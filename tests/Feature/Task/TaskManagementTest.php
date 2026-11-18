@@ -243,4 +243,36 @@ class TaskManagementTest extends TestCase
             ->get(route('intern.tasks.show', $taskA))
             ->assertForbidden();
     }
+
+    public function test_intern_owner_can_transition_assigned_to_in_progress_and_cannot_self_accept_or_invalid_transition(): void
+    {
+        $pic = User::factory()->create(['role' => 'pic', 'is_active' => true]);
+        $internA = User::factory()->create(['role' => 'intern', 'is_active' => true]);
+        $internB = User::factory()->create(['role' => 'intern', 'is_active' => true]);
+
+        $task = Task::factory()->create([
+            'pic_user_id' => $pic->id,
+            'intern_user_id' => $internA->id,
+            'status' => TaskStatus::Assigned,
+        ]);
+
+        // Intern B (bukan pemilik) ditolak saat mencoba memulai tugas Intern A
+        $this->actingAs($internB)
+            ->patch(route('intern.tasks.start', $task))
+            ->assertForbidden();
+
+        // Intern A (pemilik) berhasil mengubah status assigned -> in_progress (meski mengirim payload status=accepted)
+        $response = $this->actingAs($internA)
+            ->patch(route('intern.tasks.start', $task), [
+                'status' => TaskStatus::Accepted->value,
+            ]);
+
+        $response->assertRedirect(route('intern.tasks.show', $task));
+        $this->assertSame(TaskStatus::InProgress, $task->fresh()->status);
+
+        // Setelah status menjadi in_progress, panggilan ulang ke endpoint start ditolak (403)
+        $this->actingAs($internA)
+            ->patch(route('intern.tasks.start', $task))
+            ->assertForbidden();
+    }
 }

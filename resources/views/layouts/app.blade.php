@@ -255,17 +255,19 @@
                     <span>{{ \Carbon\Carbon::now()->translatedFormat('l, d F Y') }}</span>
                 </div>
 
-                <!-- Search Input -->
-                <div class="relative hidden sm:block">
-                    <input 
-                        type="text" 
-                        placeholder="@yield('search-placeholder', 'Cari peserta...')" 
-                        class="w-64 pl-9 pr-3.5 py-2.5 text-xs bg-white border border-slate-200/80 rounded-xl text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 shadow-xs transition"
-                    >
-                    <svg class="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                    </svg>
-                </div>
+                <!-- Search Input (Hanya untuk Admin & PIC) -->
+                @if(in_array(auth()->user()?->role, ['admin', 'pic'], true))
+                    <div class="relative hidden sm:block">
+                        <input 
+                            type="text" 
+                            placeholder="@yield('search-placeholder', 'Cari peserta...')" 
+                            class="w-64 pl-9 pr-3.5 py-2.5 text-xs bg-white border border-slate-200/80 rounded-xl text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 shadow-xs transition"
+                        >
+                        <svg class="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                        </svg>
+                    </div>
+                @endif
 
                 <!-- Tombol Notifikasi -->
                 <button class="p-2.5 rounded-xl bg-white border border-slate-200/80 text-slate-600 hover:text-slate-900 shadow-xs transition relative">

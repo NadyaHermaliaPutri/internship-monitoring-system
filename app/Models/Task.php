@@ -73,6 +73,14 @@ class Task extends Model
     }
 
     /**
+     * Alias relasi logbook otomatis untuk konsistensi pemanggilan Task::logbook().
+     */
+    public function logbook(): HasOne
+    {
+        return $this->hasOne(Logbook::class, 'task_id');
+    }
+
+    /**
      * Menentukan apakah tugas sudah melewati deadline terbaru (WIB) dan belum berstatus accepted.
      */
     public function isOverdue(?Carbon $referenceTime = null): bool
@@ -93,6 +101,11 @@ class Task extends Model
     public function canBeEditedByPic(): bool
     {
         return $this->status?->canBeEditedByPic() ?? false;
+    }
+
+    public function canBeStartedByIntern(): bool
+    {
+        return $this->status?->canBeStartedByIntern() ?? false;
     }
 
     /**

@@ -152,4 +152,34 @@ class TaskService
             return $locked->refresh();
         });
     }
+
+    /**
+     * Transisi status tugas oleh peserta pemilik dari assigned -> in_progress.
+     * Menolak keras transisi dari status selain assigned atau percobaan mengubah ke accepted.
+     */
+    public function startTask(Task $task, User $intern): Task
+    {
+        return DB::transaction(function () use ($task, $intern) {
+            /** @var Task $locked */
+            $locked = Task::query()->whereKey($task->id)->lockForUpdate()->firstOrFail();
+
+            if (! $intern->isIntern() || ! $intern->is_active || $locked->intern_user_id !== $intern->id) {
+                throw ValidationException::withMessages([
+                    'task' => 'Anda tidak berwenang memulai tugas ini.',
+                ]);
+            }
+
+            if (! $locked->canBeStartedByIntern()) {
+                throw ValidationException::withMessages([
+                    'status' => 'Tugas hanya dapat dimulai ketika berstatus Ditugaskan (Assigned).',
+                ]);
+            }
+
+            $locked->update([
+                'status' => TaskStatus::InProgress,
+            ]);
+
+            return $locked->refresh();
+        });
+    }
 }

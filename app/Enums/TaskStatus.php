@@ -32,4 +32,9 @@ enum TaskStatus: string
     {
         return $this !== self::Accepted;
     }
+
+    public function canBeStartedByIntern(): bool
+    {
+        return $this === self::Assigned;
+    }
 }

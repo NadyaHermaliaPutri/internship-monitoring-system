@@ -276,4 +276,33 @@ class LogbookTest extends TestCase
         $this->assertSame(0, Logbook::query()->pendingApproval()->count());
         $this->assertSame(0, Logbook::query()->forEwsFulfillment($intern->id, '2026-11-18')->count());
     }
+
+    public function test_logbook_index_supports_keyword_search_pagination_and_hides_global_intern_search_for_intern(): void
+    {
+        $intern = User::factory()->create(['role' => 'intern', 'is_active' => true]);
+
+        Logbook::factory()->create([
+            'intern_user_id' => $intern->id,
+            'log_date' => '2026-11-18',
+            'title' => 'Refaktor Komponen Tabel Logbook',
+            'activity_description' => 'Mengubah layout halaman riwayat menjadi full-width.',
+        ]);
+
+        Logbook::factory()->create([
+            'intern_user_id' => $intern->id,
+            'log_date' => '2026-11-17',
+            'title' => 'Integrasi Endpoint Presensi',
+            'activity_description' => 'Menyiapkan validasi jam masuk.',
+        ]);
+
+        $response = $this->actingAs($intern)->get(route('intern.logbooks.index', [
+            'search' => 'Refaktor Komponen',
+        ]));
+
+        $response->assertOk();
+        $response->assertSee('+ Tambah Logbook');
+        $response->assertSee('Refaktor Komponen Tabel Logbook');
+        $response->assertDontSee('Integrasi Endpoint Presensi');
+        $response->assertDontSee('Cari peserta...');
+    }
 }

@@ -51,13 +51,26 @@
                 </div>
             </div>
 
-            <div class="flex items-center gap-2.5">
+            <div class="flex flex-wrap items-center gap-2.5">
                 <a
                     href="{{ route($rolePrefix . '.tasks.index') }}"
                     class="px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50"
                 >
                     &larr; Daftar Tugas
                 </a>
+
+                @can('start', $task)
+                    <form method="POST" action="{{ route('intern.tasks.start', $task) }}">
+                        @csrf
+                        @method('PATCH')
+                        <button
+                            type="submit"
+                            class="px-4 py-2 rounded-xl bg-[#015987] hover:bg-[#014467] text-xs font-bold text-white shadow-xs transition"
+                        >
+                            Mulai Kerjakan Tugas
+                        </button>
+                    </form>
+                @endcan
 
                 @can('update', $task)
                     <a
@@ -96,9 +109,25 @@
 
         {{-- Deskripsi Tugas --}}
         <div>
-            <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Deskripsi & Instruksi Tugas</h3>
+            <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Deskripsi &amp; Instruksi Tugas</h3>
             <div class="p-4 rounded-xl bg-slate-50/70 border border-slate-100 text-xs text-slate-800 whitespace-pre-line leading-relaxed">{{ $task->description }}</div>
         </div>
+
+        {{-- Info Aksi Peserta (Alur Pengerjaan & Pengumpulan) --}}
+        @if ($user->isIntern())
+            <div class="p-4 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1.5 text-xs">
+                <p class="font-bold text-slate-800">Status Pengerjaan Tugas Anda: <span class="text-[#015987]">{{ $task->status->label() }}</span></p>
+                @if ($task->status->value === 'assigned')
+                    <p class="text-slate-600">
+                        Tekan tombol <strong>Mulai Kerjakan Tugas</strong> di atas untuk menandai bahwa Anda telah memulai pengerjaan tugas ini (<code>In Progress</code>).
+                    </p>
+                @elseif ($task->status->value === 'in_progress')
+                    <p class="text-slate-600">
+                        Tugas sedang Anda kerjakan. Formulir pengumpulan bukti hasil tugas (URL / video / file) akan tersedia pada tahap pengumpulan tugas.
+                    </p>
+                @endif
+            </div>
+        @endif
 
         {{-- Keterkaitan Logbook Otomatis --}}
         @if ($task->assignmentLogbook)

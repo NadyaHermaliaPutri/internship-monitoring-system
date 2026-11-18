@@ -37,6 +37,18 @@ class LogbookController extends Controller
             ->withCount('revisions')
             ->visibleTo($user);
 
+        // Filter opsional: pencarian kata kunci pada title atau activity_description
+        if ($request->filled('search')) {
+            $keyword = trim($request->string('search')->toString());
+            if ($keyword !== '') {
+                $escaped = addcslashes($keyword, '%_\\');
+                $query->where(function ($q) use ($escaped) {
+                    $q->where('title', 'like', "%{$escaped}%")
+                        ->orWhere('activity_description', 'like', "%{$escaped}%");
+                });
+            }
+        }
+
         // Filter opsional: status
         if ($request->filled('status') && in_array($request->string('status')->toString(), ['pending', 'approved', 'revision_requested'], true)) {
             $query->where('status', $request->string('status')->toString());

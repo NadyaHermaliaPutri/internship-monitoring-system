@@ -12,6 +12,10 @@
 @php
     $user = auth()->user();
     $rolePrefix = $user->role;
+    $hasActiveFilter = request()->filled('search')
+        || request()->filled('status')
+        || request()->filled('overdue')
+        || request()->filled('intern_id');
 @endphp
 
 <div class="space-y-6">
@@ -65,285 +69,294 @@
         </div>
     </div>
 
-    <div class="grid grid-cols-1 {{ $user->isPic() ? 'xl:grid-cols-12' : '' }} gap-6 items-start">
+    {{-- Kontainer Full-Width Daftar Tugas --}}
+    <div class="w-full bg-white rounded-2xl border border-slate-200/70 shadow-xs p-5 sm:p-6 space-y-5">
 
-        {{-- KOLOM KIRI (KHUSUS PIC): Form Cepat Buat Tugas Baru --}}
-        @if ($user->isPic())
-            <div class="xl:col-span-5 bg-white rounded-2xl border border-slate-200/70 shadow-xs p-6 space-y-5">
-                <div class="flex items-center justify-between pb-3 border-b border-slate-100">
-                    <div>
-                        <h2 class="text-base font-bold text-[#015987]">Buat Tugas Baru</h2>
-                        <p class="text-[11px] text-slate-500 mt-0.5">
-                            Otomatis mencatat peristiwa penugasan ke Logbook peserta terkait.
-                        </p>
-                    </div>
-                    <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-sky-50 text-[#015987] border border-sky-200">
-                        WIB
-                    </span>
-                </div>
-
-                @if ($internOptions->isEmpty())
-                    <div class="p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs space-y-1">
-                        <p class="font-bold">Belum Ada Peserta Aktif dalam Penugasan Anda</p>
-                        <p class="text-[11px]">
-                            Anda hanya dapat memberikan tugas kepada peserta magang aktif yang sedang ditugaskan kepada Anda pada tabel penugasan PIC.
-                        </p>
-                    </div>
-                @else
-                    <form method="POST" action="{{ route('pic.tasks.store') }}" class="space-y-4">
-                        @csrf
-
-                        <div>
-                            <label for="intern_user_id" class="block text-xs font-bold text-slate-700 mb-1.5">
-                                Peserta Magang Penerima <span class="text-rose-500">*</span>
-                            </label>
-                            <select
-                                id="intern_user_id"
-                                name="intern_user_id"
-                                required
-                                class="w-full px-3.5 py-2.5 text-xs rounded-xl border @error('intern_user_id') border-rose-400 bg-rose-50/40 @else border-slate-200 bg-slate-50/60 @enderror text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-[#015987] transition"
-                            >
-                                <option value="">-- Pilih Peserta Bimbingan Aktif --</option>
-                                @foreach ($internOptions as $internOption)
-                                    <option value="{{ $internOption->id }}" @selected((string) old('intern_user_id') === (string) $internOption->id)>
-                                        {{ $internOption->name }} ({{ $internOption->email }})
-                                    </option>
-                                @endforeach
-                            </select>
-                            @error('intern_user_id')
-                                <p class="text-[11px] text-rose-600 font-semibold mt-1">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        <div>
-                            <label for="title" class="block text-xs font-bold text-slate-700 mb-1.5">
-                                Judul Tugas <span class="text-rose-500">*</span>
-                            </label>
-                            <input
-                                type="text"
-                                id="title"
-                                name="title"
-                                value="{{ old('title') }}"
-                                maxlength="180"
-                                placeholder="Contoh: Slicing UI Halaman Laporan Evaluasi Magang"
-                                required
-                                class="w-full px-3.5 py-2.5 text-xs rounded-xl border @error('title') border-rose-400 bg-rose-50/40 @else border-slate-200 bg-slate-50/60 @enderror text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-[#015987] transition"
-                            >
-                            @error('title')
-                                <p class="text-[11px] text-rose-600 font-semibold mt-1">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        <div>
-                            <label for="deadline_at" class="block text-xs font-bold text-slate-700 mb-1.5">
-                                Batas Waktu Pengumpulan (Deadline WIB) <span class="text-rose-500">*</span>
-                            </label>
-                            <input
-                                type="datetime-local"
-                                id="deadline_at"
-                                name="deadline_at"
-                                value="{{ old('deadline_at', $defaultDeadline) }}"
-                                required
-                                class="w-full px-3.5 py-2.5 text-xs rounded-xl border @error('deadline_at') border-rose-400 bg-rose-50/40 @else border-slate-200 bg-slate-50/60 @enderror text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-[#015987] transition"
-                            >
-                            <p class="text-[11px] text-slate-400 mt-1">
-                                Wajib berada di masa depan sesuai zona waktu Asia/Jakarta (WIB).
-                            </p>
-                            @error('deadline_at')
-                                <p class="text-[11px] text-rose-600 font-semibold mt-1">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        <div>
-                            <label for="description" class="block text-xs font-bold text-slate-700 mb-1.5">
-                                Deskripsi & Spesifikasi Tugas <span class="text-rose-500">*</span>
-                            </label>
-                            <textarea
-                                id="description"
-                                name="description"
-                                rows="4"
-                                placeholder="Jelaskan instruksi pengerjaan, kriteria selesai, dan format bukti yang diharapkan..."
-                                required
-                                class="w-full px-3.5 py-2.5 text-xs rounded-xl border @error('description') border-rose-400 bg-rose-50/40 @else border-slate-200 bg-slate-50/60 @enderror text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-[#015987] transition"
-                            >{{ old('description') }}</textarea>
-                            @error('description')
-                                <p class="text-[11px] text-rose-600 font-semibold mt-1">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        <div class="pt-2 flex items-center justify-end">
-                            <button
-                                type="submit"
-                                class="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#015987] hover:bg-[#014467] text-white font-bold text-xs shadow-xs transition"
-                            >
-                                Tugaskan kepada Peserta
-                            </button>
-                        </div>
-                    </form>
-                @endif
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
+            <div>
+                <h2 class="text-base font-bold text-[#015987]">Daftar Penugasan</h2>
+                <p class="text-xs text-slate-500 mt-0.5">
+                    Indikator Overdue dihitung otomatis dari batas waktu (deadline) terbaru sesuai waktu server Asia/Jakarta.
+                </p>
             </div>
-        @endif
 
-        {{-- KOLOM KANAN: Filter & Daftar Tugas --}}
-        <div class="{{ $user->isPic() ? 'xl:col-span-7' : '' }} bg-white rounded-2xl border border-slate-200/70 shadow-xs p-6 space-y-5">
+            @if ($user->isPic())
+                <a
+                    href="{{ route('pic.tasks.create') }}"
+                    class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#015987] hover:bg-[#014467] text-white font-bold text-xs shadow-xs transition"
+                >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    <span>+ Buat Tugas Baru</span>
+                </a>
+            @endif
+        </div>
 
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
-                <div>
-                    <h2 class="text-base font-bold text-[#015987]">Daftar Tugas</h2>
-                    <p class="text-[11px] text-slate-500 mt-0.5">
-                        Indikator Overdue dihitung otomatis dari batas waktu (deadline) terbaru.
-                    </p>
-                </div>
-
-                @if ($user->isPic())
-                    <a
-                        href="{{ route('pic.tasks.create') }}"
-                        class="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl border border-[#015987] text-[#015987] hover:bg-sky-50 font-bold text-xs transition"
+        {{-- Bar Filter & Pencarian --}}
+        <form method="GET" action="{{ route($rolePrefix . '.tasks.index') }}" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 bg-slate-50/70 p-4 rounded-xl border border-slate-100 items-end">
+            <div class="{{ $user->isIntern() ? 'lg:col-span-5' : 'lg:col-span-4' }}">
+                <label for="search" class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Kata Kunci</label>
+                <div class="relative">
+                    <input
+                        type="text"
+                        id="search"
+                        name="search"
+                        value="{{ request('search') }}"
+                        placeholder="Cari judul atau deskripsi tugas..."
+                        class="w-full pl-8 pr-3 py-2 text-xs rounded-lg border border-slate-200 bg-white text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-[#015987]"
                     >
-                        + Form Halaman Penuh
-                    </a>
-                @endif
+                    <svg class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                </div>
             </div>
 
-            {{-- Bar Filter --}}
-            <form method="GET" action="{{ route($rolePrefix . '.tasks.index') }}" class="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50/70 p-3.5 rounded-xl border border-slate-100">
-                @if (! $user->isIntern())
-                    <div>
-                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Peserta Magang</label>
-                        <select name="intern_id" class="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 bg-white text-slate-700">
-                            <option value="">Semua Peserta</option>
-                            @foreach ($internOptions as $internOption)
-                                <option value="{{ $internOption->id }}" @selected((string) request('intern_id') === (string) $internOption->id)>
-                                    {{ $internOption->name }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
-                @endif
-
-                <div>
-                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Status Tugas</label>
-                    <select name="status" class="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 bg-white text-slate-700">
-                        <option value="">Semua Status</option>
-                        @foreach ($statusOptions as $statusCase)
-                            <option value="{{ $statusCase->value }}" @selected(request('status') === $statusCase->value)>
-                                {{ $statusCase->label() }}
+            @if (! $user->isIntern())
+                <div class="lg:col-span-3">
+                    <label for="intern_id" class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Peserta Magang</label>
+                    <select id="intern_id" name="intern_id" class="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 bg-white text-slate-700">
+                        <option value="">Semua Peserta</option>
+                        @foreach ($internOptions as $internOption)
+                            <option value="{{ $internOption->id }}" @selected((string) request('intern_id') === (string) $internOption->id)>
+                                {{ $internOption->name }}
                             </option>
                         @endforeach
                     </select>
                 </div>
-
-                <div>
-                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Kondisi Deadline</label>
-                    <div class="flex items-center gap-2">
-                        <select name="overdue" class="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 bg-white text-slate-700">
-                            <option value="">Semua</option>
-                            <option value="1" @selected(request('overdue') === '1')>Hanya yang Overdue</option>
-                        </select>
-                        <button type="submit" class="px-3.5 py-2 rounded-lg bg-[#015987] text-white text-xs font-bold hover:bg-[#014467] transition">
-                            Filter
-                        </button>
-                    </div>
-                </div>
-            </form>
-
-            {{-- Daftar Entri Tugas --}}
-            @if ($tasks->isEmpty())
-                <div class="text-center py-12 px-4 rounded-2xl border border-dashed border-slate-200 bg-slate-50/40">
-                    <p class="text-sm font-bold text-slate-700">Belum ada data tugas</p>
-                    <p class="text-xs text-slate-500 mt-1">
-                        @if ($user->isPic())
-                            Silakan buat tugas baru untuk peserta bimbingan Anda pada formulir di samping.
-                        @elseif ($user->isIntern())
-                            Belum ada tugas yang diberikan oleh PIC Pembimbing Anda.
-                        @else
-                            Belum ada tugas yang sesuai dengan filter pencarian.
-                        @endif
-                    </p>
-                </div>
-            @else
-                <div class="space-y-3.5">
-                    @foreach ($tasks as $taskItem)
-                        @php
-                            $isOverdue = $taskItem->isOverdue();
-                            $statusBadge = match ($taskItem->status->value) {
-                                'accepted' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
-                                'submitted', 'resubmitted' => 'bg-amber-50 text-amber-700 border-amber-200',
-                                'revision_requested' => 'bg-indigo-50 text-indigo-700 border-indigo-200',
-                                'in_progress' => 'bg-sky-50 text-sky-700 border-sky-200',
-                                default => 'bg-slate-100 text-slate-700 border-slate-200',
-                            };
-                        @endphp
-
-                        <div class="p-4 rounded-2xl border {{ $isOverdue ? 'border-rose-300 bg-rose-50/20' : 'border-slate-200/80 bg-white' }} hover:border-slate-300 transition space-y-3">
-                            <div class="flex flex-wrap items-start justify-between gap-2">
-                                <div class="space-y-1">
-                                    <div class="flex flex-wrap items-center gap-2">
-                                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold border {{ $statusBadge }}">
-                                            {{ $taskItem->status->label() }}
-                                        </span>
-
-                                        @if ($isOverdue)
-                                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-100 text-rose-700 border border-rose-300">
-                                                OVERDUE (Lewat Deadline)
-                                            </span>
-                                        @endif
-
-                                        <span class="text-[11px] text-slate-500">
-                                            Ditugaskan: {{ $taskItem->assigned_at->timezone('Asia/Jakarta')->translatedFormat('d M Y H:i') }} WIB
-                                        </span>
-                                    </div>
-
-                                    <h3 class="text-sm font-bold text-slate-900">
-                                        {{ $taskItem->title }}
-                                    </h3>
-
-                                    <p class="text-[11px] text-slate-500">
-                                        @if (! $user->isIntern())
-                                            Peserta: <strong class="text-slate-700">{{ $taskItem->intern?->name }}</strong> •
-                                        @endif
-                                        PIC: <strong class="text-slate-700">{{ $taskItem->pic?->name }}</strong>
-                                        @if ($taskItem->deadline_at)
-                                            • Deadline:
-                                            <strong class="{{ $isOverdue ? 'text-rose-600' : 'text-[#015987]' }}">
-                                                {{ $taskItem->deadline_at->timezone('Asia/Jakarta')->translatedFormat('d M Y H:i') }} WIB
-                                            </strong>
-                                        @endif
-                                    </p>
-                                </div>
-
-                                <div class="flex items-center gap-2">
-                                    <a
-                                        href="{{ route($rolePrefix . '.tasks.show', $taskItem) }}"
-                                        class="px-3 py-1.5 rounded-xl border border-slate-200 hover:border-[#015987] text-xs font-semibold text-[#015987] transition"
-                                    >
-                                        Detail
-                                    </a>
-
-                                    @can('update', $taskItem)
-                                        <a
-                                            href="{{ route('pic.tasks.edit', $taskItem) }}"
-                                            class="px-3 py-1.5 rounded-xl bg-[#015987] hover:bg-[#014467] text-xs font-semibold text-white transition"
-                                        >
-                                            Edit / Deadline
-                                        </a>
-                                    @endcan
-                                </div>
-                            </div>
-
-                            <p class="text-xs text-slate-600 leading-relaxed line-clamp-2">
-                                {{ $taskItem->description }}
-                            </p>
-                        </div>
-                    @endforeach
-                </div>
-
-                <div class="pt-3">
-                    {{ $tasks->links() }}
-                </div>
             @endif
 
-        </div>
+            <div class="{{ $user->isIntern() ? 'lg:col-span-3' : 'lg:col-span-2' }}">
+                <label for="status" class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Status Tugas</label>
+                <select id="status" name="status" class="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 bg-white text-slate-700">
+                    <option value="">Semua Status</option>
+                    @foreach ($statusOptions as $statusCase)
+                        <option value="{{ $statusCase->value }}" @selected(request('status') === $statusCase->value)>
+                            {{ $statusCase->label() }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div class="{{ $user->isIntern() ? 'lg:col-span-4' : 'lg:col-span-3' }}">
+                <label for="overdue" class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Kondisi Deadline</label>
+                <div class="flex items-center gap-2">
+                    <select id="overdue" name="overdue" class="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 bg-white text-slate-700">
+                        <option value="">Semua</option>
+                        <option value="1" @selected(request('overdue') === '1')>Hanya yang Overdue</option>
+                    </select>
+                    <button type="submit" class="px-3.5 py-2 rounded-lg bg-[#015987] text-white text-xs font-bold hover:bg-[#014467] transition shrink-0">
+                        Filter
+                    </button>
+                    @if ($hasActiveFilter)
+                        <a
+                            href="{{ route($rolePrefix . '.tasks.index') }}"
+                            class="px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 text-xs font-semibold transition shrink-0"
+                        >
+                            Reset
+                        </a>
+                    @endif
+                </div>
+            </div>
+        </form>
+
+        {{-- Daftar Tugas --}}
+        @if ($tasks->isEmpty())
+            <div class="text-center py-12 px-4 rounded-2xl border border-dashed border-slate-200 bg-slate-50/40 space-y-2">
+                <p class="text-sm font-bold text-slate-700">Belum ada data tugas</p>
+                <p class="text-xs text-slate-500">
+                    @if ($hasActiveFilter)
+                        Tidak ada tugas yang cocok dengan filter pencarian Anda.
+                    @elseif ($user->isPic())
+                        Silakan tekan tombol <strong>+ Buat Tugas Baru</strong> di kanan atas untuk memberikan tugas kepada peserta bimbingan Anda.
+                    @elseif ($user->isIntern())
+                        Belum ada tugas yang diberikan oleh PIC Pembimbing Anda.
+                    @else
+                        Belum ada penugasan yang tercatat di sistem.
+                    @endif
+                </p>
+            </div>
+        @else
+            {{-- TAMPILAN DESKTOP (md ke atas): Tabel Ringkas Full-Width --}}
+            <div class="hidden md:block overflow-x-auto rounded-2xl border border-slate-200/80">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-[#015987]/5 border-b border-slate-200/80 text-[11px] font-bold text-[#015987] uppercase tracking-wider">
+                            <th class="py-3.5 px-4 whitespace-nowrap">Ditugaskan</th>
+                            @if (! $user->isIntern())
+                                <th class="py-3.5 px-4 whitespace-nowrap">Peserta</th>
+                            @else
+                                <th class="py-3.5 px-4 whitespace-nowrap">PIC Pembimbing</th>
+                            @endif
+                            <th class="py-3.5 px-4 w-full">Judul &amp; Deskripsi Ringkas</th>
+                            <th class="py-3.5 px-4 whitespace-nowrap">Deadline (WIB)</th>
+                            <th class="py-3.5 px-4 whitespace-nowrap">Status</th>
+                            <th class="py-3.5 px-4 text-right whitespace-nowrap">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 text-xs">
+                        @foreach ($tasks as $taskItem)
+                            @php
+                                $isOverdue = $taskItem->isOverdue();
+                                $statusBadge = match ($taskItem->status->value) {
+                                    'accepted' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
+                                    'submitted', 'resubmitted' => 'bg-amber-50 text-amber-700 border-amber-200',
+                                    'revision_requested' => 'bg-indigo-50 text-indigo-700 border-indigo-200',
+                                    'in_progress' => 'bg-sky-50 text-sky-700 border-sky-200',
+                                    default => 'bg-slate-100 text-slate-700 border-slate-200',
+                                };
+                            @endphp
+                            <tr class="{{ $isOverdue ? 'bg-rose-50/20' : '' }} hover:bg-slate-50/80 transition align-middle">
+                                <td class="py-3.5 px-4 whitespace-nowrap text-slate-600 font-medium">
+                                    {{ $taskItem->assigned_at->timezone('Asia/Jakarta')->translatedFormat('d M Y') }}
+                                </td>
+
+                                <td class="py-3.5 px-4 whitespace-nowrap font-semibold text-slate-800">
+                                    {{ ! $user->isIntern() ? $taskItem->intern?->name : $taskItem->pic?->name }}
+                                </td>
+
+                                <td class="py-3.5 px-4 max-w-md">
+                                    <p class="font-bold text-slate-900 truncate">{{ $taskItem->title }}</p>
+                                    <p class="text-[11px] text-slate-500 line-clamp-1 mt-0.5">{{ $taskItem->description }}</p>
+                                </td>
+
+                                <td class="py-3.5 px-4 whitespace-nowrap">
+                                    @if ($taskItem->deadline_at)
+                                        <span class="font-bold {{ $isOverdue ? 'text-rose-600' : 'text-[#015987]' }}">
+                                            {{ $taskItem->deadline_at->timezone('Asia/Jakarta')->translatedFormat('d M Y H:i') }}
+                                        </span>
+                                    @else
+                                        <span class="text-slate-400">-</span>
+                                    @endif
+                                </td>
+
+                                <td class="py-3.5 px-4 whitespace-nowrap">
+                                    <div class="flex flex-wrap items-center gap-1.5">
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border {{ $statusBadge }}">
+                                            {{ $taskItem->status->label() }}
+                                        </span>
+                                        @if ($isOverdue)
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-100 text-rose-700 border border-rose-300">
+                                                OVERDUE
+                                            </span>
+                                        @endif
+                                    </div>
+                                </td>
+
+                                <td class="py-3.5 px-4 whitespace-nowrap text-right">
+                                    <div class="inline-flex items-center justify-end gap-2">
+                                        <a
+                                            href="{{ route($rolePrefix . '.tasks.show', $taskItem) }}"
+                                            class="px-3 py-1.5 rounded-xl border border-slate-200 hover:border-[#015987] text-xs font-semibold text-[#015987] transition"
+                                        >
+                                            Detail
+                                        </a>
+
+                                        @can('start', $taskItem)
+                                            <form method="POST" action="{{ route('intern.tasks.start', $taskItem) }}">
+                                                @csrf
+                                                @method('PATCH')
+                                                <button
+                                                    type="submit"
+                                                    class="px-3 py-1.5 rounded-xl bg-[#015987] hover:bg-[#014467] text-xs font-semibold text-white transition"
+                                                >
+                                                    Mulai Kerjakan
+                                                </button>
+                                            </form>
+                                        @endcan
+
+                                        @can('update', $taskItem)
+                                            <a
+                                                href="{{ route('pic.tasks.edit', $taskItem) }}"
+                                                class="px-3 py-1.5 rounded-xl bg-[#015987] hover:bg-[#014467] text-xs font-semibold text-white transition"
+                                            >
+                                                Edit / Deadline
+                                            </a>
+                                        @endcan
+                                    </div>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+
+            {{-- TAMPILAN MOBILE / PWA (< md): Daftar Kartu Ringkas 1 Kolom --}}
+            <div class="md:hidden space-y-3">
+                @foreach ($tasks as $taskItem)
+                    @php
+                        $isOverdue = $taskItem->isOverdue();
+                        $statusBadge = match ($taskItem->status->value) {
+                            'accepted' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
+                            'submitted', 'resubmitted' => 'bg-amber-50 text-amber-700 border-amber-200',
+                            'revision_requested' => 'bg-indigo-50 text-indigo-700 border-indigo-200',
+                            'in_progress' => 'bg-sky-50 text-sky-700 border-sky-200',
+                            default => 'bg-slate-100 text-slate-700 border-slate-200',
+                        };
+                    @endphp
+                    <div class="p-4 rounded-2xl border {{ $isOverdue ? 'border-rose-300 bg-rose-50/20' : 'border-slate-200/80 bg-white' }} space-y-2.5">
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold border {{ $statusBadge }}">
+                                {{ $taskItem->status->label() }}
+                            </span>
+                            @if ($isOverdue)
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-100 text-rose-700 border border-rose-300">
+                                    OVERDUE
+                                </span>
+                            @endif
+                        </div>
+
+                        <h3 class="text-sm font-bold text-slate-900">{{ $taskItem->title }}</h3>
+
+                        <p class="text-[11px] text-slate-500">
+                            {{ ! $user->isIntern() ? 'Peserta: ' . $taskItem->intern?->name : 'PIC: ' . $taskItem->pic?->name }}
+                            @if ($taskItem->deadline_at)
+                                • Deadline:
+                                <strong class="{{ $isOverdue ? 'text-rose-600' : 'text-[#015987]' }}">
+                                    {{ $taskItem->deadline_at->timezone('Asia/Jakarta')->translatedFormat('d M Y H:i') }} WIB
+                                </strong>
+                            @endif
+                        </p>
+
+                        <p class="text-xs text-slate-600 leading-relaxed line-clamp-2">
+                            {{ $taskItem->description }}
+                        </p>
+
+                        <div class="pt-2 border-t border-slate-100 flex items-center justify-end gap-2">
+                            <a
+                                href="{{ route($rolePrefix . '.tasks.show', $taskItem) }}"
+                                class="px-3 py-1.5 rounded-xl border border-slate-200 text-xs font-semibold text-[#015987]"
+                            >
+                                Detail
+                            </a>
+
+                            @can('start', $taskItem)
+                                <form method="POST" action="{{ route('intern.tasks.start', $taskItem) }}">
+                                    @csrf
+                                    @method('PATCH')
+                                    <button type="submit" class="px-3 py-1.5 rounded-xl bg-[#015987] text-xs font-semibold text-white">
+                                        Mulai Kerjakan
+                                    </button>
+                                </form>
+                            @endcan
+
+                            @can('update', $taskItem)
+                                <a
+                                    href="{{ route('pic.tasks.edit', $taskItem) }}"
+                                    class="px-3 py-1.5 rounded-xl bg-[#015987] text-xs font-semibold text-white"
+                                >
+                                    Edit / Deadline
+                                </a>
+                            @endcan
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+
+            <div class="pt-3">
+                {{ $tasks->links() }}
+            </div>
+        @endif
 
     </div>
 

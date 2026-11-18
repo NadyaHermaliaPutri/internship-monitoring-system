@@ -35,6 +35,18 @@ class TaskController extends Controller
             ->with(['pic:id,name,email', 'intern:id,name,email'])
             ->visibleTo($user);
 
+        // Filter opsional: pencarian kata kunci pada title atau description
+        if ($request->filled('search')) {
+            $keyword = trim($request->string('search')->toString());
+            if ($keyword !== '') {
+                $escaped = addcslashes($keyword, '%_\\');
+                $query->where(function ($q) use ($escaped) {
+                    $q->where('title', 'like', "%{$escaped}%")
+                        ->orWhere('description', 'like', "%{$escaped}%");
+                });
+            }
+        }
+
         // Filter opsional: status
         $allowedStatuses = array_map(fn (TaskStatus $s) => $s->value, TaskStatus::cases());
         if ($request->filled('status') && in_array($request->string('status')->toString(), $allowedStatuses, true)) {
@@ -161,5 +173,23 @@ class TaskController extends Controller
         return redirect()
             ->route('pic.tasks.show', $task)
             ->with('status', 'Detail tugas dan batas waktu (deadline) berhasil diperbarui.');
+    }
+
+    /**
+     * Peserta pemilik tugas mengubah status dari assigned -> in_progress.
+     * Menolak keras jika bukan pemilik, status bukan assigned, atau mencoba memanipulasi status.
+     */
+    public function start(Request $request, Task $task): RedirectResponse
+    {
+        Gate::authorize('start', $task);
+
+        /** @var User $intern */
+        $intern = $request->user();
+
+        $this->taskService->startTask($task, $intern);
+
+        return redirect()
+            ->route('intern.tasks.show', $task)
+            ->with('status', 'Status tugas berhasil diubah menjadi Sedang Dikerjakan (In Progress).');
     }
 }

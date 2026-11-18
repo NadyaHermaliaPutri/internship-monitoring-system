@@ -68,6 +68,22 @@ class TaskPolicy
     }
 
     /**
+     * Peserta pemilik tugas yang aktif dapat mengubah status dari assigned -> in_progress.
+     */
+    public function start(User $user, Task $task): bool
+    {
+        if (! $user->is_active || ! $user->isIntern()) {
+            return false;
+        }
+
+        if ($task->intern_user_id !== $user->id) {
+            return false;
+        }
+
+        return $task->canBeStartedByIntern();
+    }
+
+    /**
      * Data historis tugas tidak boleh dihapus.
      */
     public function delete(User $user, Task $task): bool
