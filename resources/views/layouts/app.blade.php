@@ -112,20 +112,26 @@
             </div>
 
             <!-- 3. Navigasi Sidebar (Desain Pinterest Tab Nempel ke Kanan Sesuai Gambar 2) -->
-            <nav class="mt-6 w-full">
-                <!-- Menu Dashboard Aktif: Nempel ke Kanan, Rounded Kiri, dan Melengkung Halus Atas-Bawah -->
+            @php
+                $rolePrefix = auth()->user()->role ?? 'admin';
+                $isDashboardActive = request()->routeIs('*.dashboard');
+                $isLogbookActive = request()->routeIs('*.logbooks.*');
+            @endphp
+            <nav class="mt-6 w-full space-y-2">
+                <!-- Menu Dashboard -->
                 <div class="relative w-full pl-5">
-                    <a href="{{ route((auth()->user()->role ?? 'admin') . '.dashboard') }}" class="relative flex items-center gap-3 py-3 pl-4 pr-6 bg-[#eef4f8] text-[#015987] font-bold text-xs rounded-l-full w-full shadow-none block">
-                        
-                        <!-- Lekukan Cekung Atas (Top Concave Fillet) -->
-                        <span class="absolute -top-5 right-0 w-5 h-5 pointer-events-none">
-                            <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">
-                                <path d="M20 0 L20 20 L0 20 A20 20 0 0 0 20 0 Z" fill="#eef4f8"/>
-                            </svg>
-                        </span>
+                    <a href="{{ route($rolePrefix . '.dashboard') }}" class="relative flex items-center gap-3 py-3 pl-4 pr-6 {{ $isDashboardActive ? 'bg-[#eef4f8] text-[#015987] font-bold' : 'text-sky-100 hover:bg-white/10 font-medium' }} text-xs rounded-l-full w-full shadow-none transition">
+                        @if($isDashboardActive)
+                            <!-- Lekukan Cekung Atas (Top Concave Fillet) -->
+                            <span class="absolute -top-5 right-0 w-5 h-5 pointer-events-none">
+                                <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">
+                                    <path d="M20 0 L20 20 L0 20 A20 20 0 0 0 20 0 Z" fill="#eef4f8"/>
+                                </svg>
+                            </span>
+                        @endif
 
                         <!-- Icon 4-Kotak Outline Sesuai Gambar 2 -->
-                        <svg class="w-4 h-4 text-[#015987] flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <svg class="w-4 h-4 {{ $isDashboardActive ? 'text-[#015987]' : 'text-sky-200' }} flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                             <rect x="3" y="3" width="7" height="7" rx="1.5"></rect>
                             <rect x="14" y="3" width="7" height="7" rx="1.5"></rect>
                             <rect x="3" y="14" width="7" height="7" rx="1.5"></rect>
@@ -135,12 +141,41 @@
                         <!-- Teks Dashboard -->
                         <span>Dashboard</span>
 
-                        <!-- Lekukan Cekung Bawah (Bottom Concave Fillet) Sempurna -->
-                        <span class="absolute -bottom-5 right-0 w-5 h-5 pointer-events-none">
-                            <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">
-                                <path d="M20 20 L20 0 L0 0 A20 20 0 0 1 20 20 Z" fill="#eef4f8"/>
-                            </svg>
-                        </span>
+                        @if($isDashboardActive)
+                            <!-- Lekukan Cekung Bawah (Bottom Concave Fillet) Sempurna -->
+                            <span class="absolute -bottom-5 right-0 w-5 h-5 pointer-events-none">
+                                <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">
+                                    <path d="M20 20 L20 0 L0 0 A20 20 0 0 1 20 20 Z" fill="#eef4f8"/>
+                                </svg>
+                            </span>
+                        @endif
+                    </a>
+                </div>
+
+                <!-- Menu Logbook Harian -->
+                <div class="relative w-full pl-5">
+                    <a href="{{ route($rolePrefix . '.logbooks.index') }}" class="relative flex items-center gap-3 py-3 pl-4 pr-6 {{ $isLogbookActive ? 'bg-[#eef4f8] text-[#015987] font-bold' : 'text-sky-100 hover:bg-white/10 font-medium' }} text-xs rounded-l-full w-full shadow-none transition">
+                        @if($isLogbookActive)
+                            <span class="absolute -top-5 right-0 w-5 h-5 pointer-events-none">
+                                <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">
+                                    <path d="M20 0 L20 20 L0 20 A20 20 0 0 0 20 0 Z" fill="#eef4f8"/>
+                                </svg>
+                            </span>
+                        @endif
+
+                        <svg class="w-4 h-4 {{ $isLogbookActive ? 'text-[#015987]' : 'text-sky-200' }} flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+
+                        <span>Logbook Harian</span>
+
+                        @if($isLogbookActive)
+                            <span class="absolute -bottom-5 right-0 w-5 h-5 pointer-events-none">
+                                <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">
+                                    <path d="M20 20 L20 0 L0 0 A20 20 0 0 1 20 20 Z" fill="#eef4f8"/>
+                                </svg>
+                            </span>
+                        @endif
                     </a>
                 </div>
             </nav>
