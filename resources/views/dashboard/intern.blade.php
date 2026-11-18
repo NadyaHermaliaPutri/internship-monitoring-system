@@ -24,7 +24,15 @@
                 </div>
             </div>
             <div class="mt-5">
-                @if($dailySummary['attendance_today'])
+                @if($dailySummary['attendance_today'] && $dailySummary['attendance_today']->isRejected())
+                    <div class="flex items-baseline gap-2">
+                        <span class="text-2xl sm:text-3xl font-extrabold text-rose-600">Ditolak HR</span>
+                    </div>
+                    <p class="text-[11px] font-semibold text-rose-600 mt-1.5 flex items-center gap-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span>
+                        Perlu Foto Ulang • Batas: Hari ini
+                    </p>
+                @elseif($dailySummary['attendance_today'])
                     <div class="flex items-baseline gap-2">
                         <span class="text-2xl sm:text-3xl font-extrabold text-[#015987]">Hadir</span>
                         <span class="text-xs text-slate-500 font-medium">{{ \Carbon\Carbon::parse($dailySummary['attendance_today']->checked_in_at)->timezone(config('wantrace.timezone', 'Asia/Jakarta'))->format('H:i') }} WIB</span>
@@ -166,7 +174,33 @@
         <div class="lg:col-span-7 space-y-8">
 
             <!-- BANNER 1: STATUS PRESENSI HARIAN PESERTA -->
-            @if($dailySummary['approved_leave_today'])
+            @if($dailySummary['attendance_today'] && $dailySummary['attendance_today']->isRejected())
+                <div class="bg-rose-700 text-white p-6 sm:p-7 rounded-2xl shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-5">
+                    <div class="space-y-2">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center flex-shrink-0">
+                                <svg class="w-4 h-4 text-rose-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                                </svg>
+                            </div>
+                            <h3 class="text-sm sm:text-base font-bold text-white tracking-tight">
+                                Foto Presensi Masuk Ditolak HR
+                            </h3>
+                        </div>
+                        <p class="text-xs text-rose-100">
+                            Alasan: "{{ $dailySummary['attendance_today']->notes }}"
+                        </p>
+                        <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-white/10 text-white text-xs font-medium mt-1">
+                            <span>Waktu Awal: {{ \Carbon\Carbon::parse($dailySummary['attendance_today']->checked_in_at)->timezone(config('wantrace.timezone', 'Asia/Jakarta'))->format('H:i:s') }} WIB (Status {{ $dailySummary['attendance_today']->isOnTime() ? 'Tepat Waktu' : 'Terlambat' }} tetap dipertahankan)</span>
+                        </div>
+                    </div>
+                    <div class="flex-shrink-0">
+                        <a href="{{ route('intern.attendance.index') }}" class="px-5 py-2.5 bg-white text-rose-700 hover:bg-rose-50 text-xs font-bold rounded-xl transition shadow-xs inline-block">
+                            Buka Kamera &amp; Foto Ulang
+                        </a>
+                    </div>
+                </div>
+            @elseif($dailySummary['approved_leave_today'])
                 <div class="bg-[#78350f] text-white p-6 sm:p-7 rounded-2xl shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-5">
                     <div class="space-y-2">
                         <div class="flex items-center gap-2.5">

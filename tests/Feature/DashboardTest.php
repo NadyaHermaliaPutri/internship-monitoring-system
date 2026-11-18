@@ -104,6 +104,34 @@ class DashboardTest extends TestCase
         $response->assertSee('Presensi Masuk Berhasil Tercatat');
     }
 
+    public function test_intern_dashboard_reflects_rejected_attendance(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $intern = User::factory()->create(['role' => 'intern', 'is_active' => true]);
+        $media = $this->createMedia($intern);
+
+        Carbon::setTestNow(Carbon::parse('2026-11-18 08:00:00', 'Asia/Jakarta'));
+
+        Attendance::create([
+            'intern_user_id' => $intern->id,
+            'photo_media_id' => $media->id,
+            'attendance_date' => '2026-11-18',
+            'checked_in_at' => '2026-11-18 08:00:00',
+            'status' => 'on_time',
+            'verification_status' => 'rejected',
+            'reviewed_by' => $admin->id,
+            'notes' => 'Foto tidak jelas, silakan foto ulang di ruangan terang.',
+        ]);
+
+        $response = $this->actingAs($intern)->get('/intern/dashboard');
+        $response->assertOk();
+        $response->assertSee('Ditolak HR');
+        $response->assertSee('Perlu Foto Ulang • Batas: Hari ini');
+        $response->assertSee('Foto Presensi Masuk Ditolak HR');
+        $response->assertSee('Foto tidak jelas, silakan foto ulang di ruangan terang.');
+        $response->assertSee('Buka Kamera &amp; Foto Ulang', false);
+    }
+
     public function test_intern_dashboard_reflects_holiday_status(): void
     {
         $intern = User::factory()->create(['role' => 'intern', 'is_active' => true]);

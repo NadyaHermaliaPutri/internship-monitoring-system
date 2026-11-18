@@ -202,10 +202,17 @@
 
                                     <div class="flex items-center gap-2 flex-shrink-0">
                                         @if($att)
-                                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold {{ $att->isOnTime() ? 'bg-teal-50 text-teal-700 border border-teal-200' : 'bg-rose-50 text-rose-700 border border-rose-200' }}">
-                                                <span class="w-1.5 h-1.5 rounded-full {{ $att->isOnTime() ? 'bg-teal-500' : 'bg-rose-500' }}"></span>
-                                                {{ $att->isOnTime() ? 'Hadir Tepat Waktu' : 'Terlambat' }} ({{ \Carbon\Carbon::parse($att->checked_in_at)->timezone(config('wantrace.timezone', 'Asia/Jakarta'))->format('H:i') }} WIB)
-                                            </span>
+                                            @if($att->isRejected())
+                                                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-rose-50 text-rose-700 border border-rose-200">
+                                                    <span class="w-1.5 h-1.5 rounded-full bg-rose-600"></span>
+                                                    Ditolak HR (Perlu Foto Ulang)
+                                                </span>
+                                            @else
+                                                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold {{ $att->isOnTime() ? 'bg-teal-50 text-teal-700 border border-teal-200' : 'bg-rose-50 text-rose-700 border border-rose-200' }}">
+                                                    <span class="w-1.5 h-1.5 rounded-full {{ $att->isOnTime() ? 'bg-teal-500' : 'bg-rose-500' }}"></span>
+                                                    {{ $att->isOnTime() ? 'Hadir Tepat Waktu' : 'Terlambat' }} ({{ \Carbon\Carbon::parse($att->checked_in_at)->timezone(config('wantrace.timezone', 'Asia/Jakarta'))->format('H:i') }} WIB)
+                                                </span>
+                                            @endif
                                             @if($att->photo_media_id)
                                                 <a href="{{ route('media.private.show', $att->photo_media_id) }}" target="_blank" class="p-1 rounded-lg border border-slate-200 text-slate-500 hover:text-slate-800 text-[10px] font-medium" title="Lihat Foto Bukti">
                                                     Foto Bukti
