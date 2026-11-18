@@ -38,11 +38,26 @@ return [
             'report' => false,
         ],
 
-        // Disk penyimpanan file privat (foto presensi, bukti izin, tugas)
-        // Sesuai Database Dictionary v1.0 PT WAN Teknologi Internasional
+        /*
+        |--------------------------------------------------------------------------
+        | Disk Privat untuk Upload File Sensitif (PT WAN Internship System)
+        |--------------------------------------------------------------------------
+        | Digunakan bersama oleh Anggota 2 (Presensi, Izin) dan Anggota 3 (Logbook, Tugas).
+        | File di disk ini TIDAK memiliki symlink publik dan wajib diakses melalui
+        | route / controller yang terproteksi middleware otorisasi.
+        */
         'local_private' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),
+            'visibility' => 'private',
+            'throw' => false,
+            'report' => false,
+        ],
+
+        'private' => [
+            'driver' => 'local',
+            'root' => storage_path('app/private'),
+            'visibility' => 'private',
             'throw' => false,
             'report' => false,
         ],

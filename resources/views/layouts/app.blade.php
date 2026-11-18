@@ -112,57 +112,81 @@
             </div>
 
             <!-- 3. Navigasi Sidebar (Desain Pinterest Tab Nempel ke Kanan Sesuai Gambar 2) -->
+            @php
+                $rolePrefix = auth()->user()->role ?? 'admin';
+                $isDashboardActive = request()->routeIs('*.dashboard');
+                $isLogbookActive = request()->routeIs('*.logbooks.*');
+                $isAdminCalendarActive = request()->routeIs('admin.calendar.*');
+                $isAdminAttendanceActive = request()->routeIs('admin.attendance.*');
+                $isAdminLeaveActive = request()->routeIs('admin.leave.*');
+                $isPicAttendanceActive = request()->routeIs('pic.attendance.*');
+                $isPicLeaveActive = request()->routeIs('pic.leave.*');
+                $isInternAttendanceActive = request()->routeIs('intern.attendance.*');
+                $isInternLeaveActive = request()->routeIs('intern.leave.*');
+            @endphp
             <nav class="mt-6 w-full space-y-1">
-                @php
-                    $isDashboardActive = request()->routeIs('*.dashboard');
-                    $isAdminCalendarActive = request()->routeIs('admin.calendar.*');
-                    $isAdminAttendanceActive = request()->routeIs('admin.attendance.*');
-                    $isAdminLeaveActive = request()->routeIs('admin.leave.*');
-                    $isPicAttendanceActive = request()->routeIs('pic.attendance.*');
-                    $isPicLeaveActive = request()->routeIs('pic.leave.*');
-                    $isInternAttendanceActive = request()->routeIs('intern.attendance.*');
-                    $isInternLeaveActive = request()->routeIs('intern.leave.*');
-                @endphp
-
-                <!-- Menu: Dashboard (Semua Role) -->
+                <!-- Menu Dashboard (Semua Role) -->
                 <div class="relative w-full pl-5 {{ $isDashboardActive ? 'z-10' : '' }}">
-                    @if($isDashboardActive)
-                        <a href="{{ route((auth()->user()->role ?? 'admin') . '.dashboard') }}" class="relative flex items-center gap-3 py-3 pl-4 pr-6 bg-[#eef4f8] text-[#015987] font-bold text-xs rounded-l-full w-full shadow-none block">
+                    <a href="{{ route($rolePrefix . '.dashboard') }}" class="relative flex items-center gap-3 py-3 pl-4 pr-6 {{ $isDashboardActive ? 'bg-[#eef4f8] text-[#015987] font-bold' : 'text-sky-100 hover:bg-white/10 font-medium' }} text-xs rounded-l-full w-full shadow-none transition">
+                        @if($isDashboardActive)
                             <!-- Lekukan Cekung Atas (Top Concave Fillet) -->
                             <span class="absolute -top-5 right-0 w-5 h-5 pointer-events-none">
                                 <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">
                                     <path d="M20 0 L20 20 L0 20 A20 20 0 0 0 20 0 Z" fill="#eef4f8"/>
                                 </svg>
                             </span>
+                        @endif
 
-                            <!-- Icon 4-Kotak Outline Sesuai Gambar 2 -->
-                            <svg class="w-4 h-4 text-[#015987] flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <rect x="3" y="3" width="7" height="7" rx="1.5"></rect>
-                                <rect x="14" y="3" width="7" height="7" rx="1.5"></rect>
-                                <rect x="3" y="14" width="7" height="7" rx="1.5"></rect>
-                                <rect x="14" y="14" width="7" height="7" rx="1.5"></rect>
-                            </svg>
-                            
-                            <span>Dashboard</span>
+                        <!-- Icon 4-Kotak Outline Sesuai Gambar 2 -->
+                        <svg class="w-4 h-4 {{ $isDashboardActive ? 'text-[#015987]' : 'text-sky-200' }} flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <rect x="3" y="3" width="7" height="7" rx="1.5"></rect>
+                            <rect x="14" y="3" width="7" height="7" rx="1.5"></rect>
+                            <rect x="3" y="14" width="7" height="7" rx="1.5"></rect>
+                            <rect x="14" y="14" width="7" height="7" rx="1.5"></rect>
+                        </svg>
+                        
+                        <!-- Teks Dashboard -->
+                        <span>Dashboard</span>
 
+                        @if($isDashboardActive)
                             <!-- Lekukan Cekung Bawah (Bottom Concave Fillet) -->
                             <span class="absolute -bottom-5 right-0 w-5 h-5 pointer-events-none">
                                 <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">
                                     <path d="M20 20 L20 0 L0 0 A20 20 0 0 1 20 20 Z" fill="#eef4f8"/>
                                 </svg>
                             </span>
-                        </a>
-                    @else
-                        <a href="{{ route((auth()->user()->role ?? 'admin') . '.dashboard') }}" class="flex items-center gap-3 py-3 pl-4 pr-6 text-white/80 hover:text-white hover:bg-white/10 font-medium text-xs rounded-l-full w-full transition">
-                            <svg class="w-4 h-4 text-white/80 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <rect x="3" y="3" width="7" height="7" rx="1.5"></rect>
-                                <rect x="14" y="3" width="7" height="7" rx="1.5"></rect>
-                                <rect x="3" y="14" width="7" height="7" rx="1.5"></rect>
-                                <rect x="14" y="14" width="7" height="7" rx="1.5"></rect>
-                            </svg>
-                            <span>Dashboard</span>
-                        </a>
-                    @endif
+                        @endif
+                    </a>
+                </div>
+
+                <!-- Menu Logbook Harian (Semua Role) -->
+                <div class="relative w-full pl-5 {{ $isLogbookActive ? 'z-10' : '' }}">
+                    <a href="{{ route($rolePrefix . '.logbooks.index') }}" class="relative flex items-center gap-3 py-3 pl-4 pr-6 {{ $isLogbookActive ? 'bg-[#eef4f8] text-[#015987] font-bold' : 'text-sky-100 hover:bg-white/10 font-medium' }} text-xs rounded-l-full w-full shadow-none transition">
+                        @if($isLogbookActive)
+                            <!-- Lekukan Cekung Atas (Top Concave Fillet) -->
+                            <span class="absolute -top-5 right-0 w-5 h-5 pointer-events-none">
+                                <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">
+                                    <path d="M20 0 L20 20 L0 20 A20 20 0 0 0 20 0 Z" fill="#eef4f8"/>
+                                </svg>
+                            </span>
+                        @endif
+
+                        <svg class="w-4 h-4 {{ $isLogbookActive ? 'text-[#015987]' : 'text-sky-200' }} flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+
+                        <span>Logbook Harian</span>
+
+                        @if($isLogbookActive)
+                            <!-- Lekukan Cekung Bawah (Bottom Concave Fillet) -->
+                            <span class="absolute -bottom-5 right-0 w-5 h-5 pointer-events-none">
+                                <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">
+                                    <path d="M20 20 L20 0 L0 0 A20 20 0 0 1 20 20 Z" fill="#eef4f8"/>
+                                </svg>
+                            </span>
+                        @endif
+                    </a>
+                </div>
                 </div>
 
                 {{-- ============================================================== --}}
