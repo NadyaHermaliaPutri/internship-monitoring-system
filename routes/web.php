@@ -3,6 +3,7 @@
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\CalendarController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LeaveRequestController;
 use App\Http\Controllers\LogbookController;
 use App\Http\Controllers\PrivateMediaController;
@@ -35,9 +36,7 @@ Route::middleware('auth')->group(function () {
 
     // Dashboard & Monitoring Admin / HR
     Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
-        Route::get('/dashboard', function () {
-            return view('dashboard.admin');
-        })->name('dashboard');
+        Route::get('/dashboard', [DashboardController::class, 'admin'])->name('dashboard');
 
         // Modul 2: Kalender Kerja (Admin/HR)
         Route::prefix('kalender')->name('calendar.')->group(function () {
@@ -68,9 +67,7 @@ Route::middleware('auth')->group(function () {
 
     // Dashboard, Logbook, & Pengelolaan Tugas PIC
     Route::middleware('role:pic')->prefix('pic')->name('pic.')->group(function () {
-        Route::get('/dashboard', function () {
-            return view('dashboard.pic');
-        })->name('dashboard');
+        Route::get('/dashboard', [DashboardController::class, 'pic'])->name('dashboard');
 
         // Modul 2: Monitoring Presensi Peserta Bimbingan (Read-Only PIC)
         Route::prefix('presensi')->name('attendance.')->group(function () {
@@ -96,9 +93,7 @@ Route::middleware('auth')->group(function () {
 
     // Dashboard, Logbook, & Daftar Tugas Peserta Magang
     Route::middleware('role:intern')->prefix('intern')->name('intern.')->group(function () {
-        Route::get('/dashboard', function () {
-            return view('dashboard.intern');
-        })->name('dashboard');
+        Route::get('/dashboard', [DashboardController::class, 'intern'])->name('dashboard');
 
         // Modul 2: Presensi Masuk & Riwayat (Peserta Magang)
         Route::prefix('presensi')->name('attendance.')->group(function () {
