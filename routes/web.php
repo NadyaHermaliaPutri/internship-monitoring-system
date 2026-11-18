@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\PrivateMediaController;
 use Illuminate\Support\Facades\Route;
 
@@ -33,6 +34,13 @@ Route::middleware('auth')->group(function () {
         Route::get('/dashboard', function () {
             return view('dashboard.admin');
         })->name('dashboard');
+
+        // Modul 2: Kalender Kerja (Admin/HR)
+        Route::prefix('kalender')->name('calendar.')->group(function () {
+            Route::get('/', [CalendarController::class, 'index'])->name('index');
+            Route::post('/', [CalendarController::class, 'store'])->name('store');
+            Route::delete('/{calendarException}', [CalendarController::class, 'destroy'])->name('destroy');
+        });
     });
 
     // Dashboard PIC
