@@ -38,6 +38,30 @@ return [
             'report' => false,
         ],
 
+        /*
+        |--------------------------------------------------------------------------
+        | Disk Privat untuk Upload File Sensitif (PT WAN Internship System)
+        |--------------------------------------------------------------------------
+        | Digunakan bersama oleh Anggota 2 (Presensi, Izin) dan Anggota 3 (Logbook, Tugas).
+        | File di disk ini TIDAK memiliki symlink publik dan wajib diakses melalui
+        | route / controller yang terproteksi middleware otorisasi.
+        */
+        'local_private' => [
+            'driver' => 'local',
+            'root' => storage_path('app/private'),
+            'visibility' => 'private',
+            'throw' => false,
+            'report' => false,
+        ],
+
+        'private' => [
+            'driver' => 'local',
+            'root' => storage_path('app/private'),
+            'visibility' => 'private',
+            'throw' => false,
+            'report' => false,
+        ],
+
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),
