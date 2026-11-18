@@ -38,6 +38,15 @@ return [
             'report' => false,
         ],
 
+        // Disk penyimpanan file privat (foto presensi, bukti izin, tugas)
+        // Sesuai Database Dictionary v1.0 PT WAN Teknologi Internasional
+        'local_private' => [
+            'driver' => 'local',
+            'root' => storage_path('app/private'),
+            'throw' => false,
+            'report' => false,
+        ],
+
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),

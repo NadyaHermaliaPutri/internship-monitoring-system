@@ -1,0 +1,44 @@
+<?php
+
+return [
+    /*
+    |--------------------------------------------------------------------------
+    | Aturan Waktu & Jam Kerja PT WAN Teknologi Internasional
+    |--------------------------------------------------------------------------
+    | Seluruh penentuan waktu wajib merujuk ke timezone Asia/Jakarta (WIB).
+    | Jam kerja operasional resmi: 08.00 - 17.00 WIB.
+    | Toleransi keterlambatan check-in sampai 08.05 WIB inklusif (on_time).
+    | Setelah 08.05 WIB dianggap terlambat (late).
+    */
+    'timezone' => env('APP_TIMEZONE', 'Asia/Jakarta'),
+
+    'work_hours' => [
+        'start' => '08:00',
+        'tolerance_cutoff' => '08:05', // Inklusif sampai 08:05:59 WIB dianggap tepat waktu
+        'end' => '17:00',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Konfigurasi Unggah Berkas & Dokumen Bukti (Private Local Storage)
+    |--------------------------------------------------------------------------
+    | Batas ukuran file dan MIME yang diizinkan sesuai keputusan modul.
+    */
+    'uploads' => [
+        'disk' => 'local_private',
+
+        // Foto selfie bukti presensi masuk harian
+        'attendance_photo' => [
+            'max_size_kb' => 2048, // 2 MB
+            'mimes' => ['jpeg', 'jpg', 'png', 'webp'],
+            'directory' => 'attendance_photos',
+        ],
+
+        // Bukti pengajuan izin / sakit (surat dokter / dokumen)
+        'leave_evidence' => [
+            'max_size_kb' => 5120, // 5 MB
+            'mimes' => ['jpeg', 'jpg', 'png', 'pdf'],
+            'directory' => 'leave_evidences',
+        ],
+    ],
+];
