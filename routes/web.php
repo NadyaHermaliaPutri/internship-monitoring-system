@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\PrivateMediaController;
@@ -41,6 +42,12 @@ Route::middleware('auth')->group(function () {
             Route::post('/', [CalendarController::class, 'store'])->name('store');
             Route::delete('/{calendarException}', [CalendarController::class, 'destroy'])->name('destroy');
         });
+
+        // Modul 2: Monitoring & Koreksi Presensi (Admin/HR)
+        Route::prefix('presensi')->name('attendance.')->group(function () {
+            Route::get('/', [AttendanceController::class, 'adminIndex'])->name('index');
+            Route::patch('/{attendance}', [AttendanceController::class, 'adminUpdate'])->name('update');
+        });
     });
 
     // Dashboard PIC
@@ -48,6 +55,11 @@ Route::middleware('auth')->group(function () {
         Route::get('/dashboard', function () {
             return view('dashboard.pic');
         })->name('dashboard');
+
+        // Modul 2: Monitoring Presensi Peserta Bimbingan (Read-Only PIC)
+        Route::prefix('presensi')->name('attendance.')->group(function () {
+            Route::get('/', [AttendanceController::class, 'picIndex'])->name('index');
+        });
     });
 
     // Dashboard Peserta Magang
@@ -55,5 +67,11 @@ Route::middleware('auth')->group(function () {
         Route::get('/dashboard', function () {
             return view('dashboard.intern');
         })->name('dashboard');
+
+        // Modul 2: Presensi Masuk & Riwayat (Peserta Magang)
+        Route::prefix('presensi')->name('attendance.')->group(function () {
+            Route::get('/', [AttendanceController::class, 'internIndex'])->name('index');
+            Route::post('/', [AttendanceController::class, 'internStore'])->name('store');
+        });
     });
 });
