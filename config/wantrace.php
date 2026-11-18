@@ -31,14 +31,14 @@ return [
         'attendance_photo' => [
             'max_size_kb' => 2048, // 2 MB
             'mimes' => ['jpeg', 'jpg', 'png', 'webp'],
-            'directory' => 'attendance_photos',
+            'directory' => 'presensi',
         ],
 
         // Bukti pengajuan izin / sakit (surat dokter / dokumen)
         'leave_evidence' => [
             'max_size_kb' => 5120, // 5 MB
             'mimes' => ['jpeg', 'jpg', 'png', 'pdf'],
-            'directory' => 'leave_evidences',
+            'directory' => 'izin',
         ],
     ],
 ];

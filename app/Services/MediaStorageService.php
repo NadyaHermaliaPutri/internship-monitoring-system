@@ -87,7 +87,7 @@ class MediaStorageService
             throw new InvalidArgumentException('Ukuran foto selfie melebihi batas maksimal (2 MB).');
         }
 
-        $directory = config("wantrace.uploads.{$category}.directory", 'attendance_photos');
+        $directory = config("wantrace.uploads.{$category}.directory", 'presensi');
         $uniqueFileName = sprintf('%s_selfie_%s.%s', date('Ymd_His'), Str::random(24), $extension);
         $relativePath = $directory . '/' . $uniqueFileName;
 
