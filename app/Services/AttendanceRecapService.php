@@ -1,0 +1,191 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\Attendance;
+use App\Models\LeaveRequest;
+use App\Models\PicAssignment;
+use App\Models\User;
+use Carbon\Carbon;
+use Illuminate\Support\Collection;
+
+class AttendanceRecapService
+{
+    public function __construct(
+        protected WorkCalendarService $calendarService
+    ) {}
+
+    /**
+     * Memeriksa apakah seorang peserta magang memiliki izin/sakit yang sudah disetujui pada tanggal tertentu.
+     * Service ini krusial untuk pengecualian EWS (Anggota 4) agar tidak mendeteksi izin sah sebagai ketidakhadiran.
+     */
+    public function isInternExcusedOnDate(int $internUserId, string $date): bool
+    {
+        return LeaveRequest::where('intern_user_id', $internUserId)
+            ->activeOnDate($date)
+            ->exists();
+    }
+
+    /**
+     * Mendapatkan record izin/sakit yang disetujui pada tanggal tertentu jika ada.
+     */
+    public function getApprovedLeaveOnDate(int $internUserId, string $date): ?LeaveRequest
+    {
+        return LeaveRequest::where('intern_user_id', $internUserId)
+            ->activeOnDate($date)
+            ->first();
+    }
+
+    /**
+     * Menghitung ringkasan rekapitulasi presensi harian untuk seluruh peserta magang (Dashboard Admin & Laporan).
+     */
+    public function getDailyOverallRecap(string $date): array
+    {
+        $dayStatus = $this->calendarService->getDayStatus($date);
+
+        // Ambil semua peserta magang yang aktif
+        $activeInternsCount = User::where('role', 'intern')->where('is_active', true)->count();
+
+        // Presensi pada tanggal tersebut
+        $attendances = Attendance::with(['intern', 'photo', 'reviewer'])
+            ->whereDate('attendance_date', $date)
+            ->get();
+
+        $onTimeCount = $attendances->where('status', 'on_time')->count();
+        $lateCount = $attendances->where('status', 'late')->count();
+        $totalPresent = $attendances->count();
+
+        // Izin/Sakit yang disetujui pada tanggal tersebut
+        $approvedLeaves = LeaveRequest::with('intern')
+            ->activeOnDate($date)
+            ->get();
+
+        $pendingLeavesCount = LeaveRequest::where('status', 'pending')
+            ->whereDate('start_date', '<=', $date)
+            ->whereDate('end_date', '>=', $date)
+            ->count();
+
+        return [
+            'date' => $date,
+            'day_status' => $dayStatus,
+            'total_active_interns' => $activeInternsCount,
+            'total_present' => $totalPresent,
+            'on_time_count' => $onTimeCount,
+            'late_count' => $lateCount,
+            'approved_leaves_count' => $approvedLeaves->count(),
+            'pending_leaves_count' => $pendingLeavesCount,
+            'attendances' => $attendances,
+            'approved_leaves' => $approvedLeaves,
+        ];
+    }
+
+    /**
+     * Menghitung rekapitulasi presensi bulanan seorang peserta magang.
+     */
+    public function getInternMonthlyRecap(int $internUserId, int $year, int $month): array
+    {
+        $startDate = Carbon::createFromDate($year, $month, 1, config('wantrace.timezone', 'Asia/Jakarta'))->startOfMonth();
+        $endDate = $startDate->copy()->endOfMonth();
+
+        // Daftar hari kerja resmi di bulan tersebut
+        $workingDays = $this->calendarService->getWorkingDaysList($startDate, $endDate);
+        $totalWorkingDays = count($workingDays);
+
+        // Presensi peserta di bulan tersebut
+        $attendances = Attendance::where('intern_user_id', $internUserId)
+            ->whereDate('attendance_date', '>=', $startDate->format('Y-m-d'))
+            ->whereDate('attendance_date', '<=', $endDate->format('Y-m-d'))
+            ->get();
+
+        $onTimeCount = $attendances->where('status', 'on_time')->count();
+        $lateCount = $attendances->where('status', 'late')->count();
+        $totalPresent = $attendances->count();
+
+        // Izin/Sakit yang disetujui di bulan tersebut
+        $approvedLeaves = LeaveRequest::where('intern_user_id', $internUserId)
+            ->where('status', 'approved')
+            ->where(function ($q) use ($startDate, $endDate) {
+                $q->whereBetween('start_date', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
+                    ->orWhereBetween('end_date', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
+                    ->orWhere(function ($sub) use ($startDate, $endDate) {
+                        $sub->where('start_date', '<=', $startDate->format('Y-m-d'))
+                            ->where('end_date', '>=', $endDate->format('Y-m-d'));
+                    });
+            })
+            ->get();
+
+        $sickDaysCount = 0;
+        $leaveDaysCount = 0;
+
+        foreach ($approvedLeaves as $leave) {
+            $leaveStart = Carbon::parse($leave->start_date)->max($startDate);
+            $leaveEnd = Carbon::parse($leave->end_date)->min($endDate);
+            $days = $this->calendarService->getWorkingDaysCount($leaveStart, $leaveEnd);
+
+            if ($leave->isSick()) {
+                $sickDaysCount += $days;
+            } else {
+                $leaveDaysCount += $days;
+            }
+        }
+
+        $attendanceRate = $totalWorkingDays > 0 ? round(($totalPresent / $totalWorkingDays) * 100, 1) : 0;
+
+        return [
+            'intern_user_id' => $internUserId,
+            'year' => $year,
+            'month' => $month,
+            'total_working_days' => $totalWorkingDays,
+            'total_present' => $totalPresent,
+            'on_time_count' => $onTimeCount,
+            'late_count' => $lateCount,
+            'sick_days_count' => $sickDaysCount,
+            'leave_days_count' => $leaveDaysCount,
+            'attendance_rate' => $attendanceRate,
+            'attendances' => $attendances,
+        ];
+    }
+
+    /**
+     * Ringkasan presensi harian untuk peserta yang sedang dibimbing oleh PIC tertentu (read-only PIC).
+     */
+    public function getPicAssignedInternsDailySummary(int $picUserId, string $date): array
+    {
+        // Dapatkan ID peserta yang saat ini ditugaskan aktif ke PIC ini (end_date IS NULL)
+        $assignedInternUserIds = PicAssignment::active()
+            ->where('pic_user_id', $picUserId)
+            ->pluck('intern_user_id')
+            ->unique()
+            ->toArray();
+
+        if (empty($assignedInternUserIds)) {
+            return [
+                'date' => $date,
+                'total_assigned_interns' => 0,
+                'total_present' => 0,
+                'attendances' => collect(),
+                'approved_leaves' => collect(),
+            ];
+        }
+
+        $attendances = Attendance::with(['intern', 'photo'])
+            ->whereIn('intern_user_id', $assignedInternUserIds)
+            ->where('attendance_date', $date)
+            ->get();
+
+        $approvedLeaves = LeaveRequest::with('intern')
+            ->whereIn('intern_user_id', $assignedInternUserIds)
+            ->activeOnDate($date)
+            ->get();
+
+        return [
+            'date' => $date,
+            'total_assigned_interns' => count($assignedInternUserIds),
+            'total_present' => $attendances->count(),
+            'on_time_count' => $attendances->where('status', 'on_time')->count(),
+            'late_count' => $attendances->where('status', 'late')->count(),
+            'attendances' => $attendances,
+            'approved_leaves' => $approvedLeaves,
+        ];
+    }
+}
