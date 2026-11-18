@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Attendance\RejectAttendanceRequest;
 use App\Http\Requests\Attendance\StoreAttendanceRequest;
 use App\Http\Requests\Attendance\UpdateAttendanceRequest;
 use App\Models\Attendance;
@@ -48,11 +49,14 @@ class AttendanceController extends Controller
         // Periksa apakah peserta sudah melakukan check-in hari ini
         $todayAttendance = Attendance::with('photo')
             ->where('intern_user_id', $intern->id)
-            ->where('attendance_date', $todayDate)
+            ->whereDate('attendance_date', $todayDate)
             ->first();
 
-        // Kondisi apakah form/kamera aktif untuk check-in
-        $canCheckIn = $isWorkingDay && is_null($approvedLeaveToday) && is_null($todayAttendance);
+        $isRejectedToday = ! is_null($todayAttendance) && $todayAttendance->isRejected();
+
+        // Kondisi apakah form/kamera aktif untuk check-in:
+        // Aktif jika belum pernah check-in hari ini, ATAU jika presensi hari ini berstatus ditolak (rejected)
+        $canCheckIn = $isWorkingDay && is_null($approvedLeaveToday) && (is_null($todayAttendance) || $isRejectedToday);
 
         // Filter riwayat presensi
         $selectedMonth = (int) $request->input('month', $now->month);
@@ -86,6 +90,7 @@ class AttendanceController extends Controller
             'isWorkingDay',
             'approvedLeaveToday',
             'todayAttendance',
+            'isRejectedToday',
             'canCheckIn',
             'attendances',
             'monthlyRecap',
@@ -190,6 +195,31 @@ class AttendanceController extends Controller
         return redirect()
             ->back()
             ->with('success', "Status presensi peserta {$attendance->intern->name} berhasil diperbarui menjadi {$validated['status']} dan dicatat ke audit log.");
+    }
+
+    /**
+     * Memproses penolakan presensi peserta oleh Admin/HR.
+     */
+    public function adminReject(RejectAttendanceRequest $request, Attendance $attendance): RedirectResponse
+    {
+        $admin = $request->user();
+
+        Gate::authorize('reject', $attendance);
+
+        $validated = $request->validated();
+
+        $this->attendanceService->rejectAttendance(
+            attendance: $attendance,
+            admin: $admin,
+            reason: $validated['notes'],
+            ipAddress: $request->ip()
+        );
+
+        $internName = $attendance->intern->name ?? 'Peserta';
+
+        return redirect()
+            ->back()
+            ->with('success', "Presensi peserta {$internName} berhasil ditolak. Akses kamera akan dibuka kembali jika presensi bertanggal hari ini.");
     }
 
     /*

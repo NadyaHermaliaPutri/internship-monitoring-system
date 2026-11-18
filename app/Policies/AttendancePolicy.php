@@ -57,6 +57,14 @@ class AttendancePolicy
     }
 
     /**
+     * Menentukan apakah pengguna dapat menolak presensi (hanya Admin/HR).
+     */
+    public function reject(User $user, Attendance $attendance): bool
+    {
+        return $user->isAdmin();
+    }
+
+    /**
      * Menentukan apakah pengguna dapat menghapus presensi (hanya Admin/HR).
      */
     public function delete(User $user, Attendance $attendance): bool

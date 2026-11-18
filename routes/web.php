@@ -48,6 +48,7 @@ Route::middleware('auth')->group(function () {
         Route::prefix('presensi')->name('attendance.')->group(function () {
             Route::get('/', [AttendanceController::class, 'adminIndex'])->name('index');
             Route::patch('/{attendance}', [AttendanceController::class, 'adminUpdate'])->name('update');
+            Route::post('/{attendance}/reject', [AttendanceController::class, 'adminReject'])->name('reject');
         });
 
         // Modul 2: Verifikasi & Keputusan Izin/Sakit (Admin/HR)

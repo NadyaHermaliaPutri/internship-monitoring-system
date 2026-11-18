@@ -273,28 +273,47 @@
 
                             <!-- 4. Status Presensi -->
                             <td class="py-4 px-5">
-                                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold border {{ $row->isOnTime() ? 'bg-teal-50 text-teal-600 border-teal-200' : 'bg-rose-50 text-rose-600 border-rose-200' }}">
-                                    <span class="w-1 h-1 rounded-full {{ $row->isOnTime() ? 'bg-teal-500' : 'bg-rose-500' }}"></span>
-                                    {{ $row->isOnTime() ? 'Tepat Waktu' : 'Terlambat' }}
-                                </span>
+                                @if($row->isRejected())
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold border bg-rose-50 text-rose-700 border-rose-200">
+                                        <span class="w-1 h-1 rounded-full bg-rose-600"></span>
+                                        Ditolak HR
+                                    </span>
+                                @else
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold border {{ $row->isOnTime() ? 'bg-teal-50 text-teal-600 border-teal-200' : 'bg-rose-50 text-rose-600 border-rose-200' }}">
+                                        <span class="w-1 h-1 rounded-full {{ $row->isOnTime() ? 'bg-teal-500' : 'bg-rose-500' }}"></span>
+                                        {{ $row->isOnTime() ? 'Tepat Waktu' : 'Terlambat' }}
+                                    </span>
+                                @endif
                             </td>
 
                             <!-- 5. Catatan / Status Koreksi HR -->
                             <td class="py-4 px-5 max-w-xs">
-                                @if($row->isReviewed())
-                                    <span class="inline-flex items-center gap-1 text-[10px] font-semibold text-sky-700 bg-sky-50 px-2 py-0.5 rounded border border-sky-200/80 mb-1">
-                                        <svg class="w-3 h-3 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                @if($row->isRejected())
+                                    <span class="inline-flex items-center gap-1 text-[10px] font-semibold text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200/80 mb-1">
+                                        <svg class="w-3 h-3 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                                         </svg>
-                                        Ditinjau: {{ $row->reviewer->name }}
+                                        Ditolak: {{ $row->reviewer?->name ?? 'HR' }}
                                     </span>
+                                    <p class="text-[11px] text-rose-600 font-medium truncate" title="{{ $row->notes }}">
+                                        {{ $row->notes ?: '-' }}
+                                    </p>
+                                @else
+                                    @if($row->isReviewed())
+                                        <span class="inline-flex items-center gap-1 text-[10px] font-semibold text-sky-700 bg-sky-50 px-2 py-0.5 rounded border border-sky-200/80 mb-1">
+                                            <svg class="w-3 h-3 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                            </svg>
+                                            Ditinjau: {{ $row->reviewer->name }}
+                                        </span>
+                                    @endif
+                                    <p class="text-[11px] text-slate-500 truncate" title="{{ $row->notes }}">
+                                        {{ $row->notes ?: '-' }}
+                                    </p>
                                 @endif
-                                <p class="text-[11px] text-slate-500 truncate" title="{{ $row->notes }}">
-                                    {{ $row->notes ?: '-' }}
-                                </p>
                             </td>
 
-                            <!-- 6. Aksi (Koreksi Status) -->
+                            <!-- 6. Aksi (Koreksi Status & Tolak Presensi) -->
                             <td class="py-4 px-6 text-right space-x-1.5 whitespace-nowrap">
                                 <button 
                                     type="button" 
@@ -303,12 +322,25 @@
                                     Foto
                                 </button>
                                 
-                                <button 
-                                    type="button" 
-                                    onclick="openCorrectionModal('{{ $row->id }}', '{{ $row->intern->name }}', '{{ $row->status }}', '{{ addslashes($row->notes ?? '') }}', '{{ route('admin.attendance.update', $row) }}')"
-                                    class="px-2.5 py-1 text-[11px] font-semibold text-[#015987] bg-sky-50 border border-sky-200/80 rounded-lg hover:bg-sky-100 transition shadow-2xs">
-                                    Koreksi
-                                </button>
+                                @if(! $row->isRejected())
+                                    <button 
+                                        type="button" 
+                                        onclick="openCorrectionModal('{{ $row->id }}', '{{ $row->intern->name }}', '{{ $row->status }}', '{{ addslashes($row->notes ?? '') }}', '{{ route('admin.attendance.update', $row) }}')"
+                                        class="px-2.5 py-1 text-[11px] font-semibold text-[#015987] bg-sky-50 border border-sky-200/80 rounded-lg hover:bg-sky-100 transition shadow-2xs">
+                                        Koreksi
+                                    </button>
+
+                                    <button 
+                                        type="button" 
+                                        onclick="openRejectModal('{{ $row->id }}', '{{ $row->intern->name }}', '{{ route('admin.attendance.reject', $row) }}')"
+                                        class="px-2.5 py-1 text-[11px] font-semibold text-rose-600 bg-rose-50 border border-rose-200/80 rounded-lg hover:bg-rose-100 transition shadow-2xs">
+                                        Tolak
+                                    </button>
+                                @else
+                                    <span class="inline-block px-2.5 py-1 text-[11px] font-medium text-slate-400 bg-slate-50 border border-slate-200 rounded-lg cursor-not-allowed">
+                                        Perlu Foto Ulang
+                                    </span>
+                                @endif
                             </td>
 
                         </tr>
@@ -392,6 +424,61 @@
     </div>
 </div>
 
+<!-- ============================================================== -->
+<!-- 5. MODAL PENOLAKAN PRESENSI OLEH ADMIN/HR                      -->
+<!-- ============================================================== -->
+<div id="rejectModal" class="fixed inset-0 z-50 hidden bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-md rounded-2xl border border-slate-200/80 shadow-xl overflow-hidden">
+        
+        <div class="px-6 py-4 bg-rose-50 border-b border-rose-100 flex items-center justify-between">
+            <div>
+                <h4 class="text-sm font-bold text-rose-800">Tolak Foto Presensi</h4>
+                <p class="text-[11px] text-rose-600 mt-0.5" id="rejectModalSubtitle">Peserta Magang</p>
+            </div>
+            <button type="button" onclick="closeRejectModal()" class="text-slate-400 hover:text-slate-700">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+
+        <form id="rejectForm" method="POST" action="" class="p-6 space-y-4">
+            @csrf
+
+            <div class="p-3 bg-amber-50 rounded-xl border border-amber-200 text-amber-800 text-[11px] leading-relaxed">
+                Menolak presensi akan membuka kembali akses kamera peserta untuk mengambil foto selfie ulang hari ini. Jam check-in awal dan status tepat waktu/terlambat tetap dipertahankan.
+            </div>
+
+            <!-- Catatan / Alasan Penolakan -->
+            <div class="space-y-1.5">
+                <label for="rejectNotes" class="block text-xs font-bold text-slate-700">Alasan Penolakan <span class="text-rose-500">*</span></label>
+                <textarea 
+                    id="rejectNotes" 
+                    name="notes" 
+                    rows="3" 
+                    required 
+                    minlength="5"
+                    maxlength="1000"
+                    placeholder="Contoh: Foto buram / tidak menampilkan wajah dengan jelas / bukan di lingkungan kerja..."
+                    class="w-full px-3.5 py-2.5 text-xs bg-white border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-600 resize-none"
+                ></textarea>
+                <p class="text-[10px] text-slate-400">Minimal 5 karakter. Alasan ini akan dibaca oleh peserta di dashboard &amp; halaman presensi.</p>
+            </div>
+
+            <!-- Tombol Aksi -->
+            <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                <button type="button" onclick="closeRejectModal()" class="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-slate-600 text-xs font-semibold rounded-xl transition">
+                    Batal
+                </button>
+                <button type="submit" class="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold rounded-xl shadow-xs transition">
+                    Konfirmasi Tolak
+                </button>
+            </div>
+        </form>
+
+    </div>
+</div>
+
 <!-- Modal Preview Foto Selfie Resolusi Penuh -->
 <div id="imagePreviewModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
     <div class="bg-white max-w-md w-full rounded-2xl overflow-hidden shadow-2xl border border-slate-200">
@@ -445,10 +532,28 @@
         document.getElementById('correctionModal').classList.add('hidden');
     }
 
+    function openRejectModal(attendanceId, internName, rejectUrl) {
+        const modal = document.getElementById('rejectModal');
+        const form = document.getElementById('rejectForm');
+        const subtitle = document.getElementById('rejectModalSubtitle');
+        const notesTextarea = document.getElementById('rejectNotes');
+
+        form.action = rejectUrl;
+        subtitle.innerText = 'Peserta: ' + internName;
+        notesTextarea.value = '';
+
+        modal.classList.remove('hidden');
+    }
+
+    function closeRejectModal() {
+        document.getElementById('rejectModal').classList.add('hidden');
+    }
+
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
             closeImagePreviewModal();
             closeCorrectionModal();
+            closeRejectModal();
         }
     });
 </script>
