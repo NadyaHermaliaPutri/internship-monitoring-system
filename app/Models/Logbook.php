@@ -69,6 +69,14 @@ class Logbook extends Model
         return $this->hasMany(LogbookRevision::class)->orderByDesc('revision_no');
     }
 
+    /**
+     * Tugas terkait apabila logbook ini berasal dari penugasan otomatis PIC.
+     */
+    public function task(): BelongsTo
+    {
+        return $this->belongsTo(Task::class, 'task_id');
+    }
+
     public function isManual(): bool
     {
         return $this->source === LogbookSource::Manual;

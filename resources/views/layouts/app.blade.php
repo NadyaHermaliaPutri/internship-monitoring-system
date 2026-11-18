@@ -116,6 +116,7 @@
                 $rolePrefix = auth()->user()->role ?? 'admin';
                 $isDashboardActive = request()->routeIs('*.dashboard');
                 $isLogbookActive = request()->routeIs('*.logbooks.*');
+                $isTaskActive = request()->routeIs('*.tasks.*');
             @endphp
             <nav class="mt-6 w-full space-y-2">
                 <!-- Menu Dashboard -->
@@ -170,6 +171,33 @@
                         <span>Logbook Harian</span>
 
                         @if($isLogbookActive)
+                            <span class="absolute -bottom-5 right-0 w-5 h-5 pointer-events-none">
+                                <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">
+                                    <path d="M20 20 L20 0 L0 0 A20 20 0 0 1 20 20 Z" fill="#eef4f8"/>
+                                </svg>
+                            </span>
+                        @endif
+                    </a>
+                </div>
+
+                <!-- Menu Tugas Magang -->
+                <div class="relative w-full pl-5">
+                    <a href="{{ route($rolePrefix . '.tasks.index') }}" class="relative flex items-center gap-3 py-3 pl-4 pr-6 {{ $isTaskActive ? 'bg-[#eef4f8] text-[#015987] font-bold' : 'text-sky-100 hover:bg-white/10 font-medium' }} text-xs rounded-l-full w-full shadow-none transition">
+                        @if($isTaskActive)
+                            <span class="absolute -top-5 right-0 w-5 h-5 pointer-events-none">
+                                <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">
+                                    <path d="M20 0 L20 20 L0 20 A20 20 0 0 0 20 0 Z" fill="#eef4f8"/>
+                                </svg>
+                            </span>
+                        @endif
+
+                        <svg class="w-4 h-4 {{ $isTaskActive ? 'text-[#015987]' : 'text-sky-200' }} flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                        </svg>
+
+                        <span>Tugas Magang</span>
+
+                        @if($isTaskActive)
                             <span class="absolute -bottom-5 right-0 w-5 h-5 pointer-events-none">
                                 <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">
                                     <path d="M20 20 L20 0 L0 0 A20 20 0 0 1 20 20 Z" fill="#eef4f8"/>

@@ -5,6 +5,7 @@ namespace Database\Factories;
 use App\Enums\LogbookSource;
 use App\Enums\LogbookStatus;
 use App\Models\Logbook;
+use App\Models\Task;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Carbon;
@@ -53,14 +54,16 @@ class LogbookFactory extends Factory
         ]);
     }
 
-    public function fromTaskAssignment(int $taskId, ?string $title = null): static
+    public function fromTaskAssignment(?int $taskId = null, ?string $title = null): static
     {
-        return $this->state(fn () => [
+        return $this->state(fn (array $attributes) => [
             'title' => $title ?? 'Penugasan: '.fake()->sentence(3),
             'activity_description' => 'Catatan otomatis sistem saat PIC memberikan tugas kepada peserta.',
             'result' => null,
             'source' => LogbookSource::TaskAssignment,
-            'task_id' => $taskId,
+            'task_id' => $taskId ?? Task::factory()->create([
+                'intern_user_id' => $attributes['intern_user_id'],
+            ])->id,
             'status' => null,
         ]);
     }

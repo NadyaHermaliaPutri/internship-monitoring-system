@@ -5,6 +5,7 @@ namespace Tests\Feature\Logbook;
 use App\Enums\LogbookSource;
 use App\Enums\LogbookStatus;
 use App\Models\Logbook;
+use App\Models\Task;
 use App\Models\User;
 use App\Services\LogbookService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -164,7 +165,9 @@ class LogbookTest extends TestCase
             'log_date' => '2026-11-18',
         ]);
 
-        $autoLogbook = Logbook::factory()->fromTaskAssignment(101, 'Tugas Integrasi API')->create([
+        $task = Task::factory()->create(['intern_user_id' => $intern->id]);
+
+        $autoLogbook = Logbook::factory()->fromTaskAssignment($task->id, 'Tugas Integrasi API')->create([
             'intern_user_id' => $intern->id,
             'log_date' => '2026-11-18',
         ]);
@@ -245,11 +248,12 @@ class LogbookTest extends TestCase
     public function test_automatic_task_assignment_logbook_is_idempotent_and_excluded_from_approval_and_ews(): void
     {
         $intern = User::factory()->create(['role' => 'intern', 'is_active' => true]);
+        $task = Task::factory()->create(['intern_user_id' => $intern->id]);
         $service = app(LogbookService::class);
 
         $first = $service->recordTaskAssignmentEntry(
             internUserId: $intern->id,
-            taskId: 501,
+            taskId: $task->id,
             taskTitle: 'Penugasan: Desain Skema Database',
             activityDescription: 'PIC memberikan tugas Desain Skema Database.',
             logDate: '2026-11-18'
@@ -258,7 +262,7 @@ class LogbookTest extends TestCase
         // Pemanggilan ulang dengan task_id yang sama tidak boleh menduplikasi baris
         $second = $service->recordTaskAssignmentEntry(
             internUserId: $intern->id,
-            taskId: 501,
+            taskId: $task->id,
             taskTitle: 'Penugasan: Desain Skema Database (Refresh)',
             activityDescription: 'PIC memberikan tugas Desain Skema Database.',
             logDate: '2026-11-18'

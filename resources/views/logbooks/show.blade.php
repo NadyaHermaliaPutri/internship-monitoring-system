@@ -88,6 +88,23 @@
                 <div class="p-4 rounded-xl bg-slate-50/70 border border-slate-100 text-xs text-slate-700 whitespace-pre-line leading-relaxed">{{ $logbook->result ?: 'Tidak ada catatan hasil tambahan.' }}</div>
             </div>
 
+            @if ($logbook->task_id)
+                <div class="p-4 rounded-xl bg-sky-50/60 border border-sky-200/70 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                        <p class="text-xs font-bold text-[#015987]">Terhubung dengan Penugasan PIC</p>
+                        <p class="text-[11px] text-slate-600 mt-0.5">
+                            Catatan ini dibuat otomatis oleh sistem saat PIC memberikan tugas (bukan penanda tugas selesai).
+                        </p>
+                    </div>
+                    <a
+                        href="{{ route($rolePrefix . '.tasks.show', $logbook->task_id) }}"
+                        class="inline-flex items-center px-3.5 py-2 rounded-xl bg-white border border-sky-200 text-xs font-bold text-[#015987] hover:bg-sky-50 transition"
+                    >
+                        Lihat Detail Tugas &rarr;
+                    </a>
+                </div>
+            @endif
+
             @if ($logbook->reviewed_by || $logbook->review_note)
                 <div class="p-4 rounded-xl bg-sky-50/60 border border-sky-200/70 space-y-1 text-xs">
                     <p class="font-bold text-[#015987]">
