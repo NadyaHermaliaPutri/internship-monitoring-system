@@ -116,6 +116,7 @@
                 $rolePrefix = auth()->user()->role ?? 'admin';
                 $isDashboardActive = request()->routeIs('*.dashboard');
                 $isLogbookActive = request()->routeIs('*.logbooks.*');
+                $isTaskActive = request()->routeIs('*.tasks.*');
                 $isAdminCalendarActive = request()->routeIs('admin.calendar.*');
                 $isAdminAttendanceActive = request()->routeIs('admin.attendance.*');
                 $isAdminLeaveActive = request()->routeIs('admin.leave.*');
@@ -187,6 +188,32 @@
                         @endif
                     </a>
                 </div>
+
+                <!-- Menu Tugas Magang (Semua Role) -->
+                <div class="relative w-full pl-5 {{ $isTaskActive ? 'z-10' : '' }}">
+                    <a href="{{ route($rolePrefix . '.tasks.index') }}" class="relative flex items-center gap-3 py-3 pl-4 pr-6 {{ $isTaskActive ? 'bg-[#eef4f8] text-[#015987] font-bold' : 'text-sky-100 hover:bg-white/10 font-medium' }} text-xs rounded-l-full w-full shadow-none transition">
+                        @if($isTaskActive)
+                            <span class="absolute -top-5 right-0 w-5 h-5 pointer-events-none">
+                                <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">
+                                    <path d="M20 0 L20 20 L0 20 A20 20 0 0 0 20 0 Z" fill="#eef4f8"/>
+                                </svg>
+                            </span>
+                        @endif
+
+                        <svg class="w-4 h-4 {{ $isTaskActive ? 'text-[#015987]' : 'text-sky-200' }} flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                        </svg>
+
+                        <span>Tugas Magang</span>
+
+                        @if($isTaskActive)
+                            <span class="absolute -bottom-5 right-0 w-5 h-5 pointer-events-none">
+                                <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">
+                                    <path d="M20 20 L20 0 L0 0 A20 20 0 0 1 20 20 Z" fill="#eef4f8"/>
+                                </svg>
+                            </span>
+                        @endif
+                    </a>
                 </div>
 
                 {{-- ============================================================== --}}
@@ -457,17 +484,19 @@
                     <span>{{ \Carbon\Carbon::now()->translatedFormat('l, d F Y') }}</span>
                 </div>
 
-                <!-- Search Input -->
-                <div class="relative hidden sm:block">
-                    <input 
-                        type="text" 
-                        placeholder="@yield('search-placeholder', 'Cari peserta...')" 
-                        class="w-64 pl-9 pr-3.5 py-2.5 text-xs bg-white border border-slate-200/80 rounded-xl text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 shadow-xs transition"
-                    >
-                    <svg class="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                    </svg>
-                </div>
+                <!-- Search Input (Hanya untuk Admin & PIC) -->
+                @if(in_array(auth()->user()?->role, ['admin', 'pic'], true))
+                    <div class="relative hidden sm:block">
+                        <input 
+                            type="text" 
+                            placeholder="@yield('search-placeholder', 'Cari peserta...')" 
+                            class="w-64 pl-9 pr-3.5 py-2.5 text-xs bg-white border border-slate-200/80 rounded-xl text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 shadow-xs transition"
+                        >
+                        <svg class="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                        </svg>
+                    </div>
+                @endif
 
                 <!-- Tombol Notifikasi -->
                 <button class="p-2.5 rounded-xl bg-white border border-slate-200/80 text-slate-600 hover:text-slate-900 shadow-xs transition relative">

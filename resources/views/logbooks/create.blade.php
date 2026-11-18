@@ -7,11 +7,16 @@
 @section('content')
 <div class="max-w-3xl mx-auto">
     <div class="bg-white rounded-2xl border border-slate-200/70 shadow-xs p-6 sm:p-8 space-y-6">
-        <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+        <div class="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-slate-100">
             <div>
-                <h2 class="text-base font-bold text-[#015987]">Formulir Aktivitas Harian</h2>
-                <p class="text-xs text-slate-500 mt-0.5">
-                    Tanggal mengacu pada waktu server Asia/Jakarta (maksimal mundur {{ $maxBackdateDays }} hari).
+                <div class="flex items-center gap-2">
+                    <h2 class="text-base font-bold text-[#015987]">Formulir Aktivitas Harian</h2>
+                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-sky-50 text-[#015987] border border-sky-200">
+                        WIB
+                    </span>
+                </div>
+                <p class="text-xs text-slate-500 mt-1">
+                    Anda dapat menambahkan lebih dari 1 aktivitas per hari (maksimal mundur {{ $maxBackdateDays }} hari dari tanggal server Asia/Jakarta).
                 </p>
             </div>
             <a href="{{ route('intern.logbooks.index') }}" class="text-xs font-bold text-[#015987] hover:underline">
@@ -34,8 +39,11 @@
                     min="{{ $earliestDate }}"
                     max="{{ $todayDate }}"
                     required
-                    class="w-full px-3.5 py-2.5 text-xs rounded-xl border @error('log_date') border-rose-400 bg-rose-50/40 @else border-slate-200 bg-slate-50/60 @enderror text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-[#015987]"
+                    class="w-full px-3.5 py-2.5 text-xs rounded-xl border @error('log_date') border-rose-400 bg-rose-50/40 @else border-slate-200 bg-slate-50/60 @enderror text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-[#015987] transition"
                 >
+                <p class="text-[11px] text-slate-400 mt-1">
+                    Rentang diizinkan: {{ \Carbon\Carbon::parse($earliestDate)->translatedFormat('d M Y') }} s/d {{ \Carbon\Carbon::parse($todayDate)->translatedFormat('d M Y') }} (WIB)
+                </p>
                 @error('log_date')
                     <p class="text-[11px] text-rose-600 font-semibold mt-1">{{ $message }}</p>
                 @enderror
@@ -52,8 +60,8 @@
                     value="{{ old('title') }}"
                     maxlength="150"
                     required
-                    placeholder="Ringkasan singkat aktivitas yang dikerjakan"
-                    class="w-full px-3.5 py-2.5 text-xs rounded-xl border @error('title') border-rose-400 bg-rose-50/40 @else border-slate-200 bg-slate-50/60 @enderror text-slate-800"
+                    placeholder="Contoh: Implementasi validasi form presensi harian"
+                    class="w-full px-3.5 py-2.5 text-xs rounded-xl border @error('title') border-rose-400 bg-rose-50/40 @else border-slate-200 bg-slate-50/60 @enderror text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-[#015987] transition"
                 >
                 @error('title')
                     <p class="text-[11px] text-rose-600 font-semibold mt-1">{{ $message }}</p>
@@ -69,8 +77,8 @@
                     name="activity_description"
                     rows="5"
                     required
-                    placeholder="Uraikan langkah pekerjaan, kendala, atau diskusi yang dilakukan..."
-                    class="w-full px-3.5 py-2.5 text-xs rounded-xl border @error('activity_description') border-rose-400 bg-rose-50/40 @else border-slate-200 bg-slate-50/60 @enderror text-slate-800"
+                    placeholder="Jelaskan secara rinci kegiatan yang Anda kerjakan (minimal 10 karakter)..."
+                    class="w-full px-3.5 py-2.5 text-xs rounded-xl border @error('activity_description') border-rose-400 bg-rose-50/40 @else border-slate-200 bg-slate-50/60 @enderror text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-[#015987] transition"
                 >{{ old('activity_description') }}</textarea>
                 @error('activity_description')
                     <p class="text-[11px] text-rose-600 font-semibold mt-1">{{ $message }}</p>
@@ -85,8 +93,8 @@
                     id="result"
                     name="result"
                     rows="3"
-                    placeholder="Hasil akhir atau artefak yang dicapai"
-                    class="w-full px-3.5 py-2.5 text-xs rounded-xl border @error('result') border-rose-400 bg-rose-50/40 @else border-slate-200 bg-slate-50/60 @enderror text-slate-800"
+                    placeholder="Contoh: PR #12 siap ditinjau / modul selesai diuji lokal"
+                    class="w-full px-3.5 py-2.5 text-xs rounded-xl border @error('result') border-rose-400 bg-rose-50/40 @else border-slate-200 bg-slate-50/60 @enderror text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-[#015987] transition"
                 >{{ old('result') }}</textarea>
                 @error('result')
                     <p class="text-[11px] text-rose-600 font-semibold mt-1">{{ $message }}</p>
@@ -94,10 +102,10 @@
             </div>
 
             <div class="pt-3 flex items-center justify-end gap-3">
-                <a href="{{ route('intern.logbooks.index') }}" class="px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50">
+                <a href="{{ route('intern.logbooks.index') }}" class="px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition">
                     Batal
                 </a>
-                <button type="submit" class="px-5 py-2.5 rounded-xl bg-[#015987] hover:bg-[#014467] text-white text-xs font-bold">
+                <button type="submit" class="px-5 py-2.5 rounded-xl bg-[#015987] hover:bg-[#014467] text-white text-xs font-bold shadow-xs transition">
                     Simpan Logbook
                 </button>
             </div>

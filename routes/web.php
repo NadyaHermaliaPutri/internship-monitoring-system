@@ -6,11 +6,12 @@ use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\LeaveRequestController;
 use App\Http\Controllers\LogbookController;
 use App\Http\Controllers\PrivateMediaController;
+use App\Http\Controllers\TaskController;
 use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
-| Web Routes - Modul Otentikasi, Dashboard, Presensi, Kalender, Izin, & Logbook
+| Web Routes - Modul Otentikasi, Dashboard, Presensi, Kalender, Izin, Logbook, & Tugas
 |--------------------------------------------------------------------------
 */
 
@@ -60,9 +61,12 @@ Route::middleware('auth')->group(function () {
         // Modul 3: Monitoring Logbook (Admin/HR)
         Route::get('/logbooks', [LogbookController::class, 'index'])->name('logbooks.index');
         Route::get('/logbooks/{logbook}', [LogbookController::class, 'show'])->name('logbooks.show');
+
+        Route::get('/tasks', [TaskController::class, 'index'])->name('tasks.index');
+        Route::get('/tasks/{task}', [TaskController::class, 'show'])->name('tasks.show');
     });
 
-    // Dashboard & Monitoring PIC
+    // Dashboard, Logbook, & Pengelolaan Tugas PIC
     Route::middleware('role:pic')->prefix('pic')->name('pic.')->group(function () {
         Route::get('/dashboard', function () {
             return view('dashboard.pic');
@@ -81,9 +85,16 @@ Route::middleware('auth')->group(function () {
         // Modul 3: Monitoring Logbook Peserta Bimbingan (PIC)
         Route::get('/logbooks', [LogbookController::class, 'index'])->name('logbooks.index');
         Route::get('/logbooks/{logbook}', [LogbookController::class, 'show'])->name('logbooks.show');
+
+        Route::get('/tasks', [TaskController::class, 'index'])->name('tasks.index');
+        Route::get('/tasks/create', [TaskController::class, 'create'])->name('tasks.create');
+        Route::post('/tasks', [TaskController::class, 'store'])->name('tasks.store');
+        Route::get('/tasks/{task}', [TaskController::class, 'show'])->name('tasks.show');
+        Route::get('/tasks/{task}/edit', [TaskController::class, 'edit'])->name('tasks.edit');
+        Route::put('/tasks/{task}', [TaskController::class, 'update'])->name('tasks.update');
     });
 
-    // Dashboard & Fitur Peserta Magang
+    // Dashboard, Logbook, & Daftar Tugas Peserta Magang
     Route::middleware('role:intern')->prefix('intern')->name('intern.')->group(function () {
         Route::get('/dashboard', function () {
             return view('dashboard.intern');
@@ -108,5 +119,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/logbooks/{logbook}', [LogbookController::class, 'show'])->name('logbooks.show');
         Route::get('/logbooks/{logbook}/edit', [LogbookController::class, 'edit'])->name('logbooks.edit');
         Route::put('/logbooks/{logbook}', [LogbookController::class, 'update'])->name('logbooks.update');
+
+        Route::get('/tasks', [TaskController::class, 'index'])->name('tasks.index');
+        Route::get('/tasks/{task}', [TaskController::class, 'show'])->name('tasks.show');
+        Route::patch('/tasks/{task}/start', [TaskController::class, 'start'])->name('tasks.start');
     });
 });
