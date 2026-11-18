@@ -1,11 +1,12 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\LogbookController;
 use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
-| Web Routes - Modul Otentikasi dan Dashboard
+| Web Routes - Modul Otentikasi, Dashboard, dan Logbook Harian
 |--------------------------------------------------------------------------
 */
 
@@ -23,24 +24,37 @@ Route::middleware('guest')->group(function () {
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'destroy'])->name('logout');
 
-    // Dashboard Admin / HR
+    // Dashboard & Monitoring Admin / HR
     Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
         Route::get('/dashboard', function () {
             return view('dashboard.admin');
         })->name('dashboard');
+
+        Route::get('/logbooks', [LogbookController::class, 'index'])->name('logbooks.index');
+        Route::get('/logbooks/{logbook}', [LogbookController::class, 'show'])->name('logbooks.show');
     });
 
-    // Dashboard PIC
+    // Dashboard & Monitoring PIC
     Route::middleware('role:pic')->prefix('pic')->name('pic.')->group(function () {
         Route::get('/dashboard', function () {
             return view('dashboard.pic');
         })->name('dashboard');
+
+        Route::get('/logbooks', [LogbookController::class, 'index'])->name('logbooks.index');
+        Route::get('/logbooks/{logbook}', [LogbookController::class, 'show'])->name('logbooks.show');
     });
 
-    // Dashboard Peserta Magang
+    // Dashboard & Fitur Peserta Magang
     Route::middleware('role:intern')->prefix('intern')->name('intern.')->group(function () {
         Route::get('/dashboard', function () {
             return view('dashboard.intern');
         })->name('dashboard');
+
+        Route::get('/logbooks', [LogbookController::class, 'index'])->name('logbooks.index');
+        Route::get('/logbooks/create', [LogbookController::class, 'create'])->name('logbooks.create');
+        Route::post('/logbooks', [LogbookController::class, 'store'])->name('logbooks.store');
+        Route::get('/logbooks/{logbook}', [LogbookController::class, 'show'])->name('logbooks.show');
+        Route::get('/logbooks/{logbook}/edit', [LogbookController::class, 'edit'])->name('logbooks.edit');
+        Route::put('/logbooks/{logbook}', [LogbookController::class, 'update'])->name('logbooks.update');
     });
 });
