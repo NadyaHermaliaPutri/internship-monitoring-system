@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\PrivateMediaController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -22,6 +23,10 @@ Route::middleware('guest')->group(function () {
 // Route Terotentikasi
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'destroy'])->name('logout');
+
+    // Akses Berkas Privat Terotorisasi (tanpa membuat link publik)
+    Route::get('/media/private/{mediaFile}', [PrivateMediaController::class, 'show'])
+        ->name('media.private.show');
 
     // Dashboard Admin / HR
     Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
