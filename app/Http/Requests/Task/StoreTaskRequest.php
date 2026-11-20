@@ -59,6 +59,12 @@ class StoreTaskRequest extends FormRequest
                     }
                 },
             ],
+            // Hardening anti-tampering: tolak eksplisit percobaan menyisipkan kolom status/audit lewat payload HTTP
+            'status' => ['prohibited'],
+            'accepted_at' => ['prohibited'],
+            'accepted_by' => ['prohibited'],
+            'pic_user_id' => ['prohibited'],
+            'assigned_at' => ['prohibited'],
         ];
     }
 

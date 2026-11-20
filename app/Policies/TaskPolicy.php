@@ -101,6 +101,20 @@ class TaskPolicy
     }
 
     /**
+     * Hanya PIC aktif yang merupakan penanggung jawab tugas (pic_user_id === user->id)
+     * yang boleh melakukan review, dan hanya ketika status tugas adalah submitted atau resubmitted.
+     * Peserta, PIC lain, dan Admin ditolak (403 Forbidden).
+     */
+    public function review(User $user, Task $task): bool
+    {
+        if (! $user->is_active || ! $user->isPic()) {
+            return false;
+        }
+
+        return $task->pic_user_id === $user->id;
+    }
+
+    /**
      * Data historis tugas tidak boleh dihapus.
      */
     public function delete(User $user, Task $task): bool

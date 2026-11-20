@@ -198,6 +198,7 @@
                         @foreach ($tasks as $taskItem)
                             @php
                                 $isOverdue = $taskItem->isOverdue();
+                                $needsPicReview = $user->isPic() && $taskItem->canBeReviewedByPic();
                                 $statusBadge = match ($taskItem->status->value) {
                                     'accepted' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
                                     'submitted', 'resubmitted' => 'bg-amber-50 text-amber-700 border-amber-200',
@@ -206,7 +207,7 @@
                                     default => 'bg-slate-100 text-slate-700 border-slate-200',
                                 };
                             @endphp
-                            <tr class="{{ $isOverdue ? 'bg-rose-50/20' : '' }} hover:bg-slate-50/80 transition align-middle">
+                            <tr class="{{ $isOverdue ? 'bg-rose-50/20' : ($needsPicReview ? 'bg-amber-50/35' : '') }} hover:bg-slate-50/80 transition align-middle">
                                 <td class="py-3.5 px-4 whitespace-nowrap text-slate-600 font-medium">
                                     {{ $taskItem->assigned_at->timezone('Asia/Jakarta')->translatedFormat('d M Y') }}
                                 </td>
@@ -245,12 +246,21 @@
 
                                 <td class="py-3.5 px-4 whitespace-nowrap text-right">
                                     <div class="inline-flex items-center justify-end gap-2">
-                                        <a
-                                            href="{{ route($rolePrefix . '.tasks.show', $taskItem) }}"
-                                            class="px-3 py-1.5 rounded-xl border border-slate-200 hover:border-[#015987] text-xs font-semibold text-[#015987] transition"
-                                        >
-                                            Detail
-                                        </a>
+                                        @if ($needsPicReview)
+                                            <a
+                                                href="{{ route('pic.tasks.show', $taskItem) }}"
+                                                class="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-xs font-bold text-white shadow-xs transition"
+                                            >
+                                                Review Tugas
+                                            </a>
+                                        @else
+                                            <a
+                                                href="{{ route($rolePrefix . '.tasks.show', $taskItem) }}"
+                                                class="px-3 py-1.5 rounded-xl border border-slate-200 hover:border-[#015987] text-xs font-semibold text-[#015987] transition"
+                                            >
+                                                Detail
+                                            </a>
+                                        @endif
 
                                         @can('start', $taskItem)
                                             <form method="POST" action="{{ route('intern.tasks.start', $taskItem) }}">

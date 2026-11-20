@@ -60,4 +60,63 @@ enum TaskStatus: string
             default => self::Submitted,
         };
     }
+
+    /**
+     * PIC hanya dapat meninjau tugas apabila status saat ini adalah submitted atau resubmitted.
+     */
+    public function canBeReviewedByPic(): bool
+    {
+        return in_array($this, [
+            self::Submitted,
+            self::Resubmitted,
+        ], true);
+    }
+
+    /**
+     * Daftar status berikutnya yang diizinkan dari status saat ini berdasarkan role aktor.
+     *
+     * @return array<int, self>
+     */
+    public function allowedNextStatuses(?string $actorRole = null): array
+    {
+        return match ($this) {
+            self::Assigned => match ($actorRole) {
+                'intern' => [self::InProgress, self::Submitted],
+                'pic' => [],
+                'admin' => [],
+                null => [self::InProgress, self::Submitted],
+                default => [],
+            },
+            self::InProgress => match ($actorRole) {
+                'intern' => [self::Submitted],
+                'pic' => [],
+                'admin' => [],
+                null => [self::Submitted],
+                default => [],
+            },
+            self::Submitted, self::Resubmitted => match ($actorRole) {
+                'pic' => [self::RevisionRequested, self::Accepted],
+                'intern' => [],
+                'admin' => [],
+                null => [self::RevisionRequested, self::Accepted],
+                default => [],
+            },
+            self::RevisionRequested => match ($actorRole) {
+                'intern' => [self::Resubmitted],
+                'pic' => [],
+                'admin' => [],
+                null => [self::Resubmitted],
+                default => [],
+            },
+            self::Accepted => [],
+        };
+    }
+
+    /**
+     * Memeriksa apakah transisi menuju $target sah menurut matriks state machine dan role aktor.
+     */
+    public function canTransitionTo(self $target, ?string $actorRole = null): bool
+    {
+        return in_array($target, $this->allowedNextStatuses($actorRole), true);
+    }
 }

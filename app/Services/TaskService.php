@@ -2,9 +2,11 @@
 
 namespace App\Services;
 
+use App\Enums\TaskReviewDecision;
 use App\Enums\TaskStatus;
 use App\Models\Logbook;
 use App\Models\Task;
+use App\Models\TaskReview;
 use App\Models\TaskSubmission;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
@@ -166,17 +168,7 @@ class TaskService
             /** @var Task $locked */
             $locked = Task::query()->whereKey($task->id)->lockForUpdate()->firstOrFail();
 
-            if (! $intern->isIntern() || ! $intern->is_active || $locked->intern_user_id !== $intern->id) {
-                throw ValidationException::withMessages([
-                    'task' => 'Anda tidak berwenang memulai tugas ini.',
-                ]);
-            }
-
-            if (! $locked->canBeStartedByIntern()) {
-                throw ValidationException::withMessages([
-                    'status' => 'Tugas hanya dapat dimulai ketika berstatus Ditugaskan (Assigned).',
-                ]);
-            }
+            $locked->assertCanTransitionTo(TaskStatus::InProgress, $intern);
 
             $locked->update([
                 'status' => TaskStatus::InProgress,
@@ -200,17 +192,8 @@ class TaskService
             /** @var Task $locked */
             $locked = Task::query()->whereKey($task->id)->lockForUpdate()->firstOrFail();
 
-            if (! $intern->isIntern() || ! $intern->is_active || $locked->intern_user_id !== $intern->id) {
-                throw ValidationException::withMessages([
-                    'task' => 'Anda tidak berwenang mengumpulkan hasil untuk tugas ini.',
-                ]);
-            }
-
-            if (! $locked->canBeSubmittedByIntern()) {
-                throw ValidationException::withMessages([
-                    'status' => 'Tugas dengan status saat ini tidak dapat dikumpulkan.',
-                ]);
-            }
+            $nextStatus = $locked->status?->nextStatusAfterSubmission() ?? TaskStatus::Submitted;
+            $locked->assertCanTransitionTo($nextStatus, $intern);
 
             $url = isset($data['submission_url']) && trim((string) $data['submission_url']) !== ''
                 ? trim((string) $data['submission_url'])
@@ -233,7 +216,6 @@ class TaskService
             }
 
             $nextSubmissionNumber = ((int) $locked->submissions()->max('submission_number')) + 1;
-            $nextStatus = $locked->status->nextStatusAfterSubmission();
 
             $submission = TaskSubmission::create([
                 'task_id' => $locked->id,
@@ -250,6 +232,83 @@ class TaskService
             ]);
 
             return $submission;
+        });
+    }
+
+    /**
+     * Meninjau pengumpulan hasil tugas terbaru oleh PIC penanggung jawab tugas.
+     * Selalu membuat baris baru di task_reviews (tidak pernah menimpa review lama) di dalam DB::transaction:
+     * - revision_requested: wajib feedback, mengubah status tugas -> revision_requested
+     * - accepted: mengubah status tugas -> accepted, mengisi accepted_at & accepted_by
+     *
+     * @param  array{decision: string, feedback?: ?string, task_submission_id?: ?int}  $data
+     */
+    public function reviewTask(Task $task, User $pic, array $data): TaskReview
+    {
+        return DB::transaction(function () use ($task, $pic, $data) {
+            /** @var Task $locked */
+            $locked = Task::query()->whereKey($task->id)->lockForUpdate()->firstOrFail();
+
+            $decision = TaskReviewDecision::from($data['decision']);
+            $targetStatus = $decision->toTaskStatus();
+
+            $locked->assertCanTransitionTo($targetStatus, $pic);
+
+            /** @var TaskSubmission|null $latestSubmission */
+            $latestSubmission = $locked->submissions()->orderByDesc('submission_number')->first();
+
+            if (! $latestSubmission) {
+                throw ValidationException::withMessages([
+                    'task_submission_id' => 'Belum ada pengumpulan hasil tugas yang dapat ditinjau.',
+                ]);
+            }
+
+            if (! empty($data['task_submission_id']) && (int) $data['task_submission_id'] !== $latestSubmission->id) {
+                throw ValidationException::withMessages([
+                    'task_submission_id' => 'Peninjauan hanya dapat dilakukan pada pengumpulan (submission) versi terbaru.',
+                ]);
+            }
+
+            // Cegah duplikasi review pada submission terbaru yang sudah pernah direview
+            if ($latestSubmission->reviews()->exists()) {
+                throw ValidationException::withMessages([
+                    'task_submission_id' => 'Pengumpulan versi terbaru ini sudah pernah ditinjau.',
+                ]);
+            }
+
+            $feedback = isset($data['feedback']) && trim((string) $data['feedback']) !== ''
+                ? trim((string) $data['feedback'])
+                : null;
+
+            if ($decision === TaskReviewDecision::RevisionRequested && ($feedback === null || mb_strlen($feedback) < 5)) {
+                throw ValidationException::withMessages([
+                    'feedback' => 'Catatan revisi (feedback) wajib diisi minimal 5 karakter ketika meminta revisi.',
+                ]);
+            }
+
+            $now = $this->now();
+
+            $review = TaskReview::create([
+                'task_submission_id' => $latestSubmission->id,
+                'reviewed_by' => $pic->id,
+                'decision' => $decision,
+                'feedback' => $feedback,
+                'reviewed_at' => $now,
+            ]);
+
+            if ($decision === TaskReviewDecision::Accepted) {
+                $locked->update([
+                    'status' => TaskStatus::Accepted,
+                    'accepted_at' => $now,
+                    'accepted_by' => $pic->id,
+                ]);
+            } else {
+                $locked->update([
+                    'status' => TaskStatus::RevisionRequested,
+                ]);
+            }
+
+            return $review;
         });
     }
 }

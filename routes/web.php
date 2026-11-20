@@ -7,6 +7,7 @@ use App\Http\Controllers\LeaveRequestController;
 use App\Http\Controllers\LogbookController;
 use App\Http\Controllers\PrivateMediaController;
 use App\Http\Controllers\TaskController;
+use App\Http\Controllers\TaskReviewController;
 use App\Http\Controllers\TaskSubmissionController;
 use Illuminate\Support\Facades\Route;
 
@@ -93,6 +94,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/tasks/{task}', [TaskController::class, 'show'])->name('tasks.show');
         Route::get('/tasks/{task}/edit', [TaskController::class, 'edit'])->name('tasks.edit');
         Route::put('/tasks/{task}', [TaskController::class, 'update'])->name('tasks.update');
+        Route::post('/tasks/{task}/reviews', [TaskReviewController::class, 'store'])->name('tasks.reviews.store');
     });
 
     // Dashboard, Logbook, & Daftar Tugas Peserta Magang

@@ -144,6 +144,7 @@ class TaskController extends Controller
             'assignmentLogbook',
             'submissions.evidenceMedia',
             'submissions.submitter:id,name',
+            'submissions.reviews.reviewer:id,name',
         ]);
 
         return view('tasks.show', [

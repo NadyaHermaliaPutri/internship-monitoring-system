@@ -5,6 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 #[Fillable([
     'task_id',
@@ -47,5 +49,21 @@ class TaskSubmission extends Model
     public function evidenceMedia(): BelongsTo
     {
         return $this->belongsTo(MediaFile::class, 'evidence_media_id');
+    }
+
+    /**
+     * Seluruh riwayat review PIC untuk submission ini.
+     */
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(TaskReview::class, 'task_submission_id')->orderByDesc('reviewed_at')->orderByDesc('id');
+    }
+
+    /**
+     * Review PIC terbaru pada submission ini.
+     */
+    public function latestReview(): HasOne
+    {
+        return $this->hasOne(TaskReview::class, 'task_submission_id')->latestOfMany();
     }
 }

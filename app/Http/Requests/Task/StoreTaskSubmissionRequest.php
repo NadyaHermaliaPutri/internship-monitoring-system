@@ -65,6 +65,13 @@ class StoreTaskSubmissionRequest extends FormRequest
                 },
             ],
             'submission_note' => ['nullable', 'string', 'max:2000'],
+            // Hardening anti-tampering: peserta tidak boleh menyisipkan status/accepted metadata pada submission request
+            'status' => ['prohibited'],
+            'accepted_at' => ['prohibited'],
+            'accepted_by' => ['prohibited'],
+            'pic_user_id' => ['prohibited'],
+            'intern_user_id' => ['prohibited'],
+            'assigned_at' => ['prohibited'],
         ];
     }
 
