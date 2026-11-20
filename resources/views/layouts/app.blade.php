@@ -33,7 +33,11 @@
         }
     </script>
 
+    <!-- Alpine.js (Lightweight UI Interactions & Modals) -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.8/dist/cdn.min.js"></script>
+
     <style>
+        [x-cloak] { display: none !important; }
         * {
             font-family: 'Plus Jakarta Sans', sans-serif;
         }
@@ -233,6 +237,9 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                 </svg>
                                 <span>Presensi Peserta</span>
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                                </svg>
+                                <span>Kelola Akun</span>
                                 <span class="absolute -bottom-5 right-0 w-5 h-5 pointer-events-none">
                                     <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">
                                         <path d="M20 20 L20 0 L0 0 A20 20 0 0 1 20 20 Z" fill="#eef4f8"/>
@@ -253,6 +260,22 @@
                     <div class="relative w-full pl-5 {{ $isAdminCalendarActive ? 'z-10' : '' }}">
                         @if($isAdminCalendarActive)
                             <a href="{{ route('admin.calendar.index') }}" class="relative flex items-center gap-3 py-3 pl-4 pr-6 bg-[#eef4f8] text-[#015987] font-bold text-xs rounded-l-full w-full shadow-none block">
+                        </div>
+                    @else
+                        <div class="w-full px-5">
+                            <a href="{{ route('admin.users.index') }}" class="flex items-center gap-3 py-3 px-4 text-white/80 hover:text-white hover:bg-white/10 font-semibold text-xs rounded-xl transition">
+                                <svg class="w-4 h-4 text-sky-200" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                                </svg>
+                                <span>Kelola Akun</span>
+                            </a>
+                        </div>
+                    @endif
+
+                    <!-- Menu 3: Profil Peserta (Pinterest Tab Saat Aktif) -->
+                    @if($isInternProfiles)
+                        <div class="relative w-full pl-5">
+                            <a href="{{ route('admin.intern-profiles.index') }}" class="relative flex items-center gap-3 py-3 pl-4 pr-6 bg-[#eef4f8] text-[#015987] font-bold text-xs rounded-l-full w-full shadow-none block">
                                 <span class="absolute -top-5 right-0 w-5 h-5 pointer-events-none">
                                     <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">
                                         <path d="M20 0 L20 20 L0 20 A20 20 0 0 0 20 0 Z" fill="#eef4f8"/>
@@ -262,6 +285,10 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                                 </svg>
                                 <span>Kalender Kerja</span>
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l9-5-9-5-9 5 9 5z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
+                                </svg>
+                                <span>Profil Peserta</span>
                                 <span class="absolute -bottom-5 right-0 w-5 h-5 pointer-events-none">
                                     <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">
                                         <path d="M20 20 L20 0 L0 0 A20 20 0 0 1 20 20 Z" fill="#eef4f8"/>
@@ -434,6 +461,18 @@
                             </a>
                         @endif
                     </div>
+                        </div>
+                    @else
+                        <div class="w-full px-5">
+                            <a href="{{ route('admin.intern-profiles.index') }}" class="flex items-center gap-3 py-3 px-4 text-white/80 hover:text-white hover:bg-white/10 font-semibold text-xs rounded-xl transition">
+                                <svg class="w-4 h-4 text-sky-200" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l9-5-9-5-9 5 9 5z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
+                                </svg>
+                                <span>Profil Peserta</span>
+                            </a>
+                        </div>
+                    @endif
                 @endif
             </nav>
         </div>
@@ -473,16 +512,18 @@
                 </p>
             </div>
 
-            <!-- Sisi Kanan: Widget Tanggal, Search Bar, & Notifikasi -->
+            <!-- Sisi Kanan: Widget Tanggal, Search Bar, & Tombol Aksi Sesuai Mockup -->
             <div class="flex items-center gap-3">
-                
-                <!-- Widget Tanggal -->
-                <div class="flex items-center gap-2 text-xs font-medium text-slate-600 bg-white px-3.5 py-2.5 rounded-xl border border-slate-200/80 shadow-xs">
-                    <svg class="w-3.5 h-3.5 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                    </svg>
-                    <span>{{ \Carbon\Carbon::now()->translatedFormat('l, d F Y') }}</span>
-                </div>
+                @if(View::hasSection('custom-header-right'))
+                    @yield('custom-header-right')
+                @else
+                    <!-- Widget Tanggal -->
+                    <div class="flex items-center gap-2 text-xs font-medium text-slate-600 bg-white px-3.5 py-2.5 rounded-xl border border-slate-200/80 shadow-xs">
+                        <svg class="w-3.5 h-3.5 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                        </svg>
+                        <span>{{ \Carbon\Carbon::now()->translatedFormat('l, d F Y') }}</span>
+                    </div>
 
                 <!-- Search Input (Hanya untuk Admin & PIC) -->
                 @if(in_array(auth()->user()?->role, ['admin', 'pic'], true))
@@ -498,13 +539,16 @@
                     </div>
                 @endif
 
-                <!-- Tombol Notifikasi -->
-                <button class="p-2.5 rounded-xl bg-white border border-slate-200/80 text-slate-600 hover:text-slate-900 shadow-xs transition relative">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
-                    </svg>
-                    <span class="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-rose-500 ring-2 ring-white"></span>
-                </button>
+                    @yield('header-actions')
+
+                    <!-- Tombol Notifikasi -->
+                    <button class="p-2.5 rounded-xl bg-white border border-slate-200/80 text-slate-600 hover:text-slate-900 shadow-xs transition relative">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                        </svg>
+                        <span class="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-rose-500 ring-2 ring-white"></span>
+                    </button>
+                @endif
             </div>
         </header>
 
@@ -514,6 +558,9 @@
         </main>
 
     </div>
+
+    <!-- Modal Pop-up Alert Sukses & Error Sesuai Figma WANTRACE -->
+    @include('partials.alert-modal')
 
     @stack('scripts')
 </body>

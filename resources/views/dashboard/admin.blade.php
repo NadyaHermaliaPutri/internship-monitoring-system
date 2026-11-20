@@ -9,14 +9,14 @@
 <div class="space-y-8">
 
     <!-- ============================================================== -->
-    <!-- 1. KARTU STATISTIK RINGKASAN (TOP 4 STAT CARDS SESUAI FIGMA) -->
+    <!-- 1. KARTU STATISTIK RINGKASAN (100% DINAMIS DARI DATABASE)      -->
     <!-- ============================================================== -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         
         <!-- Card 1: Total Peserta Aktif -->
         <div class="bg-white p-6 rounded-2xl border border-slate-200/70 shadow-xs flex flex-col justify-between min-h-[148px]">
             <div class="flex items-start justify-between">
-                <span class="text-xs font-bold text-[#015987]">Total Peserta Aktif</span>
+                <span class="text-xs font-bold text-slate-700">Total Peserta Aktif</span>
                 <div class="w-8 h-8 rounded-xl bg-sky-50 text-sky-500 flex items-center justify-center">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
@@ -35,13 +35,13 @@
             </div>
         </div>
 
-        <!-- Card 2: Presensi Hari Ini -->
+        <!-- Card 2: PIC Mentor Aktif -->
         <div class="bg-white p-6 rounded-2xl border border-slate-200/70 shadow-xs flex flex-col justify-between min-h-[148px]">
             <div class="flex items-start justify-between">
-                <span class="text-xs font-bold text-[#015987]">Presensi Hari Ini</span>
+                <span class="text-xs font-bold text-slate-700">PIC Mentor Aktif</span>
                 <div class="w-8 h-8 rounded-xl bg-teal-50 text-teal-500 flex items-center justify-center">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
                     </svg>
                 </div>
             </div>
@@ -57,46 +57,46 @@
             </div>
         </div>
 
-        <!-- Card 3: Tugas Menunggu Review -->
+        <!-- Card 3: Total Akun Aktif -->
         <div class="bg-white p-6 rounded-2xl border border-slate-200/70 shadow-xs flex flex-col justify-between min-h-[148px]">
             <div class="flex items-start justify-between">
-                <span class="text-xs font-bold text-[#015987]">Tugas Menunggu Review</span>
-                <div class="w-8 h-8 rounded-xl bg-rose-50 text-rose-400 flex items-center justify-center">
+                <span class="text-xs font-bold text-slate-700">Total Akun Aktif</span>
+                <div class="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-500 flex items-center justify-center">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
                     </svg>
                 </div>
             </div>
             <div class="mt-5">
                 <div class="flex items-baseline gap-1.5">
-                    <span class="text-2xl sm:text-3xl font-extrabold text-[#015987]">5</span>
-                    <span class="text-xs text-slate-500 font-medium">Tugas</span>
+                    <span class="text-2xl sm:text-3xl font-extrabold text-slate-900">{{ $stats['total_active'] }}</span>
+                    <span class="text-xs text-slate-500 font-medium">Akun</span>
                 </div>
-                <p class="text-[11px] font-semibold text-rose-500 mt-1.5 flex items-center gap-1">
-                    <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
-                    Perlu ditinjau
+                <p class="text-[11px] font-semibold text-indigo-600 mt-1.5 flex items-center gap-1">
+                    <span class="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
+                    <span>Dapat login ke sistem</span>
                 </p>
             </div>
         </div>
 
-        <!-- Card 4: Sinyal Peringatan (EWS) -->
+        <!-- Card 4: Akun Dinonaktifkan / Alumni -->
         <div class="bg-white p-6 rounded-2xl border border-slate-200/70 shadow-xs flex flex-col justify-between min-h-[148px]">
             <div class="flex items-start justify-between">
-                <span class="text-xs font-bold text-[#015987]">Sinyal Peringatan (EWS)</span>
+                <span class="text-xs font-bold text-slate-700">Akun Nonaktif / Selesai</span>
                 <div class="w-8 h-8 rounded-xl bg-rose-50 text-rose-500 flex items-center justify-center">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
                     </svg>
                 </div>
             </div>
             <div class="mt-5">
                 <div class="flex items-baseline gap-1.5">
-                    <span class="text-2xl sm:text-3xl font-extrabold text-[#015987]">2</span>
-                    <span class="text-xs text-slate-500 font-medium">Peserta</span>
+                    <span class="text-2xl sm:text-3xl font-extrabold text-slate-900">{{ $stats['inactive_users'] }}</span>
+                    <span class="text-xs text-slate-500 font-medium">Alumni</span>
                 </div>
-                <p class="text-[11px] font-semibold text-rose-500 mt-1.5 flex items-center gap-1">
-                    <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
-                    Perlu segera ditinjau
+                <p class="text-[11px] font-semibold text-slate-400 mt-1.5 flex items-center gap-1">
+                    <span class="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
+                    <span>Histori data tetap utuh</span>
                 </p>
             </div>
         </div>
@@ -104,11 +104,11 @@
     </div>
 
     <!-- ============================================================== -->
-    <!-- 2. GRID 2 KOLOM (PRESENSI HARIAN & PENGAJUAN IZIN SAKIT) -->
+    <!-- 2. GRID 2 KOLOM (DATA PESERTA MAGANG & RINGKASAN MONITORING)   -->
     <!-- ============================================================== -->
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         
-        <!-- KOLOM KIRI (LEBAR 7/12): TABEL PRESENSI HARIAN PESERTA -->
+        <!-- KOLOM KIRI (LEBAR 7/12): TABEL PESERTA MAGANG DINAMIS -->
         <div class="lg:col-span-7 bg-white rounded-2xl border border-slate-200/70 shadow-xs overflow-hidden">
             <!-- Header Kartu -->
             <div class="p-6 border-b border-slate-100 flex items-center justify-between">
@@ -136,8 +136,8 @@
                     <thead>
                         <tr class="border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                             <th class="py-4 px-6">Nama Peserta</th>
-                            <th class="py-4 px-5">Waktu Masuk</th>
-                            <th class="py-4 px-5 text-center">Foto Bukti</th>
+                            <th class="py-4 px-5">Asal Institusi</th>
+                            <th class="py-4 px-5">Periode Magang</th>
                             <th class="py-4 px-5">Status</th>
                             <th class="py-4 px-6 text-right">Aksi</th>
                         </tr>
@@ -211,7 +211,7 @@
                 </table>
             </div>
 
-            <!-- Footer Tabel -->
+            <!-- Footer Tabel Dinamis -->
             <div class="px-6 py-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400">
                 <span>Menampilkan {{ $adminSummary['attendances']->count() }} dari {{ $adminSummary['total_present'] }} kehadiran hari ini</span>
                 <span class="font-semibold text-sky-600">
@@ -220,13 +220,13 @@
             </div>
         </div>
 
-        <!-- KOLOM KANAN (LEBAR 5/12): PENGAJUAN IZIN & SAKIT -->
+        <!-- KOLOM KANAN (LEBAR 5/12): STATUS MONITORING & PENUGASAN -->
         <div class="lg:col-span-5 bg-white rounded-2xl border border-slate-200/70 shadow-xs p-6 space-y-5">
             <!-- Header Kartu -->
             <div class="flex items-center justify-between pb-4 border-b border-slate-100">
                 <div>
-                    <h3 class="text-sm font-bold text-[#015987]">Pengajuan Izin &amp; Sakit</h3>
-                    <p class="text-[11px] text-slate-400 mt-0.5">Permintaan terbaru yang perlu ditinjau</p>
+                    <h3 class="text-sm font-bold text-slate-900">Status Monitoring Magang</h3>
+                    <p class="text-[11px] text-slate-400 mt-0.5">Ringkasan operasional dan penugasan sistem</p>
                 </div>
                 <div class="flex items-center gap-2">
                     <span class="text-[11px] font-semibold {{ $adminSummary['pending_leaves_count'] > 0 ? 'text-rose-500 bg-rose-50' : 'text-slate-500 bg-slate-100' }} px-2.5 py-0.5 rounded-full">
