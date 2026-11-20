@@ -51,9 +51,12 @@ class AttendanceRecapService
             ->whereDate('attendance_date', $date)
             ->get();
 
-        $onTimeCount = $attendances->where('status', 'on_time')->count();
-        $lateCount = $attendances->where('status', 'late')->count();
-        $totalPresent = $attendances->count();
+        // Presensi sah (bukan yang sedang berstatus rejected)
+        $validAttendances = $attendances->where('verification_status', '!=', 'rejected');
+        $onTimeCount = $validAttendances->where('status', 'on_time')->count();
+        $lateCount = $validAttendances->where('status', 'late')->count();
+        $totalPresent = $validAttendances->count();
+        $rejectedCount = $attendances->where('verification_status', 'rejected')->count();
 
         // Izin/Sakit yang disetujui pada tanggal tersebut
         $approvedLeaves = LeaveRequest::with('intern')
@@ -72,6 +75,8 @@ class AttendanceRecapService
             'total_present' => $totalPresent,
             'on_time_count' => $onTimeCount,
             'late_count' => $lateCount,
+            'rejected_count' => $rejectedCount,
+            'rejected_count' => $rejectedCount,
             'approved_leaves_count' => $approvedLeaves->count(),
             'pending_leaves_count' => $pendingLeavesCount,
             'attendances' => $attendances,
@@ -97,9 +102,11 @@ class AttendanceRecapService
             ->whereDate('attendance_date', '<=', $endDate->format('Y-m-d'))
             ->get();
 
-        $onTimeCount = $attendances->where('status', 'on_time')->count();
-        $lateCount = $attendances->where('status', 'late')->count();
-        $totalPresent = $attendances->count();
+        $validAttendances = $attendances->where('verification_status', '!=', 'rejected');
+        $onTimeCount = $validAttendances->where('status', 'on_time')->count();
+        $lateCount = $validAttendances->where('status', 'late')->count();
+        $totalPresent = $validAttendances->count();
+        $rejectedCount = $attendances->where('verification_status', 'rejected')->count();
 
         // Izin/Sakit yang disetujui di bulan tersebut
         $approvedLeaves = LeaveRequest::where('intern_user_id', $internUserId)
@@ -139,6 +146,7 @@ class AttendanceRecapService
             'total_present' => $totalPresent,
             'on_time_count' => $onTimeCount,
             'late_count' => $lateCount,
+            'rejected_count' => $rejectedCount,
             'sick_days_count' => $sickDaysCount,
             'leave_days_count' => $leaveDaysCount,
             'attendance_rate' => $attendanceRate,
@@ -178,12 +186,15 @@ class AttendanceRecapService
             ->activeOnDate($date)
             ->get();
 
+        $validAttendances = $attendances->where('verification_status', '!=', 'rejected');
+
         return [
             'date' => $date,
             'total_assigned_interns' => count($assignedInternUserIds),
-            'total_present' => $attendances->count(),
-            'on_time_count' => $attendances->where('status', 'on_time')->count(),
-            'late_count' => $attendances->where('status', 'late')->count(),
+            'total_present' => $validAttendances->count(),
+            'on_time_count' => $validAttendances->where('status', 'on_time')->count(),
+            'late_count' => $validAttendances->where('status', 'late')->count(),
+            'rejected_count' => $attendances->where('verification_status', 'rejected')->count(),
             'attendances' => $attendances,
             'approved_leaves' => $approvedLeaves,
         ];
@@ -226,6 +237,8 @@ class AttendanceRecapService
             'date' => $today,
             'day_status' => $dayStatus,
             'attendance_today' => $attendanceToday,
+            'is_rejected_today' => $attendanceToday?->isRejected() ?? false,
+            'can_resubmit_today' => ($attendanceToday?->isRejected() ?? false) && ($dayStatus['is_working_day'] ?? true) && ! $approvedLeaveToday,
             'approved_leave_today' => $approvedLeaveToday,
             'pending_leaves_count' => $pendingLeavesCount,
             'latest_leave' => $latestLeave,

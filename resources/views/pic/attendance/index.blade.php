@@ -215,10 +215,17 @@
 
                             <!-- Status Presensi -->
                             <td class="py-4 px-5">
-                                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold border {{ $row->isOnTime() ? 'bg-teal-50 text-teal-600 border-teal-200' : 'bg-rose-50 text-rose-600 border-rose-200' }}">
-                                    <span class="w-1 h-1 rounded-full {{ $row->isOnTime() ? 'bg-teal-500' : 'bg-rose-500' }}"></span>
-                                    {{ $row->isOnTime() ? 'Tepat Waktu' : 'Terlambat' }}
-                                </span>
+                                @if($row->isRejected())
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold border bg-rose-50 text-rose-700 border-rose-200">
+                                        <span class="w-1 h-1 rounded-full bg-rose-600"></span>
+                                        Ditolak HR
+                                    </span>
+                                @else
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold border {{ $row->isOnTime() ? 'bg-teal-50 text-teal-600 border-teal-200' : 'bg-rose-50 text-rose-600 border-rose-200' }}">
+                                        <span class="w-1 h-1 rounded-full {{ $row->isOnTime() ? 'bg-teal-500' : 'bg-rose-500' }}"></span>
+                                        {{ $row->isOnTime() ? 'Tepat Waktu' : 'Terlambat' }}
+                                    </span>
+                                @endif
                             </td>
 
                             <!-- Catatan Peserta -->

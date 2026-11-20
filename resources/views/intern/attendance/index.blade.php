@@ -73,14 +73,24 @@
             </div>
             <div class="mt-5">
                 @if($todayAttendance)
-                    <div class="flex items-baseline gap-2">
-                        <span class="text-2xl font-extrabold text-[#015987]">Hadir</span>
-                        <span class="text-xs text-slate-500 font-medium">{{ $todayAttendance->checked_in_at->format('H:i') }} WIB</span>
-                    </div>
-                    <p class="text-[11px] font-semibold {{ $todayAttendance->isOnTime() ? 'text-emerald-600' : 'text-rose-500' }} mt-1.5 flex items-center gap-1">
-                        <span class="w-1.5 h-1.5 rounded-full {{ $todayAttendance->isOnTime() ? 'bg-emerald-500' : 'bg-rose-500' }}"></span>
-                        {{ $todayAttendance->isOnTime() ? 'Tepat Waktu' : 'Terlambat' }}
-                    </p>
+                    @if($todayAttendance->isRejected())
+                        <div class="flex items-baseline gap-2">
+                            <span class="text-xl sm:text-2xl font-extrabold text-rose-600">Ditolak HR</span>
+                        </div>
+                        <p class="text-[11px] font-semibold text-rose-500 mt-1.5 flex items-center gap-1">
+                            <span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span>
+                            Perlu Foto Ulang
+                        </p>
+                    @else
+                        <div class="flex items-baseline gap-2">
+                            <span class="text-2xl font-extrabold text-[#015987]">Hadir</span>
+                            <span class="text-xs text-slate-500 font-medium">{{ $todayAttendance->checked_in_at->format('H:i') }} WIB</span>
+                        </div>
+                        <p class="text-[11px] font-semibold {{ $todayAttendance->isOnTime() ? 'text-emerald-600' : 'text-rose-500' }} mt-1.5 flex items-center gap-1">
+                            <span class="w-1.5 h-1.5 rounded-full {{ $todayAttendance->isOnTime() ? 'bg-emerald-500' : 'bg-rose-500' }}"></span>
+                            {{ $todayAttendance->isOnTime() ? 'Tepat Waktu' : 'Terlambat' }}
+                        </p>
+                    @endif
                 @elseif($approvedLeaveToday)
                     <div class="flex items-baseline gap-2">
                         <span class="text-xl font-extrabold text-sky-700 uppercase">{{ $approvedLeaveToday->leave_type === 'sick' ? 'Sakit' : 'Izin' }}</span>
@@ -202,8 +212,8 @@
                     </div>
                 </div>
 
-                {{-- KONDISI 1: SUDAH CHECK-IN HARI INI --}}
-                @if($todayAttendance)
+                {{-- KONDISI 1: SUDAH CHECK-IN DAN TIDAK DITOLAK --}}
+                @if($todayAttendance && ! $todayAttendance->isRejected())
                     <div class="bg-[#014467] text-white p-6 sm:p-7 rounded-2xl shadow-xs space-y-5">
                         <div class="flex items-center gap-3">
                             <div class="w-10 h-10 rounded-2xl bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 flex items-center justify-center flex-shrink-0">
@@ -277,8 +287,35 @@
                         </p>
                     </div>
 
-                {{-- KONDISI 4: BISA MELAKUKAN PRESENSI (KAMERA AKTIF) --}}
+                {{-- KONDISI 4: BISA MELAKUKAN PRESENSI (KAMERA AKTIF: BELUM CHECK-IN ATAU DITOLAK HR) --}}
                 @else
+                    @if($todayAttendance && $todayAttendance->isRejected())
+                        <!-- Alert Penolakan Presensi oleh HR -->
+                        <div class="p-5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 space-y-3 mb-5">
+                            <div class="flex items-start gap-3">
+                                <div class="w-9 h-9 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                                    </svg>
+                                </div>
+                                <div class="space-y-1">
+                                    <h4 class="text-sm font-bold text-rose-900">Foto Presensi Masuk Hari Ini Ditolak oleh HR</h4>
+                                    <p class="text-xs text-rose-700 leading-relaxed">
+                                        <strong>Alasan Penolakan:</strong> "{{ $todayAttendance->notes }}"
+                                    </p>
+                                    <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/80 border border-rose-200 text-[11px] text-rose-800 font-semibold mt-1">
+                                        <svg class="w-3.5 h-3.5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                        <span>Waktu Check-In Awal: {{ $todayAttendance->checked_in_at->format('H:i:s') }} WIB (Status {{ $todayAttendance->isOnTime() ? 'Tepat Waktu' : 'Terlambat' }} tetap dipertahankan).</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <p class="text-[11px] text-rose-600 border-t border-rose-200/60 pt-2 font-medium">
+                                Kamera telah dibuka kembali. Silakan ambil foto selfie ulang dengan pencahayaan jelas untuk memperbarui berkas bukti presensi Anda.
+                            </p>
+                        </div>
+                    @endif
                     
                     <!-- Viewport Kamera Selfie Langsung WebRTC -->
                     <div class="relative w-full h-[360px] sm:h-[400px] bg-slate-900 rounded-2xl overflow-hidden shadow-inner flex items-center justify-center">
@@ -345,7 +382,7 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
                                 </svg>
-                                <span>Ambil Foto Selfie &amp; Presensi Masuk</span>
+                                <span>{{ $isRejectedToday ? 'Ambil Foto Selfie Ulang' : 'Ambil Foto Selfie & Presensi Masuk' }}</span>
                             </button>
                         </div>
 
@@ -366,7 +403,7 @@
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
                                 </svg>
-                                <span>Kirim Presensi Sekarang</span>
+                                <span>{{ $isRejectedToday ? 'Kirim Foto Ulang' : 'Kirim Presensi Sekarang' }}</span>
                             </button>
                         </div>
 
@@ -461,15 +498,33 @@
                                         </div>
                                     </div>
 
-                                    <!-- Badge Status Tepat Waktu / Terlambat -->
-                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold border {{ $row->isOnTime() ? 'bg-teal-50 text-teal-600 border-teal-200' : 'bg-rose-50 text-rose-600 border-rose-200' }}">
-                                        <span class="w-1 h-1 rounded-full {{ $row->isOnTime() ? 'bg-teal-500' : 'bg-rose-500' }}"></span>
-                                        {{ $row->isOnTime() ? 'Tepat Waktu' : 'Terlambat' }}
-                                    </span>
+                                    <!-- Badge Status Tepat Waktu / Terlambat / Ditolak -->
+                                    @if($row->isRejected())
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold border bg-rose-50 text-rose-700 border-rose-200">
+                                            <span class="w-1 h-1 rounded-full bg-rose-600"></span>
+                                            Ditolak HR
+                                        </span>
+                                    @else
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold border {{ $row->isOnTime() ? 'bg-teal-50 text-teal-600 border-teal-200' : 'bg-rose-50 text-rose-600 border-rose-200' }}">
+                                            <span class="w-1 h-1 rounded-full {{ $row->isOnTime() ? 'bg-teal-500' : 'bg-rose-500' }}"></span>
+                                            {{ $row->isOnTime() ? 'Tepat Waktu' : 'Terlambat' }}
+                                        </span>
+                                    @endif
                                 </div>
 
-                                <!-- Catatan Peserta / Catatan Review HR -->
-                                @if($row->notes || $row->isReviewed())
+                                <!-- Catatan Peserta / Catatan Review HR / Alasan Penolakan -->
+                                @if($row->isRejected())
+                                    <div class="text-[11px] pt-1.5 border-t border-slate-100 flex flex-col gap-0.5">
+                                        <p class="text-rose-600 font-medium">
+                                            <span class="font-semibold text-rose-700">Alasan Penolakan HR:</span> {{ $row->notes }}
+                                        </p>
+                                        @if($row->isReviewed())
+                                            <p class="text-[10px] text-slate-400">
+                                                Ditinjau oleh HR ({{ $row->reviewer->name }})
+                                            </p>
+                                        @endif
+                                    </div>
+                                @elseif($row->notes || $row->isReviewed())
                                     <div class="text-[11px] text-slate-500 pt-1.5 border-t border-slate-100 flex flex-col gap-0.5">
                                         @if($row->notes)
                                             <p><span class="font-semibold text-slate-600">Catatan:</span> {{ $row->notes }}</p>

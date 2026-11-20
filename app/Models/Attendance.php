@@ -21,6 +21,7 @@ class Attendance extends Model
         'attendance_date',
         'checked_in_at',
         'status',
+        'verification_status',
         'photo_media_id',
         'reviewed_by',
         'notes',
@@ -73,6 +74,21 @@ class Attendance extends Model
         return ! is_null($this->reviewed_by);
     }
 
+    public function isRejected(): bool
+    {
+        return $this->verification_status === 'rejected';
+    }
+
+    public function isSubmitted(): bool
+    {
+        return $this->verification_status === 'submitted';
+    }
+
+    public function isValidPresence(): bool
+    {
+        return $this->verification_status !== 'rejected';
+    }
+
     /**
      * Scope filter status tepat waktu.
      */
@@ -95,6 +111,38 @@ class Attendance extends Model
     public function scopeForDate(Builder $query, string $date): Builder
     {
         return $query->where('attendance_date', $date);
+    }
+
+    /**
+     * Scope filter presensi sah (tidak ditolak oleh HR).
+     */
+    public function scopeValid(Builder $query): Builder
+    {
+        return $query->where('verification_status', '!=', 'rejected');
+    }
+
+    /**
+     * Scope filter presensi yang tidak ditolak.
+     */
+    public function scopeNotRejected(Builder $query): Builder
+    {
+        return $query->where('verification_status', '!=', 'rejected');
+    }
+
+    /**
+     * Scope filter presensi yang ditolak oleh HR.
+     */
+    public function scopeRejected(Builder $query): Builder
+    {
+        return $query->where('verification_status', 'rejected');
+    }
+
+    /**
+     * Scope filter presensi berstatus submitted.
+     */
+    public function scopeSubmitted(Builder $query): Builder
+    {
+        return $query->where('verification_status', 'submitted');
     }
 
     /**

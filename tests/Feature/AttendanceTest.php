@@ -289,4 +289,327 @@ class AttendanceTest extends TestCase
             'notes' => 'PIC mencoba mengubah',
         ])->assertStatus(403);
     }
+
+    public function test_admin_can_reject_attendance_with_reason(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $intern = User::factory()->create(['role' => 'intern', 'is_active' => true]);
+
+        $media = MediaFile::create([
+            'disk' => 'local_private',
+            'file_path' => 'presensi/photo.jpg',
+            'file_name' => 'photo.jpg',
+            'original_name' => 'photo.jpg',
+            'mime_type' => 'image/jpeg',
+            'file_size_bytes' => 1024,
+            'category' => 'attendance_photo',
+            'owner_user_id' => $intern->id,
+        ]);
+
+        $attendance = Attendance::create([
+            'intern_user_id' => $intern->id,
+            'attendance_date' => '2026-11-18',
+            'checked_in_at' => '2026-11-18 08:02:00',
+            'status' => 'on_time',
+            'verification_status' => 'submitted',
+            'photo_media_id' => $media->id,
+        ]);
+
+        $response = $this->actingAs($admin)
+            ->from('/admin/presensi')
+            ->post("/admin/presensi/{$attendance->id}/reject", [
+                'notes' => 'Foto blur, wajah peserta tidak terlihat jelas.',
+            ]);
+
+        $response->assertRedirect('/admin/presensi');
+        $response->assertSessionHas('success');
+
+        $attendance->refresh();
+        $this->assertEquals('rejected', $attendance->verification_status);
+        $this->assertTrue($attendance->isRejected());
+        $this->assertEquals('on_time', $attendance->status); // Original status preserved
+        $this->assertEquals($admin->id, $attendance->reviewed_by);
+        $this->assertEquals('Foto blur, wajah peserta tidak terlihat jelas.', $attendance->notes);
+
+        // Audit log
+        $this->assertDatabaseHas('audit_logs', [
+            'actor_user_id' => $admin->id,
+            'action' => 'attendance_rejected',
+            'entity_type' => 'attendance',
+            'entity_id' => $attendance->id,
+        ]);
+    }
+
+    public function test_non_admin_cannot_reject_attendance(): void
+    {
+        $pic = User::factory()->create(['role' => 'pic', 'is_active' => true]);
+        $intern = User::factory()->create(['role' => 'intern', 'is_active' => true]);
+
+        $media = MediaFile::create([
+            'disk' => 'local_private',
+            'file_path' => 'presensi/photo.jpg',
+            'file_name' => 'photo.jpg',
+            'original_name' => 'photo.jpg',
+            'mime_type' => 'image/jpeg',
+            'file_size_bytes' => 1024,
+            'category' => 'attendance_photo',
+            'owner_user_id' => $intern->id,
+        ]);
+
+        $attendance = Attendance::create([
+            'intern_user_id' => $intern->id,
+            'attendance_date' => '2026-11-18',
+            'checked_in_at' => '2026-11-18 08:02:00',
+            'status' => 'on_time',
+            'verification_status' => 'submitted',
+            'photo_media_id' => $media->id,
+        ]);
+
+        // PIC cannot reject
+        $this->actingAs($pic)
+            ->post("/admin/presensi/{$attendance->id}/reject", [
+                'notes' => 'PIC mencoba menolak presensi.',
+            ])
+            ->assertStatus(403);
+
+        // Intern cannot reject
+        $this->actingAs($intern)
+            ->post("/admin/presensi/{$attendance->id}/reject", [
+                'notes' => 'Intern mencoba menolak presensi.',
+            ])
+            ->assertStatus(403);
+    }
+
+    public function test_rejection_requires_notes_with_minimum_length(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $intern = User::factory()->create(['role' => 'intern', 'is_active' => true]);
+
+        $media = MediaFile::create([
+            'disk' => 'local_private',
+            'file_path' => 'presensi/photo.jpg',
+            'file_name' => 'photo.jpg',
+            'original_name' => 'photo.jpg',
+            'mime_type' => 'image/jpeg',
+            'file_size_bytes' => 1024,
+            'category' => 'attendance_photo',
+            'owner_user_id' => $intern->id,
+        ]);
+
+        $attendance = Attendance::create([
+            'intern_user_id' => $intern->id,
+            'attendance_date' => '2026-11-18',
+            'checked_in_at' => '2026-11-18 08:02:00',
+            'status' => 'on_time',
+            'verification_status' => 'submitted',
+            'photo_media_id' => $media->id,
+        ]);
+
+        // Empty notes
+        $this->actingAs($admin)
+            ->post("/admin/presensi/{$attendance->id}/reject", [
+                'notes' => '',
+            ])
+            ->assertSessionHasErrors('notes');
+
+        // Too short (< 5 chars)
+        $this->actingAs($admin)
+            ->post("/admin/presensi/{$attendance->id}/reject", [
+                'notes' => 'Foto',
+            ])
+            ->assertSessionHasErrors('notes');
+    }
+
+    public function test_intern_can_resubmit_photo_on_same_day_after_rejection(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $intern = User::factory()->create(['role' => 'intern', 'is_active' => true]);
+
+        // 1. Initial check in at 08:02 (on_time)
+        Carbon::setTestNow(Carbon::parse('2026-11-18 08:02:00', 'Asia/Jakarta'));
+        $firstPhoto = UploadedFile::fake()->image('selfie_first.jpg');
+
+        $this->actingAs($intern)->post('/intern/presensi', [
+            'photo' => $firstPhoto,
+        ])->assertSessionHas('success');
+
+        $attendance = Attendance::where('intern_user_id', $intern->id)->first();
+        $this->assertNotNull($attendance);
+        $this->assertEquals('on_time', $attendance->status);
+        $this->assertEquals('08:02:00', $attendance->checked_in_at->format('H:i:s'));
+        $firstMediaId = $attendance->photo_media_id;
+        $firstMedia = MediaFile::find($firstMediaId);
+
+        // 2. Admin rejects at 08:30
+        Carbon::setTestNow(Carbon::parse('2026-11-18 08:30:00', 'Asia/Jakarta'));
+        $this->actingAs($admin)->post("/admin/presensi/{$attendance->id}/reject", [
+            'notes' => 'Foto buram, harap foto ulang di ruangan terang.',
+        ])->assertSessionHas('success');
+
+        $attendance->refresh();
+        $this->assertEquals('rejected', $attendance->verification_status);
+
+        // 3. Intern sees camera re-opened on /intern/presensi
+        $getRes = $this->actingAs($intern)->get('/intern/presensi');
+        $getRes->assertOk();
+        $getRes->assertSee('Foto Presensi Masuk Hari Ini Ditolak oleh HR');
+        $getRes->assertSee('Foto buram, harap foto ulang di ruangan terang.');
+        $getRes->assertSee('Ambil Foto Selfie Ulang');
+
+        // 4. Intern resubmits at 09:15 on same day
+        Carbon::setTestNow(Carbon::parse('2026-11-18 09:15:00', 'Asia/Jakarta'));
+        $secondPhoto = UploadedFile::fake()->image('selfie_second.jpg');
+
+        $resubmitRes = $this->actingAs($intern)->post('/intern/presensi', [
+            'photo' => $secondPhoto,
+            'notes' => 'Foto ulang dengan pencahayaan jelas',
+        ]);
+        $resubmitRes->assertSessionHas('success');
+
+        // 5. Verification of business rules:
+        // - Unique constraint preserved: only 1 attendance record exists
+        $this->assertEquals(1, Attendance::where('intern_user_id', $intern->id)->whereDate('attendance_date', '2026-11-18')->count());
+
+        $attendance->refresh();
+        // - Original check-in time and status preserved!
+        $this->assertEquals('08:02:00', $attendance->checked_in_at->format('H:i:s'));
+        $this->assertEquals('on_time', $attendance->status);
+        // - Status is submitted again
+        $this->assertEquals('submitted', $attendance->verification_status);
+        $this->assertFalse($attendance->isRejected());
+        // - New photo media assigned
+        $this->assertNotEquals($firstMediaId, $attendance->photo_media_id);
+        // - Old photo record & file NEVER deleted
+        $this->assertDatabaseHas('media_files', ['id' => $firstMediaId]);
+        Storage::disk('local_private')->assertExists($firstMedia->file_path);
+
+        // - Audit log records attendance_resubmitted
+        $this->assertDatabaseHas('audit_logs', [
+            'actor_user_id' => $intern->id,
+            'action' => 'attendance_resubmitted',
+            'entity_type' => 'attendance',
+            'entity_id' => $attendance->id,
+        ]);
+
+        $resubmitLog = AuditLog::where('action', 'attendance_resubmitted')->first();
+        $this->assertNotNull($resubmitLog);
+        $this->assertEquals($firstMediaId, $resubmitLog->old_values['photo_media_id']);
+        $this->assertEquals($attendance->photo_media_id, $resubmitLog->new_values['photo_media_id']);
+    }
+
+    public function test_past_rejection_does_not_open_today_camera(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $intern = User::factory()->create(['role' => 'intern', 'is_active' => true]);
+
+        $media = MediaFile::create([
+            'disk' => 'local_private',
+            'file_path' => 'presensi/past_photo.jpg',
+            'file_name' => 'past_photo.jpg',
+            'original_name' => 'past_photo.jpg',
+            'mime_type' => 'image/jpeg',
+            'file_size_bytes' => 1024,
+            'category' => 'attendance_photo',
+            'owner_user_id' => $intern->id,
+        ]);
+
+        // Kemarin (2026-11-17) ditolak oleh HR
+        $yesterdayAttendance = Attendance::create([
+            'intern_user_id' => $intern->id,
+            'attendance_date' => '2026-11-17',
+            'checked_in_at' => '2026-11-17 08:00:00',
+            'status' => 'on_time',
+            'verification_status' => 'rejected',
+            'reviewed_by' => $admin->id,
+            'notes' => 'Kemarin ditolak HR',
+            'photo_media_id' => $media->id,
+        ]);
+
+        // Hari ini (2026-11-18) sudah presensi masuk (submitted)
+        Carbon::setTestNow(Carbon::parse('2026-11-18 08:00:00', 'Asia/Jakarta'));
+        $todayMedia = MediaFile::create([
+            'disk' => 'local_private',
+            'file_path' => 'presensi/today_photo.jpg',
+            'file_name' => 'today_photo.jpg',
+            'original_name' => 'today_photo.jpg',
+            'mime_type' => 'image/jpeg',
+            'file_size_bytes' => 1024,
+            'category' => 'attendance_photo',
+            'owner_user_id' => $intern->id,
+        ]);
+        $todayAttendance = Attendance::create([
+            'intern_user_id' => $intern->id,
+            'attendance_date' => '2026-11-18',
+            'checked_in_at' => '2026-11-18 08:00:00',
+            'status' => 'on_time',
+            'verification_status' => 'submitted',
+            'photo_media_id' => $todayMedia->id,
+        ]);
+
+        // Saat intern membuka presensi hari ini, kamera TIDAK terbuka (Kondisi 1 aktif: sudah check-in)
+        $response = $this->actingAs($intern)->get('/intern/presensi');
+        $response->assertOk();
+        $response->assertSee('Presensi Masuk Berhasil Tercatat');
+        $response->assertDontSee('Foto Presensi Masuk Hari Ini Ditolak oleh HR');
+        // Riwayat menampilkan penolakan kemarin
+        $response->assertSee('Kemarin ditolak HR');
+    }
+
+    public function test_recap_service_excludes_rejected_attendance_from_valid_present(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $intern1 = User::factory()->create(['role' => 'intern', 'is_active' => true]);
+        $intern2 = User::factory()->create(['role' => 'intern', 'is_active' => true]);
+
+        $media1 = MediaFile::create([
+            'disk' => 'local_private',
+            'file_path' => 'presensi/photo1.jpg',
+            'file_name' => 'photo1.jpg',
+            'original_name' => 'photo1.jpg',
+            'mime_type' => 'image/jpeg',
+            'file_size_bytes' => 1024,
+            'category' => 'attendance_photo',
+            'owner_user_id' => $intern1->id,
+        ]);
+        $media2 = MediaFile::create([
+            'disk' => 'local_private',
+            'file_path' => 'presensi/photo2.jpg',
+            'file_name' => 'photo2.jpg',
+            'original_name' => 'photo2.jpg',
+            'mime_type' => 'image/jpeg',
+            'file_size_bytes' => 1024,
+            'category' => 'attendance_photo',
+            'owner_user_id' => $intern2->id,
+        ]);
+
+        // intern 1: valid submitted on_time
+        Attendance::create([
+            'intern_user_id' => $intern1->id,
+            'attendance_date' => '2026-11-18',
+            'checked_in_at' => '2026-11-18 08:00:00',
+            'status' => 'on_time',
+            'verification_status' => 'submitted',
+            'photo_media_id' => $media1->id,
+        ]);
+
+        // intern 2: rejected
+        Attendance::create([
+            'intern_user_id' => $intern2->id,
+            'attendance_date' => '2026-11-18',
+            'checked_in_at' => '2026-11-18 08:00:00',
+            'status' => 'on_time',
+            'verification_status' => 'rejected',
+            'reviewed_by' => $admin->id,
+            'notes' => 'Selfie buram',
+            'photo_media_id' => $media2->id,
+        ]);
+
+        $recapService = app(\App\Services\AttendanceRecapService::class);
+        $daily = $recapService->getDailyOverallRecap('2026-11-18');
+
+        // Only intern 1 counted as present
+        $this->assertEquals(1, $daily['total_present']);
+        $this->assertEquals(1, $daily['on_time_count']);
+        $this->assertEquals(1, $daily['rejected_count']);
+    }
 }

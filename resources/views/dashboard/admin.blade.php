@@ -174,7 +174,12 @@
                                     @endif
                                 </td>
                                 <td class="py-4 px-5">
-                                    @if($att->isOnTime())
+                                    @if($att->isRejected())
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-rose-50 text-rose-700 border border-rose-200">
+                                            <span class="w-1 h-1 rounded-full bg-rose-600"></span>
+                                            Ditolak HR
+                                        </span>
+                                    @elseif($att->isOnTime())
                                         <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-teal-50 text-teal-600 border border-teal-200">
                                             <span class="w-1 h-1 rounded-full bg-teal-500"></span>
                                             Tepat Waktu
