@@ -145,6 +145,7 @@
                 $isPicLeaveActive = request()->routeIs('pic.leave.*');
                 $isInternAttendanceActive = request()->routeIs('intern.attendance.*');
                 $isInternLeaveActive = request()->routeIs('intern.leave.*');
+                $isReportsActive = request()->routeIs('admin.reports.*');
             @endphp
             <nav class="mt-6 w-full space-y-1">
                 <!-- Menu Dashboard (Semua Role) -->
@@ -402,6 +403,35 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/>
                                 </svg>
                                 <span>Profil Peserta</span>
+                            </a>
+                        @endif
+                    </div>
+
+                    <!-- Menu 6: Laporan & Rekapitulasi (Admin/HR Only) -->
+                    <div class="relative w-full pl-5 {{ $isReportsActive ? 'z-10' : '' }}">
+                        @if($isReportsActive)
+                            <a href="{{ route('admin.reports.index') }}" class="relative flex items-center gap-3 py-3 pl-4 pr-6 bg-[#eef4f8] text-[#015987] font-bold text-xs rounded-l-full w-full shadow-none block">
+                                <span class="hidden lg:block absolute -top-5 right-0 w-5 h-5 pointer-events-none">
+                                    <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">
+                                        <path d="M20 0 L20 20 L0 20 A20 20 0 0 0 20 0 Z" fill="#eef4f8"/>
+                                    </svg>
+                                </span>
+                                <svg class="w-4 h-4 text-[#015987] flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                </svg>
+                                <span>Laporan &amp; Rekap</span>
+                                <span class="hidden lg:block absolute -bottom-5 right-0 w-5 h-5 pointer-events-none">
+                                    <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">
+                                        <path d="M20 20 L20 0 L0 0 A20 20 0 0 1 20 20 Z" fill="#eef4f8"/>
+                                    </svg>
+                                </span>
+                            </a>
+                        @else
+                            <a href="{{ route('admin.reports.index') }}" class="flex items-center gap-3 py-3 pl-4 pr-6 text-white/80 hover:text-white hover:bg-white/10 font-medium text-xs rounded-l-full w-full transition">
+                                <svg class="w-4 h-4 text-white/80 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                </svg>
+                                <span>Laporan &amp; Rekap</span>
                             </a>
                         @endif
                     </div>

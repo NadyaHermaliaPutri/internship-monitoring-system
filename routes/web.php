@@ -10,6 +10,7 @@ use App\Http\Controllers\InternProfileController;
 use App\Http\Controllers\LeaveRequestController;
 use App\Http\Controllers\LogbookController;
 use App\Http\Controllers\PrivateMediaController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
@@ -37,6 +38,13 @@ Route::middleware('auth')->group(function () {
         // Early Warning System (EWS) - Modul 4
         Route::get('/ews', [EwsController::class, 'adminIndex'])->name('ews.index');
         Route::put('/ews/settings', [EwsController::class, 'adminUpdateSettings'])->name('ews.settings.update');
+
+        // Laporan & Rekapitulasi (PDF / Excel) - Modul 4
+        Route::prefix('laporan')->name('reports.')->group(function () {
+            Route::get('/', [ReportController::class, 'index'])->name('index');
+            Route::get('/export-pdf', [ReportController::class, 'exportPdf'])->name('export-pdf');
+            Route::get('/export-excel', [ReportController::class, 'exportExcel'])->name('export-excel');
+        });
 
         // Manajemen Akun Pengguna (CRUD)
         Route::resource('users', UserController::class)->except(['show', 'destroy']);
