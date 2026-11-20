@@ -58,4 +58,14 @@ class User extends Authenticatable
     {
         return $this->role === 'intern';
     }
+
+    public function internProfile(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(InternProfile::class);
+    }
+
+    public function picProfile(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(PicProfile::class);
+    }
 }
