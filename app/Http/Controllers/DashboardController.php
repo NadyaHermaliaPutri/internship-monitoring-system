@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use App\Services\AttendanceRecapService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
@@ -19,7 +20,12 @@ class DashboardController extends Controller
     {
         $adminSummary = $this->recapService->getAdminDailyDashboard();
 
-        return view('dashboard.admin', compact('adminSummary'));
+        $stats = [
+            'total_active'   => User::where('is_active', true)->count(),
+            'inactive_users' => User::where('is_active', false)->count(),
+        ];
+
+        return view('dashboard.admin', compact('adminSummary', 'stats'));
     }
 
     /**

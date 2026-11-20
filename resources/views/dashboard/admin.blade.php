@@ -69,7 +69,7 @@
             </div>
             <div class="mt-5">
                 <div class="flex items-baseline gap-1.5">
-                    <span class="text-2xl sm:text-3xl font-extrabold text-slate-900">{{ $stats['total_active'] }}</span>
+                    <span class="text-2xl sm:text-3xl font-extrabold text-slate-900">{{ $stats['total_active'] ?? 0 }}</span>
                     <span class="text-xs text-slate-500 font-medium">Akun</span>
                 </div>
                 <p class="text-[11px] font-semibold text-indigo-600 mt-1.5 flex items-center gap-1">
@@ -91,7 +91,7 @@
             </div>
             <div class="mt-5">
                 <div class="flex items-baseline gap-1.5">
-                    <span class="text-2xl sm:text-3xl font-extrabold text-slate-900">{{ $stats['inactive_users'] }}</span>
+                    <span class="text-2xl sm:text-3xl font-extrabold text-slate-900">{{ $stats['inactive_users'] ?? 0 }}</span>
                     <span class="text-xs text-slate-500 font-medium">Alumni</span>
                 </div>
                 <p class="text-[11px] font-semibold text-slate-400 mt-1.5 flex items-center gap-1">
