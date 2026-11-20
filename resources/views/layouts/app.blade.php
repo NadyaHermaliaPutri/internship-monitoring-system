@@ -192,7 +192,6 @@
                         @endif
                     </a>
                 </div>
-
                 <!-- Menu Tugas Magang (Semua Role) -->
                 <div class="relative w-full pl-5 {{ $isTaskActive ? 'z-10' : '' }}">
                     <a href="{{ route($rolePrefix . '.tasks.index') }}" class="relative flex items-center gap-3 py-3 pl-4 pr-6 {{ $isTaskActive ? 'bg-[#eef4f8] text-[#015987] font-bold' : 'text-sky-100 hover:bg-white/10 font-medium' }} text-xs rounded-l-full w-full shadow-none transition">
@@ -220,8 +219,6 @@
                     </a>
                 </div>
 
-                {{-- ============================================================== --}}
-                {{-- MENU KHUSUS ADMINISTRATOR / HR --}}
                 {{-- ============================================================== --}}
                 {{-- MENU KHUSUS ADMINISTRATOR / HR --}}
                 {{-- ============================================================== --}}
@@ -527,22 +524,22 @@
     <div class="flex-1 flex flex-col min-w-0 min-h-screen bg-[#eef4f8]">
         
         <!-- Top Header Navbar (Menyatu dengan background #eef4f8) -->
-        <header class="px-8 pt-8 pb-5 flex flex-col md:flex-row md:items-center justify-between gap-4 sticky top-0 z-20 bg-[#eef4f8]/95 backdrop-blur-xs">
+        <header class="px-8 pt-7 pb-5 flex flex-col md:flex-row md:items-center justify-between gap-4 sticky top-0 z-20 bg-[#eef4f8] border-b border-slate-200/60 shadow-2xs flex-shrink-0">
             <!-- Judul Halaman -->
-            <div>
+            <div class="min-w-0 flex-1">
                 <div class="flex flex-wrap items-center gap-2.5">
                     <h1 class="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
                         @yield('page-title', 'Dashboard Monitoring Magang')
                     </h1>
                     @yield('page-badge')
                 </div>
-                <p class="text-xs text-[#015987] font-semibold mt-1.5">
+                <p class="text-xs text-[#015987] font-semibold mt-1.5 leading-relaxed">
                     @yield('page-subtitle', 'PT WAN Teknologi Internasional')
                 </p>
             </div>
 
             <!-- Sisi Kanan: Widget Tanggal, Search Bar, & Tombol Aksi Sesuai Mockup -->
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-3 flex-shrink-0">
                 @if(View::hasSection('custom-header-right'))
                     @yield('custom-header-right')
                 @else

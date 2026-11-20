@@ -149,7 +149,7 @@ class LeaveRequestTest extends TestCase
             'review_notes' => 'Surat dokter valid terkonfirmasi.',
         ]);
 
-        $responseApprove->assertSessionHas('success');
+        $responseApprove->assertSessionHas('success', 'Pengajuan izin/sakit berhasil disetujui.');
 
         $leave1->refresh();
         $this->assertEquals('approved', $leave1->status);
@@ -185,7 +185,7 @@ class LeaveRequestTest extends TestCase
             'decision' => 'rejected',
             'review_notes' => 'Dokumen lampiran bukan surat resmi, harap perbaiki.',
         ]);
-        $responseRejectSuccess->assertSessionHas('success');
+        $responseRejectSuccess->assertSessionHas('success', 'Pengajuan izin/sakit berhasil ditolak.');
 
         $leave2->refresh();
         $this->assertEquals('rejected', $leave2->status);
