@@ -2,11 +2,16 @@
 
 namespace Tests\Feature;
 
+use App\Enums\LogbookSource;
+use App\Enums\LogbookStatus;
+use App\Enums\TaskStatus;
 use App\Models\Attendance;
 use App\Models\CalendarException;
 use App\Models\LeaveRequest;
+use App\Models\Logbook;
 use App\Models\MediaFile;
 use App\Models\PicAssignment;
+use App\Models\Task;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -66,6 +71,25 @@ class DashboardTest extends TestCase
         $this->actingAs($admin)->get('/admin/dashboard')->assertOk();
     }
 
+    public function test_inactive_accounts_are_rejected_and_redirected_to_login(): void
+    {
+        $inactiveAdmin = User::factory()->create(['role' => 'admin', 'is_active' => false]);
+        $inactivePic = User::factory()->create(['role' => 'pic', 'is_active' => false]);
+        $inactiveIntern = User::factory()->create(['role' => 'intern', 'is_active' => false]);
+
+        $this->actingAs($inactiveAdmin)->get('/admin/dashboard')
+            ->assertRedirect('/login')
+            ->assertSessionHasErrors('email');
+
+        $this->actingAs($inactivePic)->get('/pic/dashboard')
+            ->assertRedirect('/login')
+            ->assertSessionHasErrors('email');
+
+        $this->actingAs($inactiveIntern)->get('/intern/dashboard')
+            ->assertRedirect('/login')
+            ->assertSessionHasErrors('email');
+    }
+
     public function test_intern_dashboard_reflects_not_checked_in_on_working_day(): void
     {
         $intern = User::factory()->create(['role' => 'intern', 'is_active' => true]);
@@ -92,8 +116,6 @@ class DashboardTest extends TestCase
             'attendance_date' => '2026-11-18',
             'checked_in_at' => '2026-11-18 08:00:00',
             'status' => 'on_time',
-            'device_type' => 'desktop',
-            'browser' => 'Chrome',
         ]);
 
         $response = $this->actingAs($intern)->get('/intern/dashboard');
@@ -136,7 +158,6 @@ class DashboardTest extends TestCase
     {
         $intern = User::factory()->create(['role' => 'intern', 'is_active' => true]);
 
-        // Override jadi libur khusus
         CalendarException::create([
             'exception_date' => '2026-11-18',
             'type' => 'holiday',
@@ -190,8 +211,6 @@ class DashboardTest extends TestCase
             'attendance_date' => '2026-11-18',
             'checked_in_at' => '2026-11-18 08:00:00',
             'status' => 'on_time',
-            'device_type' => 'desktop',
-            'browser' => 'Chrome',
         ]);
 
         LeaveRequest::create([
@@ -209,6 +228,75 @@ class DashboardTest extends TestCase
         $response->assertSee('Tepat Waktu');
         $response->assertSee('Urusan keluarga mendesak');
         $response->assertSee('1 Menunggu');
+    }
+
+    public function test_admin_dashboard_shows_global_data_and_task_metrics(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $pic = User::factory()->create(['role' => 'pic', 'is_active' => true]);
+        $intern = User::factory()->create(['role' => 'intern', 'name' => 'Global Intern', 'is_active' => true]);
+
+        Carbon::setTestNow(Carbon::parse('2026-11-18 09:00:00', 'Asia/Jakarta'));
+
+        // Buat tugas yang sedang menunggu review
+        Task::create([
+            'pic_user_id' => $pic->id,
+            'intern_user_id' => $intern->id,
+            'title' => 'Global Task Review Testing',
+            'description' => 'Deskripsi testing tugas',
+            'assigned_at' => now(),
+            'deadline_at' => now()->addDays(2),
+            'status' => TaskStatus::Submitted,
+        ]);
+
+        // Buat logbook manual terbaru
+        Logbook::create([
+            'intern_user_id' => $intern->id,
+            'log_date' => '2026-11-18',
+            'title' => 'Logbook Harian Mandiri Global',
+            'activity_description' => 'Mengerjakan integrasi modul dashboard',
+            'source' => LogbookSource::Manual,
+            'status' => LogbookStatus::Pending,
+        ]);
+
+        $response = $this->actingAs($admin)->get('/admin/dashboard');
+        $response->assertOk();
+        $response->assertSee('Logbook Harian Mandiri Global');
+        $response->assertSee('Tugas Menunggu Review');
+    }
+
+    public function test_admin_dashboard_search_filter_functions(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $internA = User::factory()->create(['role' => 'intern', 'name' => 'Alfa Romeo', 'email' => 'alfa@example.com', 'is_active' => true]);
+        $internB = User::factory()->create(['role' => 'intern', 'name' => 'Bravo Delta', 'email' => 'bravo@example.com', 'is_active' => true]);
+
+        $mediaA = $this->createMedia($internA);
+        $mediaB = $this->createMedia($internB);
+
+        Carbon::setTestNow(Carbon::parse('2026-11-18 08:00:00', 'Asia/Jakarta'));
+
+        Attendance::create([
+            'intern_user_id' => $internA->id,
+            'photo_media_id' => $mediaA->id,
+            'attendance_date' => '2026-11-18',
+            'checked_in_at' => '2026-11-18 08:00:00',
+            'status' => 'on_time',
+        ]);
+
+        Attendance::create([
+            'intern_user_id' => $internB->id,
+            'photo_media_id' => $mediaB->id,
+            'attendance_date' => '2026-11-18',
+            'checked_in_at' => '2026-11-18 08:04:00',
+            'status' => 'on_time',
+        ]);
+
+        // Cari dengan kata kunci "Alfa"
+        $response = $this->actingAs($admin)->get('/admin/dashboard?search=Alfa');
+        $response->assertOk();
+        $response->assertSee('Alfa Romeo');
+        $response->assertDontSee('Bravo Delta');
     }
 
     public function test_pic_dashboard_shows_only_assigned_interns(): void
@@ -236,8 +324,6 @@ class DashboardTest extends TestCase
             'attendance_date' => '2026-11-18',
             'checked_in_at' => '2026-11-18 07:55:00',
             'status' => 'on_time',
-            'device_type' => 'mobile',
-            'browser' => 'Safari',
         ]);
 
         $response = $this->actingAs($pic)->get('/pic/dashboard');
@@ -245,5 +331,60 @@ class DashboardTest extends TestCase
         $response->assertSee('Presensi &amp; Izin Anak Bimbingan Hari Ini', false);
         $response->assertSee('Bimbingan PIC');
         $response->assertDontSee('Intern Lain');
+    }
+
+    public function test_pic_dashboard_strictly_scopes_tasks_and_does_not_leak_other_pic_tasks(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $pic1 = User::factory()->create(['role' => 'pic', 'name' => 'PIC Utama', 'is_active' => true]);
+        $pic2 = User::factory()->create(['role' => 'pic', 'name' => 'PIC Sebelah', 'is_active' => true]);
+
+        $intern1 = User::factory()->create(['role' => 'intern', 'name' => 'Peserta Satu', 'is_active' => true]);
+        $intern2 = User::factory()->create(['role' => 'intern', 'name' => 'Peserta Dua', 'is_active' => true]);
+
+        PicAssignment::create([
+            'pic_user_id' => $pic1->id,
+            'intern_user_id' => $intern1->id,
+            'assigned_by' => $admin->id,
+            'start_date' => '2026-11-01',
+            'end_date' => null,
+        ]);
+
+        PicAssignment::create([
+            'pic_user_id' => $pic2->id,
+            'intern_user_id' => $intern2->id,
+            'assigned_by' => $admin->id,
+            'start_date' => '2026-11-01',
+            'end_date' => null,
+        ]);
+
+        Carbon::setTestNow(Carbon::parse('2026-11-18 10:00:00', 'Asia/Jakarta'));
+
+        // Tugas PIC 1
+        Task::create([
+            'pic_user_id' => $pic1->id,
+            'intern_user_id' => $intern1->id,
+            'title' => 'Tugas Spesifik PIC Utama',
+            'description' => 'Deskripsi tugas milik PIC 1',
+            'assigned_at' => now(),
+            'deadline_at' => now()->addDays(2),
+            'status' => TaskStatus::Submitted,
+        ]);
+
+        // Tugas PIC 2 (tidak boleh bocor ke PIC 1)
+        Task::create([
+            'pic_user_id' => $pic2->id,
+            'intern_user_id' => $intern2->id,
+            'title' => 'Tugas Rahasia PIC Sebelah',
+            'description' => 'Deskripsi tugas milik PIC 2',
+            'assigned_at' => now(),
+            'deadline_at' => now()->addDays(2),
+            'status' => TaskStatus::Submitted,
+        ]);
+
+        $response = $this->actingAs($pic1)->get('/pic/dashboard');
+        $response->assertOk();
+        $response->assertSee('Tugas Spesifik PIC Utama');
+        $response->assertDontSee('Tugas Rahasia PIC Sebelah');
     }
 }

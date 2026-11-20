@@ -2,14 +2,15 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
 use App\Services\AttendanceRecapService;
+use App\Services\DashboardService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
     public function __construct(
+        protected DashboardService $dashboardService,
         protected AttendanceRecapService $recapService
     ) {}
 
@@ -18,14 +19,24 @@ class DashboardController extends Controller
      */
     public function admin(Request $request): View
     {
-        $adminSummary = $this->recapService->getAdminDailyDashboard();
+        $search = $request->query('search');
+        $data = $this->dashboardService->getAdminDashboardData($search);
 
-        $stats = [
-            'total_active'   => User::where('is_active', true)->count(),
-            'inactive_users' => User::where('is_active', false)->count(),
-        ];
+        $adminSummary = $data['adminSummary'];
+        $stats = $data['stats'];
+        $taskSummary = $data['taskSummary'];
+        $latestLogbooks = $data['latestLogbooks'];
+        $ewsSummary = $data['ewsSummary'];
 
-        return view('dashboard.admin', compact('adminSummary', 'stats'));
+        return view('dashboard.admin', compact(
+            'data',
+            'adminSummary',
+            'stats',
+            'taskSummary',
+            'latestLogbooks',
+            'ewsSummary',
+            'search'
+        ));
     }
 
     /**
@@ -33,9 +44,26 @@ class DashboardController extends Controller
      */
     public function pic(Request $request): View
     {
-        $mentoringSummary = $this->recapService->getPicDailyDashboard($request->user());
+        $search = $request->query('search');
+        $data = $this->dashboardService->getPicDashboardData($request->user(), $search);
 
-        return view('dashboard.pic', compact('mentoringSummary'));
+        $mentoringSummary = $data['mentoringSummary'];
+        $taskStats = $data['taskStats'];
+        $awaitingReviewTasks = $data['awaitingReviewTasks'];
+        $internsWithTasks = $data['internsWithTasks'];
+        $ewsSummary = $data['ewsSummary'];
+        $upcomingDeadlines = $data['upcomingDeadlines'];
+
+        return view('dashboard.pic', compact(
+            'data',
+            'mentoringSummary',
+            'taskStats',
+            'awaitingReviewTasks',
+            'internsWithTasks',
+            'ewsSummary',
+            'upcomingDeadlines',
+            'search'
+        ));
     }
 
     /**
