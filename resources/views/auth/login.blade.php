@@ -189,7 +189,6 @@
         .form-options {
             display: flex;
             align-items: center;
-            justify-content: space-between;
             margin: 0.25rem 0 1.65rem 0;
             font-size: 0.8rem;
         }
@@ -208,18 +207,6 @@
             width: 15px;
             height: 15px;
             cursor: pointer;
-        }
-
-        .forgot-link {
-            color: #015987;
-            font-weight: 600;
-            text-decoration: none;
-            transition: color 0.15s ease;
-        }
-
-        .forgot-link:hover {
-            color: #014366;
-            text-decoration: underline;
         }
 
         .btn-submit {
@@ -243,6 +230,38 @@
 
         .btn-submit:active {
             transform: scale(0.99);
+        }
+
+        /* ================= KOTAK BANTUAN ADMIN ================= */
+        .help-notice {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.6rem;
+            margin-top: 1.25rem;
+            padding: 0.75rem 1rem;
+            background-color: #f0f7fc;
+            border: 1px solid #c8dff0;
+            border-radius: 8px;
+        }
+
+        .help-notice-icon {
+            flex-shrink: 0;
+            width: 1.1rem;
+            height: 1.1rem;
+            margin-top: 0.05rem;
+            color: #015987;
+            opacity: 0.75;
+        }
+
+        .help-notice-text {
+            font-size: 0.775rem;
+            color: #4a6a82;
+            line-height: 1.5;
+        }
+
+        .help-notice-text strong {
+            color: #015987;
+            font-weight: 600;
         }
 
         /* ================= RESPONSIF LAYAR KECIL ================= */
@@ -367,16 +386,12 @@
                     </div>
                 </div>
 
-                <!-- Opsi Ingat Saya & Lupa Kata Sandi -->
+                <!-- Opsi Ingat Saya -->
                 <div class="form-options">
                     <label class="remember-me">
                         <input type="checkbox" name="remember" id="remember" value="1" {{ old('remember') ? 'checked' : '' }}>
                         <span>Ingat Saya</span>
                     </label>
-
-                    <a href="javascript:void(0)" onclick="alert('Silakan hubungi Administrator atau PIC untuk mereset kata sandi Anda.')" class="forgot-link">
-                        Lupa Kata Sandi?
-                    </a>
                 </div>
 
                 <!-- Tombol Submit -->
@@ -384,6 +399,17 @@
                     Masuk
                 </button>
             </form>
+
+            <!-- Kotak Notifikasi Bantuan Admin/HR -->
+            <div class="help-notice">
+                <svg class="help-notice-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <p class="help-notice-text">
+                    Lupa password atau belum punya akun?<br>
+                    Hubungi <strong>Admin / HR PT WAN</strong> untuk mendapatkan akses.
+                </p>
+            </div>
         </div>
     </div>
 

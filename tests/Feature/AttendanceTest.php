@@ -7,6 +7,7 @@ use App\Models\AuditLog;
 use App\Models\CalendarException;
 use App\Models\LeaveRequest;
 use App\Models\MediaFile;
+use App\Models\PicAssignment;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -233,7 +234,7 @@ class AttendanceTest extends TestCase
             ]);
 
         $response->assertRedirect('/admin/presensi');
-        $response->assertSessionHas('success');
+        $response->assertSessionHas('success', 'Status presensi peserta berhasil diperbarui.');
 
         $attendance->refresh();
         $this->assertEquals('on_time', $attendance->status);
@@ -315,6 +316,8 @@ class AttendanceTest extends TestCase
             'photo_media_id' => $media->id,
         ]);
 
+        Carbon::setTestNow(Carbon::parse('2026-11-18 09:00:00', 'Asia/Jakarta'));
+
         $response = $this->actingAs($admin)
             ->from('/admin/presensi')
             ->post("/admin/presensi/{$attendance->id}/reject", [
@@ -322,7 +325,7 @@ class AttendanceTest extends TestCase
             ]);
 
         $response->assertRedirect('/admin/presensi');
-        $response->assertSessionHas('success');
+        $response->assertSessionHas('success', 'Presensi peserta berhasil ditolak. Akses kamera peserta untuk hari ini telah dibuka kembali untuk foto ulang.');
 
         $attendance->refresh();
         $this->assertEquals('rejected', $attendance->verification_status);
@@ -431,7 +434,7 @@ class AttendanceTest extends TestCase
 
         $this->actingAs($intern)->post('/intern/presensi', [
             'photo' => $firstPhoto,
-        ])->assertSessionHas('success');
+        ])->assertSessionHas('success', 'Presensi masuk berhasil dicatat pada pukul 08:02:00 WIB dengan status Tepat Waktu.');
 
         $attendance = Attendance::where('intern_user_id', $intern->id)->first();
         $this->assertNotNull($attendance);
@@ -444,7 +447,7 @@ class AttendanceTest extends TestCase
         Carbon::setTestNow(Carbon::parse('2026-11-18 08:30:00', 'Asia/Jakarta'));
         $this->actingAs($admin)->post("/admin/presensi/{$attendance->id}/reject", [
             'notes' => 'Foto buram, harap foto ulang di ruangan terang.',
-        ])->assertSessionHas('success');
+        ])->assertSessionHas('success', 'Presensi peserta berhasil ditolak. Akses kamera peserta untuk hari ini telah dibuka kembali untuk foto ulang.');
 
         $attendance->refresh();
         $this->assertEquals('rejected', $attendance->verification_status);
@@ -464,7 +467,7 @@ class AttendanceTest extends TestCase
             'photo' => $secondPhoto,
             'notes' => 'Foto ulang dengan pencahayaan jelas',
         ]);
-        $resubmitRes->assertSessionHas('success');
+        $resubmitRes->assertSessionHas('success', 'Foto presensi ulang berhasil dikirim.');
 
         // 5. Verification of business rules:
         // - Unique constraint preserved: only 1 attendance record exists
@@ -611,5 +614,236 @@ class AttendanceTest extends TestCase
         $this->assertEquals(1, $daily['total_present']);
         $this->assertEquals(1, $daily['on_time_count']);
         $this->assertEquals(1, $daily['rejected_count']);
+    }
+
+    public function test_admin_can_view_attendance_index_with_populated_data(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $intern1 = User::factory()->create(['name' => 'Peserta Satu', 'role' => 'intern', 'is_active' => true]);
+        $intern2 = User::factory()->create(['name' => 'Peserta Dua', 'role' => 'intern', 'is_active' => true]);
+
+        $media1 = MediaFile::create([
+            'disk' => 'local_private',
+            'file_path' => 'presensi/photo1.jpg',
+            'file_name' => 'photo1.jpg',
+            'original_name' => 'photo1.jpg',
+            'mime_type' => 'image/jpeg',
+            'file_size_bytes' => 1024,
+            'category' => 'attendance_photo',
+            'owner_user_id' => $intern1->id,
+        ]);
+        $media2 = MediaFile::create([
+            'disk' => 'local_private',
+            'file_path' => 'presensi/photo2.jpg',
+            'file_name' => 'photo2.jpg',
+            'original_name' => 'photo2.jpg',
+            'mime_type' => 'image/jpeg',
+            'file_size_bytes' => 1024,
+            'category' => 'attendance_photo',
+            'owner_user_id' => $intern2->id,
+        ]);
+
+        Carbon::setTestNow(Carbon::parse('2026-11-18 09:00:00', 'Asia/Jakarta'));
+
+        // Presensi 1: on_time dan sudah direview
+        Attendance::create([
+            'intern_user_id' => $intern1->id,
+            'attendance_date' => '2026-11-18',
+            'checked_in_at' => '2026-11-18 08:00:00',
+            'status' => 'on_time',
+            'verification_status' => 'submitted',
+            'reviewed_by' => $admin->id,
+            'notes' => 'Catatan review admin',
+            'photo_media_id' => $media1->id,
+        ]);
+
+        // Presensi 2: rejected
+        Attendance::create([
+            'intern_user_id' => $intern2->id,
+            'attendance_date' => '2026-11-18',
+            'checked_in_at' => '2026-11-18 08:15:00',
+            'status' => 'late',
+            'verification_status' => 'rejected',
+            'reviewed_by' => $admin->id,
+            'notes' => 'Wajah tidak tampak jelas',
+            'photo_media_id' => $media2->id,
+        ]);
+
+        $response = $this->actingAs($admin)->get('/admin/presensi?date=2026-11-18');
+
+        $response->assertOk();
+        $response->assertSee('Peserta Satu');
+        $response->assertSee('Peserta Dua');
+        $response->assertSee('Tepat Waktu');
+        $response->assertSee('Ditolak HR');
+        $response->assertSee('Foto');
+        $response->assertSee('Koreksi');
+        $response->assertSee('Perlu Foto Ulang');
+    }
+
+    public function test_pic_can_view_assigned_interns_attendance_with_data(): void
+    {
+        $pic = User::factory()->create(['role' => 'pic', 'is_active' => true]);
+        $assignedIntern = User::factory()->create(['name' => 'Peserta Binaan A', 'role' => 'intern', 'is_active' => true]);
+        $unassignedIntern = User::factory()->create(['name' => 'Peserta Lain B', 'role' => 'intern', 'is_active' => true]);
+
+        PicAssignment::create([
+            'pic_user_id' => $pic->id,
+            'intern_user_id' => $assignedIntern->id,
+            'start_date' => '2026-11-01',
+            'end_date' => null,
+            'assigned_by' => $pic->id,
+        ]);
+
+        $media = MediaFile::create([
+            'disk' => 'local_private',
+            'file_path' => 'presensi/binaan.jpg',
+            'file_name' => 'binaan.jpg',
+            'original_name' => 'binaan.jpg',
+            'mime_type' => 'image/jpeg',
+            'file_size_bytes' => 1024,
+            'category' => 'attendance_photo',
+            'owner_user_id' => $assignedIntern->id,
+        ]);
+
+        Carbon::setTestNow(Carbon::parse('2026-11-18 09:00:00', 'Asia/Jakarta'));
+
+        Attendance::create([
+            'intern_user_id' => $assignedIntern->id,
+            'attendance_date' => '2026-11-18',
+            'checked_in_at' => '2026-11-18 08:04:00',
+            'status' => 'on_time',
+            'verification_status' => 'submitted',
+            'notes' => 'Presensi hadir binaan',
+            'photo_media_id' => $media->id,
+        ]);
+
+        $response = $this->actingAs($pic)->get('/pic/presensi?date=2026-11-18');
+
+        $response->assertOk();
+        $response->assertSee('Peserta Binaan A');
+        $response->assertSee('Tepat Waktu');
+        $response->assertSee('Lihat Foto');
+        $response->assertDontSee('Peserta Lain B');
+    }
+
+    public function test_intern_can_view_attendance_index_with_populated_history(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $intern = User::factory()->create(['role' => 'intern', 'is_active' => true]);
+
+        $media = MediaFile::create([
+            'disk' => 'local_private',
+            'file_path' => 'presensi/history.jpg',
+            'file_name' => 'history.jpg',
+            'original_name' => 'history.jpg',
+            'mime_type' => 'image/jpeg',
+            'file_size_bytes' => 1024,
+            'category' => 'attendance_photo',
+            'owner_user_id' => $intern->id,
+        ]);
+
+        Carbon::setTestNow(Carbon::parse('2026-11-18 10:00:00', 'Asia/Jakarta'));
+
+        Attendance::create([
+            'intern_user_id' => $intern->id,
+            'attendance_date' => '2026-11-17',
+            'checked_in_at' => '2026-11-17 08:12:00',
+            'status' => 'late',
+            'verification_status' => 'submitted',
+            'notes' => 'Terlambat karena hujan deras',
+            'photo_media_id' => $media->id,
+        ]);
+
+        $response = $this->actingAs($intern)->get('/intern/presensi');
+
+        $response->assertOk();
+        $response->assertSee('Riwayat Presensi Anda');
+        $response->assertSee('Terlambat');
+        $response->assertSee('Terlambat karena hujan deras');
+    }
+
+    public function test_camera_opens_and_resubmission_succeeds_even_when_approved_leave_exists_on_same_day(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $intern = User::factory()->create(['role' => 'intern', 'is_active' => true]);
+
+        Carbon::setTestNow(Carbon::parse('2026-11-18 08:00:00', 'Asia/Jakarta'));
+
+        // Leave request was approved for today
+        $leaveMedia = MediaFile::create([
+            'disk' => 'local_private',
+            'file_path' => 'izin/surat.pdf',
+            'file_name' => 'surat.pdf',
+            'original_name' => 'surat.pdf',
+            'mime_type' => 'application/pdf',
+            'file_size_bytes' => 1024,
+            'category' => 'leave_evidence',
+            'owner_user_id' => $intern->id,
+        ]);
+
+        LeaveRequest::create([
+            'intern_user_id' => $intern->id,
+            'leave_type' => 'sick',
+            'start_date' => '2026-11-18',
+            'end_date' => '2026-11-18',
+            'reason' => 'Sakit demam',
+            'evidence_media_id' => $leaveMedia->id,
+            'status' => 'approved',
+            'reviewed_by' => $admin->id,
+            'reviewed_at' => now(),
+        ]);
+
+        // Intern has a rejected attendance today
+        $oldPhoto = UploadedFile::fake()->image('old_photo.jpg');
+        $oldPath = $oldPhoto->store('presensi', 'local_private');
+        $oldMedia = MediaFile::create([
+            'disk' => 'local_private',
+            'file_path' => $oldPath,
+            'file_name' => basename($oldPath),
+            'original_name' => 'old_photo.jpg',
+            'mime_type' => 'image/jpeg',
+            'file_size_bytes' => 1024,
+            'category' => 'attendance_photo',
+            'owner_user_id' => $intern->id,
+        ]);
+
+        $attendance = Attendance::create([
+            'intern_user_id' => $intern->id,
+            'attendance_date' => '2026-11-18',
+            'checked_in_at' => '2026-11-18 07:55:00',
+            'status' => 'on_time',
+            'verification_status' => 'rejected',
+            'notes' => 'Foto gelap gulita, silakan foto ulang.',
+            'reviewed_by' => $admin->id,
+            'photo_media_id' => $oldMedia->id,
+        ]);
+
+        // 1. Intern visits /intern/presensi
+        $res = $this->actingAs($intern)->get('/intern/presensi');
+        $res->assertOk();
+        // Priority must be REJECTED ATTENDANCE camera reopen, NOT blocked by approved leave!
+        $res->assertSee('Foto Presensi Masuk Hari Ini Ditolak oleh HR');
+        $res->assertSee('Foto gelap gulita, silakan foto ulang.');
+        $res->assertSee('Ambil Foto Selfie Ulang');
+        $res->assertDontSee('Izin Anda Telah Disetujui HR');
+
+        // 2. Intern submits new photo
+        $newPhoto = UploadedFile::fake()->image('new_bright_photo.jpg');
+        $postRes = $this->actingAs($intern)->post('/intern/presensi', [
+            'photo' => $newPhoto,
+            'notes' => 'Foto di tempat terang.',
+        ]);
+
+        $postRes->assertRedirect('/intern/presensi');
+        $postRes->assertSessionHas('success', 'Foto presensi ulang berhasil dikirim.');
+
+        // 3. Verify database updates
+        $this->assertEquals(1, Attendance::where('intern_user_id', $intern->id)->whereDate('attendance_date', '2026-11-18')->count());
+        $attendance->refresh();
+        $this->assertEquals('submitted', $attendance->verification_status);
+        $this->assertNotEquals($oldMedia->id, $attendance->photo_media_id);
+        $this->assertDatabaseHas('media_files', ['id' => $oldMedia->id]);
+        Storage::disk('local_private')->assertExists($oldPath);
     }
 }

@@ -88,6 +88,14 @@ class LeaveRequest extends Model
      */
     public function getDurationDaysAttribute(): int
     {
+        return $this->getDurationDays();
+    }
+
+    /**
+     * Method helper durasi hari kalender (1 hari minimum jika start_date == end_date).
+     */
+    public function getDurationDays(): int
+    {
         if (! $this->start_date || ! $this->end_date) {
             return 1;
         }

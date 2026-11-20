@@ -24,6 +24,40 @@ class CalendarTest extends TestCase
         $response->assertSee('Kalender Kerja');
     }
 
+    public function test_admin_can_view_calendar_index_with_populated_exceptions(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+
+        Carbon::setTestNow(Carbon::parse('2026-11-12 10:00:00', 'Asia/Jakarta'));
+
+        // Pengecualian 1: Hari Libur
+        CalendarException::create([
+            'exception_date' => '2026-11-10',
+            'type' => 'holiday',
+            'name' => 'Libur Nasional Hari Pahlawan',
+            'description' => 'Memperingati hari pahlawan',
+            'created_by' => $admin->id,
+        ]);
+
+        // Pengecualian 2: Hari Kerja Khusus di Akhir Pekan
+        CalendarException::create([
+            'exception_date' => '2026-11-15',
+            'type' => 'working_day',
+            'name' => 'Sabtu Kerja Khusus Pengganti',
+            'description' => 'Operasional khusus',
+            'created_by' => $admin->id,
+        ]);
+
+        $response = $this->actingAs($admin)->get('/admin/kalender?month=11&year=2026');
+
+        $response->assertStatus(200);
+        $response->assertSee('Kalender Kerja');
+        $response->assertSee('Libur Nasional Hari Pahlawan');
+        $response->assertSee('HARI LIBUR');
+        $response->assertSee('Sabtu Kerja Khusus Pengganti');
+        $response->assertSee('HARI KERJA KHUSUS');
+    }
+
     public function test_intern_and_pic_cannot_access_calendar_management(): void
     {
         $intern = User::factory()->create(['role' => 'intern', 'is_active' => true]);
@@ -58,6 +92,7 @@ class CalendarTest extends TestCase
         ]);
 
         $response->assertRedirect();
+        $response->assertSessionHas('success', 'Pengecualian kalender kerja berhasil ditambahkan.');
         $this->assertTrue(CalendarException::whereDate('exception_date', '2026-12-25')->exists());
 
         $exception = CalendarException::whereDate('exception_date', '2026-12-25')->first();
@@ -72,6 +107,7 @@ class CalendarTest extends TestCase
         ]);
 
         $updateResponse->assertRedirect();
+        $updateResponse->assertSessionHas('success', 'Pengecualian kalender kerja berhasil diperbarui.');
         $exception->refresh();
         $this->assertEquals('Hari Raya Natal & Cuti Bersama', $exception->name);
 
@@ -79,6 +115,7 @@ class CalendarTest extends TestCase
         $deleteResponse = $this->actingAs($admin)->delete("/admin/kalender/{$exception->id}");
 
         $deleteResponse->assertRedirect();
+        $deleteResponse->assertSessionHas('success', 'Pengecualian kalender kerja berhasil dihapus.');
         $this->assertFalse(CalendarException::whereDate('exception_date', '2026-12-25')->exists());
     }
 

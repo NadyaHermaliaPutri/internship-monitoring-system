@@ -41,7 +41,11 @@
         }
     </script>
 
+    <!-- Alpine.js (Lightweight UI Interactions & Modals) -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.8/dist/cdn.min.js"></script>
+
     <style>
+        [x-cloak] { display: none !important; }
         * {
             font-family: 'Plus Jakarta Sans', sans-serif;
         }
@@ -224,7 +228,7 @@
                 </div>
 
                 @if(auth()->user()?->role === 'admin')
-                    <!-- Menu: Presensi Peserta (Admin/HR) -->
+                    <!-- Menu 1: Presensi Peserta (Admin/HR) -->
                     <div class="relative w-full pl-5 {{ $isAdminAttendanceActive ? 'z-10' : '' }}">
                         @if($isAdminAttendanceActive)
                             <a href="{{ route('admin.attendance.index') }}" class="relative flex items-center gap-3 py-3 pl-4 pr-6 bg-[#eef4f8] text-[#015987] font-bold text-xs rounded-l-full w-full shadow-none block">
@@ -253,7 +257,7 @@
                         @endif
                     </div>
 
-                    <!-- Menu: Kalender Kerja (Admin/HR) -->
+                    <!-- Menu 2: Kalender Kerja (Admin/HR) -->
                     <div class="relative w-full pl-5 {{ $isAdminCalendarActive ? 'z-10' : '' }}">
                         @if($isAdminCalendarActive)
                             <a href="{{ route('admin.calendar.index') }}" class="relative flex items-center gap-3 py-3 pl-4 pr-6 bg-[#eef4f8] text-[#015987] font-bold text-xs rounded-l-full w-full shadow-none block">
@@ -282,7 +286,7 @@
                         @endif
                     </div>
 
-                    <!-- Menu: Verifikasi Izin / Sakit (Admin/HR) -->
+                    <!-- Menu 3: Verifikasi Izin / Sakit (Admin/HR) -->
                     <div class="relative w-full pl-5 {{ $isAdminLeaveActive ? 'z-10' : '' }}">
                         @if($isAdminLeaveActive)
                             <a href="{{ route('admin.leave.index') }}" class="relative flex items-center gap-3 py-3 pl-4 pr-6 bg-[#eef4f8] text-[#015987] font-bold text-xs rounded-l-full w-full shadow-none block">
@@ -307,6 +311,68 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                                 </svg>
                                 <span>Verifikasi Izin/Sakit</span>
+                            </a>
+                        @endif
+                    </div>
+
+                    <!-- Menu 4: Kelola Akun (Admin/HR) -->
+                    @php $isUserManagementActive = request()->routeIs('admin.users.*'); @endphp
+                    <div class="relative w-full pl-5 {{ $isUserManagementActive ? 'z-10' : '' }}">
+                        @if($isUserManagementActive)
+                            <a href="{{ route('admin.users.index') }}" class="relative flex items-center gap-3 py-3 pl-4 pr-6 bg-[#eef4f8] text-[#015987] font-bold text-xs rounded-l-full w-full shadow-none block">
+                                <span class="hidden lg:block absolute -top-5 right-0 w-5 h-5 pointer-events-none">
+                                    <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">
+                                        <path d="M20 0 L20 20 L0 20 A20 20 0 0 0 20 0 Z" fill="#eef4f8"/>
+                                    </svg>
+                                </span>
+                                <svg class="w-4 h-4 text-[#015987] flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                                </svg>
+                                <span>Kelola Akun</span>
+                                <span class="hidden lg:block absolute -bottom-5 right-0 w-5 h-5 pointer-events-none">
+                                    <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">
+                                        <path d="M20 20 L20 0 L0 0 A20 20 0 0 1 20 20 Z" fill="#eef4f8"/>
+                                    </svg>
+                                </span>
+                            </a>
+                        @else
+                            <a href="{{ route('admin.users.index') }}" class="flex items-center gap-3 py-3 pl-4 pr-6 text-white/80 hover:text-white hover:bg-white/10 font-medium text-xs rounded-l-full w-full transition">
+                                <svg class="w-4 h-4 text-white/80 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                                </svg>
+                                <span>Kelola Akun</span>
+                            </a>
+                        @endif
+                    </div>
+
+                    <!-- Menu 5: Profil Peserta (Admin/HR) -->
+                    @php $isInternProfileActive = request()->routeIs('admin.intern-profiles.*'); @endphp
+                    <div class="relative w-full pl-5 {{ $isInternProfileActive ? 'z-10' : '' }}">
+                        @if($isInternProfileActive)
+                            <a href="{{ route('admin.intern-profiles.index') }}" class="relative flex items-center gap-3 py-3 pl-4 pr-6 bg-[#eef4f8] text-[#015987] font-bold text-xs rounded-l-full w-full shadow-none block">
+                                <span class="hidden lg:block absolute -top-5 right-0 w-5 h-5 pointer-events-none">
+                                    <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">
+                                        <path d="M20 0 L20 20 L0 20 A20 20 0 0 0 20 0 Z" fill="#eef4f8"/>
+                                    </svg>
+                                </span>
+                                <svg class="w-4 h-4 text-[#015987] flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l9-5-9-5-9 5 9 5z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/>
+                                </svg>
+                                <span>Profil Peserta</span>
+                                <span class="hidden lg:block absolute -bottom-5 right-0 w-5 h-5 pointer-events-none">
+                                    <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">
+                                        <path d="M20 20 L20 0 L0 0 A20 20 0 0 1 20 20 Z" fill="#eef4f8"/>
+                                    </svg>
+                                </span>
+                            </a>
+                        @else
+                            <a href="{{ route('admin.intern-profiles.index') }}" class="flex items-center gap-3 py-3 pl-4 pr-6 text-white/80 hover:text-white hover:bg-white/10 font-medium text-xs rounded-l-full w-full transition">
+                                <svg class="w-4 h-4 text-white/80 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l9-5-9-5-9 5 9 5z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/>
+                                </svg>
+                                <span>Profil Peserta</span>
                             </a>
                         @endif
                     </div>
@@ -462,30 +528,30 @@
         </div>
 
         <!-- Top Header Navbar -->
-        <header class="px-4 sm:px-6 lg:px-8 pt-5 lg:pt-8 pb-4 lg:pb-5 flex flex-col md:flex-row md:items-center justify-between gap-4 sticky top-0 z-20 bg-[#eef4f8]/95 backdrop-blur-xs">
-            <div class="flex items-start gap-3">
-                <!-- Tombol Hamburger Mobile -->
-                <button type="button" id="mobile-sidebar-open" class="lg:hidden p-2.5 rounded-xl bg-white border border-slate-200/80 text-[#015987] shadow-xs mt-0.5" aria-label="Buka menu navigasi">
+        <header class="px-4 sm:px-6 lg:px-8 pt-5 lg:pt-7 pb-4 lg:pb-5 flex flex-col md:flex-row md:items-center justify-between gap-4 sticky top-0 z-20 bg-[#eef4f8]/95 backdrop-blur-xs border-b border-slate-200/60 shadow-2xs flex-shrink-0">
+            <!-- Judul Halaman + Tombol Hamburger Mobile -->
+            <div class="flex items-start gap-3 min-w-0 flex-1">
+                <button type="button" id="mobile-sidebar-open" class="lg:hidden p-2.5 rounded-xl bg-white border border-slate-200/80 text-[#015987] shadow-xs mt-0.5 flex-shrink-0" aria-label="Buka menu navigasi">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
                     </svg>
                 </button>
 
-                <div>
+                <div class="min-w-0 flex-1">
                     <div class="flex flex-wrap items-center gap-2.5">
                         <h1 class="text-lg sm:text-xl lg:text-2xl font-bold text-slate-900 tracking-tight">
                             @yield('page-title', 'Dashboard Monitoring Magang')
                         </h1>
                         @yield('page-badge')
                     </div>
-                    <p class="text-xs text-[#015987] font-semibold mt-1">
+                    <p class="text-xs text-[#015987] font-semibold mt-1.5 leading-relaxed">
                         @yield('page-subtitle', 'PT WAN Teknologi Internasional')
                     </p>
                 </div>
             </div>
 
-            <!-- Sisi Kanan: Widget Tanggal, Search Bar, Install PWA & Notifikasi -->
-            <div class="flex flex-wrap items-center gap-2.5 sm:gap-3">
+            <!-- Sisi Kanan: Install PWA, Widget Tanggal, Search Bar, & Tombol Aksi -->
+            <div class="flex flex-wrap items-center gap-2.5 sm:gap-3 flex-shrink-0">
                 <!-- Tombol Install PWA (muncul otomatis jika browser mendukung) -->
                 <button type="button" id="pwa-install-btn" class="hidden items-center gap-1.5 text-xs font-semibold text-white bg-[#015987] hover:bg-[#014467] px-3 py-2.5 rounded-xl shadow-xs transition">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -494,33 +560,40 @@
                     <span>Pasang Aplikasi</span>
                 </button>
 
-                <!-- Widget Tanggal -->
-                <div class="flex items-center gap-2 text-xs font-medium text-slate-600 bg-white px-3.5 py-2.5 rounded-xl border border-slate-200/80 shadow-xs">
-                    <svg class="w-3.5 h-3.5 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                    </svg>
-                    <span>{{ \Carbon\Carbon::now('Asia/Jakarta')->translatedFormat('l, d F Y') }}</span>
-                </div>
-
-                @if(in_array(auth()->user()?->role, ['admin', 'pic'], true))
-                    <div class="relative hidden sm:block">
-                        <input 
-                            type="text" 
-                            placeholder="@yield('search-placeholder', 'Cari peserta...')" 
-                            class="w-48 lg:w-64 pl-9 pr-3.5 py-2.5 text-xs bg-white border border-slate-200/80 rounded-xl text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 shadow-xs transition"
-                        >
-                        <svg class="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                @if(View::hasSection('custom-header-right'))
+                    @yield('custom-header-right')
+                @else
+                    <!-- Widget Tanggal -->
+                    <div class="flex items-center gap-2 text-xs font-medium text-slate-600 bg-white px-3.5 py-2.5 rounded-xl border border-slate-200/80 shadow-xs">
+                        <svg class="w-3.5 h-3.5 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                         </svg>
+                        <span>{{ \Carbon\Carbon::now('Asia/Jakarta')->translatedFormat('l, d F Y') }}</span>
                     </div>
-                @endif
 
-                <button type="button" class="p-2.5 rounded-xl bg-white border border-slate-200/80 text-slate-600 hover:text-slate-900 shadow-xs transition relative">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
-                    </svg>
-                    <span class="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-rose-500 ring-2 ring-white"></span>
-                </button>
+                    @if(in_array(auth()->user()?->role, ['admin', 'pic'], true))
+                        <div class="relative hidden sm:block">
+                            <input 
+                                type="text" 
+                                placeholder="@yield('search-placeholder', 'Cari peserta...')" 
+                                class="w-48 lg:w-64 pl-9 pr-3.5 py-2.5 text-xs bg-white border border-slate-200/80 rounded-xl text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 shadow-xs transition"
+                            >
+                            <svg class="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                            </svg>
+                        </div>
+                    @endif
+
+                    @yield('header-actions')
+
+                    <!-- Tombol Notifikasi -->
+                    <button type="button" class="p-2.5 rounded-xl bg-white border border-slate-200/80 text-slate-600 hover:text-slate-900 shadow-xs transition relative">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                        </svg>
+                        <span class="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-rose-500 ring-2 ring-white"></span>
+                    </button>
+                @endif
             </div>
         </header>
 
@@ -530,6 +603,9 @@
         </main>
 
     </div>
+
+    <!-- Modal Pop-up Alert Sukses & Error Sesuai Figma WANTRACE -->
+    @include('partials.alert-modal')
 
     <script>
         (function () {
@@ -596,6 +672,7 @@
             });
         })();
     </script>
+
     @stack('scripts')
 </body>
 </html>

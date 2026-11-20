@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\AuditLog;
 use App\Models\LeaveRequest;
 use App\Models\MediaFile;
+use App\Models\PicAssignment;
 use App\Models\User;
 use App\Services\AttendanceRecapService;
 use Carbon\Carbon;
@@ -148,7 +149,7 @@ class LeaveRequestTest extends TestCase
             'review_notes' => 'Surat dokter valid terkonfirmasi.',
         ]);
 
-        $responseApprove->assertSessionHas('success');
+        $responseApprove->assertSessionHas('success', 'Pengajuan izin/sakit berhasil disetujui.');
 
         $leave1->refresh();
         $this->assertEquals('approved', $leave1->status);
@@ -184,7 +185,7 @@ class LeaveRequestTest extends TestCase
             'decision' => 'rejected',
             'review_notes' => 'Dokumen lampiran bukan surat resmi, harap perbaiki.',
         ]);
-        $responseRejectSuccess->assertSessionHas('success');
+        $responseRejectSuccess->assertSessionHas('success', 'Pengajuan izin/sakit berhasil ditolak.');
 
         $leave2->refresh();
         $this->assertEquals('rejected', $leave2->status);
@@ -320,5 +321,168 @@ class LeaveRequestTest extends TestCase
         ]);
 
         $this->assertTrue($recapService->isInternExcusedOnDate($intern->id, '2026-11-26'));
+    }
+
+    public function test_admin_can_view_leave_index_with_populated_data(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $intern = User::factory()->create(['role' => 'intern', 'is_active' => true]);
+
+        $pdfMedia = MediaFile::create([
+            'disk' => 'local_private',
+            'file_path' => 'izin/surat.pdf',
+            'file_name' => 'surat.pdf',
+            'original_name' => 'surat_dokter.pdf',
+            'mime_type' => 'application/pdf',
+            'file_size_bytes' => 2048,
+            'category' => 'leave_evidence',
+            'owner_user_id' => $intern->id,
+        ]);
+
+        $imageMedia = MediaFile::create([
+            'disk' => 'local_private',
+            'file_path' => 'izin/foto.jpg',
+            'file_name' => 'foto.jpg',
+            'original_name' => 'bukti_foto.jpg',
+            'mime_type' => 'image/jpeg',
+            'file_size_bytes' => 1024,
+            'category' => 'leave_evidence',
+            'owner_user_id' => $intern->id,
+        ]);
+
+        // 1. Pending (2 hari)
+        LeaveRequest::create([
+            'intern_user_id' => $intern->id,
+            'leave_type' => 'sick',
+            'start_date' => '2026-11-20',
+            'end_date' => '2026-11-21',
+            'reason' => 'Demam tinggi dan flu',
+            'evidence_media_id' => $pdfMedia->id,
+            'status' => 'pending',
+        ]);
+
+        // 2. Approved (1 hari)
+        LeaveRequest::create([
+            'intern_user_id' => $intern->id,
+            'leave_type' => 'leave',
+            'start_date' => '2026-11-22',
+            'end_date' => '2026-11-22',
+            'reason' => 'Urusan keluarga mendesak',
+            'evidence_media_id' => $imageMedia->id,
+            'status' => 'approved',
+            'reviewed_by' => $admin->id,
+            'reviewed_at' => now(),
+            'review_notes' => 'Disetujui silakan istirahat',
+        ]);
+
+        // 3. Rejected (3 hari)
+        LeaveRequest::create([
+            'intern_user_id' => $intern->id,
+            'leave_type' => 'leave',
+            'start_date' => '2026-11-25',
+            'end_date' => '2026-11-27',
+            'reason' => 'Liburan ke luar kota',
+            'status' => 'rejected',
+            'reviewed_by' => $admin->id,
+            'reviewed_at' => now(),
+            'review_notes' => 'Tidak diperkenankan izin liburan',
+        ]);
+
+        $response = $this->actingAs($admin)->get('/admin/izin');
+
+        $response->assertOk();
+        $response->assertSee($intern->name);
+        $response->assertSee('Sakit');
+        $response->assertSee('Izin');
+        $response->assertSee('2 Hari');
+        $response->assertSee('1 Hari');
+        $response->assertSee('3 Hari');
+        $response->assertSee('Menunggu Review');
+        $response->assertSee('Disetujui HR');
+        $response->assertSee('Ditolak');
+        $response->assertSee('PDF Dokumen');
+        $response->assertSee('Lihat Gambar');
+        $response->assertSee('Verifikasi');
+        $response->assertSee('Detail');
+    }
+
+    public function test_intern_can_view_leave_index_with_populated_history(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $intern = User::factory()->create(['role' => 'intern', 'is_active' => true]);
+
+        LeaveRequest::create([
+            'intern_user_id' => $intern->id,
+            'leave_type' => 'sick',
+            'start_date' => '2026-11-20',
+            'end_date' => '2026-11-21',
+            'reason' => 'Demam dan flu',
+            'status' => 'pending',
+        ]);
+
+        LeaveRequest::create([
+            'intern_user_id' => $intern->id,
+            'leave_type' => 'leave',
+            'start_date' => '2026-11-22',
+            'end_date' => '2026-11-22',
+            'reason' => 'Keperluan keluarga',
+            'status' => 'approved',
+            'reviewed_by' => $admin->id,
+            'reviewed_at' => now(),
+            'review_notes' => 'Disetujui HR',
+        ]);
+
+        $response = $this->actingAs($intern)->get('/intern/izin');
+
+        $response->assertOk();
+        $response->assertSee('Pengajuan Izin &amp; Sakit', false);
+        $response->assertSee('2 Hari');
+        $response->assertSee('1 Hari');
+        $response->assertSee('Demam dan flu');
+        $response->assertSee('Keperluan keluarga');
+    }
+
+    public function test_pic_can_view_assigned_interns_leave_requests_with_data(): void
+    {
+        $pic = User::factory()->create(['role' => 'pic', 'is_active' => true]);
+        $assignedIntern = User::factory()->create(['name' => 'Peserta Bimbingan A', 'role' => 'intern', 'is_active' => true]);
+        $unassignedIntern = User::factory()->create(['name' => 'Peserta Lain B', 'role' => 'intern', 'is_active' => true]);
+
+        // Hubungkan assignedIntern ke PIC
+        PicAssignment::create([
+            'pic_user_id' => $pic->id,
+            'intern_user_id' => $assignedIntern->id,
+            'start_date' => '2026-11-01',
+            'end_date' => null,
+            'assigned_by' => $pic->id,
+        ]);
+
+        // Buat leave request untuk assigned intern
+        LeaveRequest::create([
+            'intern_user_id' => $assignedIntern->id,
+            'leave_type' => 'sick',
+            'start_date' => '2026-11-20',
+            'end_date' => '2026-11-21',
+            'reason' => 'Sakit typhus butuh bedrest',
+            'status' => 'pending',
+        ]);
+
+        // Buat leave request untuk unassigned intern
+        LeaveRequest::create([
+            'intern_user_id' => $unassignedIntern->id,
+            'leave_type' => 'leave',
+            'start_date' => '2026-11-20',
+            'end_date' => '2026-11-20',
+            'reason' => 'Urusan luar kota',
+            'status' => 'pending',
+        ]);
+
+        $response = $this->actingAs($pic)->get('/pic/izin');
+
+        $response->assertOk();
+        $response->assertSee('Peserta Bimbingan A');
+        $response->assertSee('2 Hari');
+        $response->assertSee('Sakit typhus butuh bedrest');
+        $response->assertDontSee('Peserta Lain B');
     }
 }
