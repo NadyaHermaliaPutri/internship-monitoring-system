@@ -84,6 +84,23 @@ class TaskPolicy
     }
 
     /**
+     * Peserta pemilik tugas yang aktif dapat mengumpulkan bukti tugas
+     * apabila status tugas adalah assigned, in_progress, atau revision_requested.
+     */
+    public function submit(User $user, Task $task): bool
+    {
+        if (! $user->is_active || ! $user->isIntern()) {
+            return false;
+        }
+
+        if ($task->intern_user_id !== $user->id) {
+            return false;
+        }
+
+        return $task->canBeSubmittedByIntern();
+    }
+
+    /**
      * Data historis tugas tidak boleh dihapus.
      */
     public function delete(User $user, Task $task): bool

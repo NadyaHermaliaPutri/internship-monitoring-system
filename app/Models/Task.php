@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Carbon;
 
@@ -81,6 +82,22 @@ class Task extends Model
     }
 
     /**
+     * Seluruh riwayat pengumpulan tugas (diurutkan dari versi terbaru ke terlama).
+     */
+    public function submissions(): HasMany
+    {
+        return $this->hasMany(TaskSubmission::class, 'task_id')->orderByDesc('submission_number');
+    }
+
+    /**
+     * Pengumpulan (submission) versi terakhir.
+     */
+    public function latestSubmission(): HasOne
+    {
+        return $this->hasOne(TaskSubmission::class, 'task_id')->latestOfMany('submission_number');
+    }
+
+    /**
      * Menentukan apakah tugas sudah melewati deadline terbaru (WIB) dan belum berstatus accepted.
      */
     public function isOverdue(?Carbon $referenceTime = null): bool
@@ -106,6 +123,11 @@ class Task extends Model
     public function canBeStartedByIntern(): bool
     {
         return $this->status?->canBeStartedByIntern() ?? false;
+    }
+
+    public function canBeSubmittedByIntern(): bool
+    {
+        return $this->status?->canBeSubmittedByIntern() ?? false;
     }
 
     /**

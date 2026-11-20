@@ -7,6 +7,7 @@ use App\Http\Controllers\LeaveRequestController;
 use App\Http\Controllers\LogbookController;
 use App\Http\Controllers\PrivateMediaController;
 use App\Http\Controllers\TaskController;
+use App\Http\Controllers\TaskSubmissionController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -123,5 +124,6 @@ Route::middleware('auth')->group(function () {
         Route::get('/tasks', [TaskController::class, 'index'])->name('tasks.index');
         Route::get('/tasks/{task}', [TaskController::class, 'show'])->name('tasks.show');
         Route::patch('/tasks/{task}/start', [TaskController::class, 'start'])->name('tasks.start');
+        Route::post('/tasks/{task}/submissions', [TaskSubmissionController::class, 'store'])->name('tasks.submissions.store');
     });
 });

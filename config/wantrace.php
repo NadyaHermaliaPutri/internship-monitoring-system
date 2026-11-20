@@ -40,5 +40,15 @@ return [
             'mimes' => ['jpeg', 'jpg', 'png', 'pdf'],
             'directory' => 'izin',
         ],
+
+        // Bukti pengumpulan tugas peserta magang (video maks 15 MB, dokumen/gambar/arsip maks 10 MB)
+        'task_evidence' => [
+            'max_video_size_kb' => 15360, // 15 MB
+            'max_document_size_kb' => 10240, // 10 MB
+            'video_mimes' => ['mp4', 'webm', 'mov'],
+            'document_mimes' => ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'jpg', 'jpeg', 'png', 'webp', 'zip', 'rar'],
+            'mimes' => ['mp4', 'webm', 'mov', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'jpg', 'jpeg', 'png', 'webp', 'zip', 'rar'],
+            'directory' => 'tugas',
+        ],
     ],
 ];

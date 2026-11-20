@@ -5,6 +5,7 @@ namespace App\Policies;
 use App\Models\Attendance;
 use App\Models\LeaveRequest;
 use App\Models\MediaFile;
+use App\Models\TaskSubmission;
 use App\Models\User;
 
 class MediaFilePolicy
@@ -41,6 +42,13 @@ class MediaFilePolicy
                 if ($leave && $user->isCurrentlyAssignedTo($leave->intern_user_id)) {
                     return true;
                 }
+            } elseif ($mediaFile->category === 'task_evidence') {
+                return TaskSubmission::query()
+                    ->where('evidence_media_id', $mediaFile->id)
+                    ->whereHas('task', function ($q) use ($user) {
+                        $q->where('pic_user_id', $user->id);
+                    })
+                    ->exists();
             }
         }
 

@@ -37,4 +37,27 @@ enum TaskStatus: string
     {
         return $this === self::Assigned;
     }
+
+    /**
+     * Peserta dapat mengumpulkan tugas saat status assigned, in_progress, atau revision_requested.
+     */
+    public function canBeSubmittedByIntern(): bool
+    {
+        return in_array($this, [
+            self::Assigned,
+            self::InProgress,
+            self::RevisionRequested,
+        ], true);
+    }
+
+    /**
+     * Menentukan status tugas baru setelah peserta mengumpulkan bukti.
+     */
+    public function nextStatusAfterSubmission(): self
+    {
+        return match ($this) {
+            self::RevisionRequested => self::Resubmitted,
+            default => self::Submitted,
+        };
+    }
 }

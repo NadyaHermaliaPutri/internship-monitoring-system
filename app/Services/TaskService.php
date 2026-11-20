@@ -5,8 +5,10 @@ namespace App\Services;
 use App\Enums\TaskStatus;
 use App\Models\Logbook;
 use App\Models\Task;
+use App\Models\TaskSubmission;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -15,7 +17,8 @@ use Illuminate\Validation\ValidationException;
 class TaskService
 {
     public function __construct(
-        private readonly LogbookService $logbookService
+        private readonly LogbookService $logbookService,
+        private readonly MediaStorageService $mediaStorageService
     ) {}
 
     /**
@@ -180,6 +183,73 @@ class TaskService
             ]);
 
             return $locked->refresh();
+        });
+    }
+
+    /**
+     * Menyimpan pengumpulan hasil tugas (baris baru di task_submissions, tidak pernah menimpa baris lama),
+     * menyimpan file bukti ke private storage (jika ada), dan memperbarui status tugas:
+     * - assigned / in_progress -> submitted
+     * - revision_requested -> resubmitted
+     *
+     * @param  array{submission_url?: ?string, submission_note?: ?string}  $data
+     */
+    public function submitTask(Task $task, User $intern, array $data, ?UploadedFile $evidenceFile = null): TaskSubmission
+    {
+        return DB::transaction(function () use ($task, $intern, $data, $evidenceFile) {
+            /** @var Task $locked */
+            $locked = Task::query()->whereKey($task->id)->lockForUpdate()->firstOrFail();
+
+            if (! $intern->isIntern() || ! $intern->is_active || $locked->intern_user_id !== $intern->id) {
+                throw ValidationException::withMessages([
+                    'task' => 'Anda tidak berwenang mengumpulkan hasil untuk tugas ini.',
+                ]);
+            }
+
+            if (! $locked->canBeSubmittedByIntern()) {
+                throw ValidationException::withMessages([
+                    'status' => 'Tugas dengan status saat ini tidak dapat dikumpulkan.',
+                ]);
+            }
+
+            $url = isset($data['submission_url']) && trim((string) $data['submission_url']) !== ''
+                ? trim((string) $data['submission_url'])
+                : null;
+
+            if ($url === null && $evidenceFile === null) {
+                throw ValidationException::withMessages([
+                    'submission_url' => 'Minimal salah satu bukti tugas (tautan URL atau berkas/video) wajib diisi.',
+                ]);
+            }
+
+            $mediaFileId = null;
+            if ($evidenceFile !== null) {
+                $mediaFile = $this->mediaStorageService->storeUploadedFile(
+                    file: $evidenceFile,
+                    owner: $intern,
+                    category: 'task_evidence'
+                );
+                $mediaFileId = $mediaFile->id;
+            }
+
+            $nextSubmissionNumber = ((int) $locked->submissions()->max('submission_number')) + 1;
+            $nextStatus = $locked->status->nextStatusAfterSubmission();
+
+            $submission = TaskSubmission::create([
+                'task_id' => $locked->id,
+                'submitted_by' => $intern->id,
+                'submission_number' => $nextSubmissionNumber,
+                'submission_note' => $data['submission_note'] ?? null,
+                'submission_url' => $url,
+                'evidence_media_id' => $mediaFileId,
+                'submitted_at' => $this->now(),
+            ]);
+
+            $locked->update([
+                'status' => $nextStatus,
+            ]);
+
+            return $submission;
         });
     }
 }
