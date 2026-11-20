@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#015987">
+    <title>Koneksi Terputus - WANTRACE</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background-color: #eef4f8;
+            color: #1e293b;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+            box-sizing: border-box;
+        }
+        .card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 1rem;
+            max-width: 420px;
+            width: 100%;
+            padding: 2rem;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(1, 89, 135, 0.08);
+        }
+        .badge {
+            display: inline-block;
+            background: #fee2e2;
+            color: #b91c1c;
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 0.35rem 0.75rem;
+            border-radius: 9999px;
+            margin-bottom: 1rem;
+        }
+        h1 {
+            font-size: 1.25rem;
+            margin: 0 0 0.75rem;
+            color: #0f172a;
+        }
+        p {
+            font-size: 0.875rem;
+            line-height: 1.6;
+            color: #475569;
+            margin: 0 0 1.5rem;
+        }
+        button {
+            background: #015987;
+            color: #ffffff;
+            border: none;
+            border-radius: 0.75rem;
+            padding: 0.75rem 1.5rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+        }
+        button:hover {
+            background: #014467;
+        }
+    </style>
+</head>
+<body>
+    <main class="card">
+        <span class="badge">Offline</span>
+        <h1>Koneksi Internet Terputus</h1>
+        <p>
+            Sistem WANTRACE membutuhkan koneksi internet aktif dan stabil.
+            Presensi, izin/sakit, logbook, pengumpulan tugas, dan review tidak dapat dikirim atau disimpan secara offline.
+        </p>
+        <button type="button" onclick="window.location.reload()">Coba Muat Ulang</button>
+    </main>
+</body>
+</html>
