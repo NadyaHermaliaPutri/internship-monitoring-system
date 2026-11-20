@@ -47,12 +47,12 @@
             </div>
             <div class="mt-5">
                 <div class="flex items-baseline gap-1.5">
-                    <span class="text-2xl sm:text-3xl font-extrabold text-[#015987]">{{ $adminSummary['total_present'] }}</span>
-                    <span class="text-xs text-slate-500 font-medium">Hadir</span>
+                    <span class="text-2xl sm:text-3xl font-extrabold text-[#015987]">{{ $stats['pic_active'] ?? 0 }}</span>
+                    <span class="text-xs text-slate-500 font-medium">Mentor</span>
                 </div>
-                <p class="text-[11px] font-semibold text-sky-600 mt-1.5 flex items-center gap-1">
-                    <span class="w-1.5 h-1.5 rounded-full bg-sky-500"></span>
-                    {{ $adminSummary['pending_leaves_count'] }} pending izin &bull; {{ $adminSummary['on_time_count'] }} tepat waktu
+                <p class="text-[11px] font-semibold text-teal-600 mt-1.5 flex items-center gap-1">
+                    <span class="w-1.5 h-1.5 rounded-full bg-teal-500"></span>
+                    <span>Pembimbing Aktif</span>
                 </p>
             </div>
         </div>
@@ -108,13 +108,26 @@
     <!-- ============================================================== -->
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         
-        <!-- KOLOM KIRI (LEBAR 7/12): TABEL PESERTA MAGANG DINAMIS -->
+        <!-- KOLOM KIRI (LEBAR 7/12): TABEL PRESENSI HARIAN PESERTA -->
         <div class="lg:col-span-7 bg-white rounded-2xl border border-slate-200/70 shadow-xs overflow-hidden">
             <!-- Header Kartu -->
-            <div class="p-6 border-b border-slate-100 flex items-center justify-between">
+            <div class="p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                    <h3 class="text-sm font-bold text-[#015987]">Presensi Harian Peserta</h3>
-                    <p class="text-[11px] text-slate-400 mt-0.5">Tanggal: {{ \Carbon\Carbon::parse($adminSummary['date'])->translatedFormat('l, d F Y') }}</p>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h3 class="text-sm font-bold text-[#015987]">Presensi Harian Peserta</h3>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            {{ $adminSummary['total_present'] }} Hadir
+                        </span>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-teal-50 text-teal-700 border border-teal-200">
+                            {{ $adminSummary['on_time_count'] }} Tepat Waktu
+                        </span>
+                        @if(($adminSummary['late_count'] ?? 0) > 0)
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-rose-50 text-rose-700 border border-rose-200">
+                                {{ $adminSummary['late_count'] }} Terlambat
+                            </span>
+                        @endif
+                    </div>
+                    <p class="text-[11px] text-slate-400 mt-1">Tanggal: {{ \Carbon\Carbon::parse($adminSummary['date'])->translatedFormat('l, d F Y') }}</p>
                 </div>
                 <a href="{{ route('admin.attendance.index', ['date' => $adminSummary['date']]) }}" class="text-xs font-semibold text-[#015987] hover:underline flex items-center gap-1">
                     Lihat Semua &rsaquo;
@@ -136,8 +149,8 @@
                     <thead>
                         <tr class="border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                             <th class="py-4 px-6">Nama Peserta</th>
-                            <th class="py-4 px-5">Asal Institusi</th>
-                            <th class="py-4 px-5">Periode Magang</th>
+                            <th class="py-4 px-5">Jam Check-In</th>
+                            <th class="py-4 px-5 text-center">Foto Bukti</th>
                             <th class="py-4 px-5">Status</th>
                             <th class="py-4 px-6 text-right">Aksi</th>
                         </tr>
@@ -220,13 +233,13 @@
             </div>
         </div>
 
-        <!-- KOLOM KANAN (LEBAR 5/12): STATUS MONITORING & PENUGASAN -->
+        <!-- KOLOM KANAN (LEBAR 5/12): PENGAJUAN IZIN & SAKIT -->
         <div class="lg:col-span-5 bg-white rounded-2xl border border-slate-200/70 shadow-xs p-6 space-y-5">
             <!-- Header Kartu -->
             <div class="flex items-center justify-between pb-4 border-b border-slate-100">
                 <div>
-                    <h3 class="text-sm font-bold text-slate-900">Status Monitoring Magang</h3>
-                    <p class="text-[11px] text-slate-400 mt-0.5">Ringkasan operasional dan penugasan sistem</p>
+                    <h3 class="text-sm font-bold text-[#015987]">Pengajuan Izin &amp; Sakit</h3>
+                    <p class="text-[11px] text-slate-400 mt-0.5">Permohonan peserta yang menunggu verifikasi HR</p>
                 </div>
                 <div class="flex items-center gap-2">
                     <span class="text-[11px] font-semibold {{ $adminSummary['pending_leaves_count'] > 0 ? 'text-rose-500 bg-rose-50' : 'text-slate-500 bg-slate-100' }} px-2.5 py-0.5 rounded-full">

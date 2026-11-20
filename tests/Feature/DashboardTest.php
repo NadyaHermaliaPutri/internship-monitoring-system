@@ -209,6 +209,10 @@ class DashboardTest extends TestCase
         $response->assertSee('Tepat Waktu');
         $response->assertSee('Urusan keluarga mendesak');
         $response->assertSee('1 Menunggu');
+        $response->assertSee('Jam Check-In');
+        $response->assertSee('Foto Bukti');
+        $response->assertSee('PIC Mentor Aktif');
+        $response->assertSee('Pengajuan Izin &amp; Sakit', false);
     }
 
     public function test_pic_dashboard_shows_only_assigned_interns(): void

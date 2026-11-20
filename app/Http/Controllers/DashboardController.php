@@ -23,6 +23,8 @@ class DashboardController extends Controller
         $stats = [
             'total_active'   => User::where('is_active', true)->count(),
             'inactive_users' => User::where('is_active', false)->count(),
+            'pic_active'     => User::where('role', 'pic')->where('is_active', true)->count(),
+            'intern_active'  => User::where('role', 'intern')->where('is_active', true)->count(),
         ];
 
         return view('dashboard.admin', compact('adminSummary', 'stats'));
