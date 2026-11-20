@@ -6,12 +6,15 @@ use App\Http\Requests\UpdateInternProfileRequest;
 use App\Models\InternProfile;
 use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class InternProfileController extends Controller
 {
+    use AuthorizesRequests;
+
     /**
      * Menampilkan daftar profil peserta magang lengkap dengan status pengisian data.
      * Otorisasi: Hanya Admin dan PIC yang diizinkan (via InternProfilePolicy::viewAny).

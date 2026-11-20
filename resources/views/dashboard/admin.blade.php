@@ -25,12 +25,12 @@
             </div>
             <div class="mt-5">
                 <div class="flex items-baseline gap-1.5">
-                    <span class="text-2xl sm:text-3xl font-extrabold text-slate-900">{{ $stats['active_interns'] }}</span>
+                    <span class="text-2xl sm:text-3xl font-extrabold text-[#015987]">{{ $adminSummary['total_active_interns'] }}</span>
                     <span class="text-xs text-slate-500 font-medium">Peserta</span>
                 </div>
                 <p class="text-[11px] font-semibold text-sky-600 mt-1.5 flex items-center gap-1">
                     <span class="w-1.5 h-1.5 rounded-full bg-sky-500"></span>
-                    <span>+{{ $stats['new_this_month'] }} bulan ini</span>
+                    Aktif Terdaftar
                 </p>
             </div>
         </div>
@@ -47,12 +47,12 @@
             </div>
             <div class="mt-5">
                 <div class="flex items-baseline gap-1.5">
-                    <span class="text-2xl sm:text-3xl font-extrabold text-slate-900">{{ $stats['active_pics'] }}</span>
-                    <span class="text-xs text-slate-500 font-medium">PIC</span>
+                    <span class="text-2xl sm:text-3xl font-extrabold text-[#015987]">{{ $adminSummary['total_present'] }}</span>
+                    <span class="text-xs text-slate-500 font-medium">Hadir</span>
                 </div>
-                <p class="text-[11px] font-semibold text-teal-600 mt-1.5 flex items-center gap-1 truncate">
-                    <span class="w-1.5 h-1.5 rounded-full bg-teal-500 flex-shrink-0"></span>
-                    <span class="truncate">{{ $stats['pic_divisions'] }}</span>
+                <p class="text-[11px] font-semibold text-sky-600 mt-1.5 flex items-center gap-1">
+                    <span class="w-1.5 h-1.5 rounded-full bg-sky-500"></span>
+                    {{ $adminSummary['pending_leaves_count'] }} pending izin &bull; {{ $adminSummary['on_time_count'] }} tepat waktu
                 </p>
             </div>
         </div>
@@ -69,7 +69,7 @@
             </div>
             <div class="mt-5">
                 <div class="flex items-baseline gap-1.5">
-                    <span class="text-2xl sm:text-3xl font-extrabold text-slate-900">{{ $stats['total_active'] }}</span>
+                    <span class="text-2xl sm:text-3xl font-extrabold text-slate-900">{{ $stats['total_active'] ?? 0 }}</span>
                     <span class="text-xs text-slate-500 font-medium">Akun</span>
                 </div>
                 <p class="text-[11px] font-semibold text-indigo-600 mt-1.5 flex items-center gap-1">
@@ -91,7 +91,7 @@
             </div>
             <div class="mt-5">
                 <div class="flex items-baseline gap-1.5">
-                    <span class="text-2xl sm:text-3xl font-extrabold text-slate-900">{{ $stats['inactive_users'] }}</span>
+                    <span class="text-2xl sm:text-3xl font-extrabold text-slate-900">{{ $stats['inactive_users'] ?? 0 }}</span>
                     <span class="text-xs text-slate-500 font-medium">Alumni</span>
                 </div>
                 <p class="text-[11px] font-semibold text-slate-400 mt-1.5 flex items-center gap-1">
@@ -113,15 +113,24 @@
             <!-- Header Kartu -->
             <div class="p-6 border-b border-slate-100 flex items-center justify-between">
                 <div>
-                    <h3 class="text-sm font-bold text-slate-900">Daftar Peserta Magang</h3>
-                    <p class="text-[11px] text-slate-400 mt-0.5">Pembaruan data terkini dari database sistem</p>
+                    <h3 class="text-sm font-bold text-[#015987]">Presensi Harian Peserta</h3>
+                    <p class="text-[11px] text-slate-400 mt-0.5">Tanggal: {{ \Carbon\Carbon::parse($adminSummary['date'])->translatedFormat('l, d F Y') }}</p>
                 </div>
-                <a href="{{ route('admin.intern-profiles.index') }}" class="text-xs font-semibold text-[#015987] hover:underline flex items-center gap-1">
+                <a href="{{ route('admin.attendance.index', ['date' => $adminSummary['date']]) }}" class="text-xs font-semibold text-[#015987] hover:underline flex items-center gap-1">
                     Lihat Semua &rsaquo;
                 </a>
             </div>
 
-            <!-- Tabel Data Peserta Real dari Database -->
+            @if(! ($adminSummary['day_status']['is_working_day'] ?? true))
+                <div class="px-6 py-3 bg-slate-50 border-b border-slate-100 flex items-center gap-2 text-xs text-slate-600">
+                    <svg class="w-4 h-4 text-slate-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <span>Hari ini adalah <strong>{{ $adminSummary['day_status']['label'] ?? 'Hari Libur' }}</strong>. Tidak ada kewajiban presensi reguler.</span>
+                </div>
+            @endif
+
+            <!-- Tabel Data -->
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse">
                     <thead>
@@ -134,65 +143,67 @@
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100 text-xs">
-                        @forelse($recentInterns as $index => $intern)
-                            @php
-                                $avatarColors = ['bg-sky-100 text-sky-700', 'bg-rose-100 text-rose-600', 'bg-purple-100 text-purple-700', 'bg-emerald-100 text-emerald-700'];
-                                $avatarClass = $avatarColors[$index % 4];
-                                $profile = $intern->internProfile;
-                            @endphp
+                        @forelse($adminSummary['attendances'] as $att)
                             <tr class="hover:bg-slate-50/70 transition">
-                                <!-- Nama Peserta -->
                                 <td class="py-4 px-6">
                                     <div class="flex items-center gap-2.5">
-                                        <div class="w-8 h-8 rounded-full font-bold text-xs flex items-center justify-center flex-shrink-0 {{ $avatarClass }}">
-                                            {{ strtoupper(substr(preg_replace('/\s+/', ' ', trim($intern->name)), 0, 1)) }}{{ strtoupper(substr(strstr(preg_replace('/\s+/', ' ', trim($intern->name)), ' ') ?: ' ', 1, 1)) }}
+                                        <div class="w-7 h-7 rounded-full bg-sky-100 text-[#015987] font-bold text-[10px] flex items-center justify-center flex-shrink-0">
+                                            {{ strtoupper(substr($att->intern->name ?? 'P', 0, 2)) }}
                                         </div>
                                         <div>
-                                            <p class="font-bold text-slate-900 text-xs leading-none">{{ $intern->name }}</p>
-                                            <p class="text-[10px] text-slate-400 mt-1">{{ $intern->email }}</p>
+                                            <p class="font-bold text-[#015987] text-xs leading-none">{{ $att->intern->name ?? '-' }}</p>
+                                            <p class="text-[10px] text-slate-400 mt-1">{{ $att->intern->email ?? '' }}</p>
                                         </div>
                                     </div>
                                 </td>
-
-                                <!-- Asal Institusi -->
-                                <td class="py-4 px-5 font-medium text-slate-700">
-                                    {{ $profile?->institution ?? 'Belum diatur' }}
+                                <td class="py-4 px-5 font-semibold text-slate-700">
+                                    <span class="flex items-center gap-1">
+                                        <svg class="w-3.5 h-3.5 {{ $att->isLate() ? 'text-rose-500' : 'text-slate-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                        {{ \Carbon\Carbon::parse($att->checked_in_at)->timezone(config('wantrace.timezone', 'Asia/Jakarta'))->format('H:i') }}
+                                    </span>
                                 </td>
-
-                                <!-- Periode Magang -->
-                                <td class="py-4 px-5 text-slate-600">
-                                    {{ $profile?->formatted_period ?? 'Belum diatur' }}
+                                <td class="py-4 px-5 text-center">
+                                    @if($att->photo_media_id)
+                                        <a href="{{ route('media.private.show', $att->photo_media_id) }}" target="_blank" class="block w-8 h-8 rounded-lg bg-slate-200 mx-auto overflow-hidden border border-slate-200 hover:ring-2 hover:ring-sky-500 transition" title="Lihat foto selfie">
+                                            <img src="{{ route('media.private.show', $att->photo_media_id) }}" alt="Foto" class="w-full h-full object-cover">
+                                        </a>
+                                    @else
+                                        <span class="text-slate-300 text-[10px]">-</span>
+                                    @endif
                                 </td>
-
-                                <!-- Status Akun -->
                                 <td class="py-4 px-5">
-                                    @if($intern->is_active)
-                                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-600 border border-emerald-200">
-                                            <span class="w-1 h-1 rounded-full bg-emerald-500"></span>
-                                            Aktif
+                                    @if($att->isRejected())
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-rose-50 text-rose-700 border border-rose-200">
+                                            <span class="w-1 h-1 rounded-full bg-rose-600"></span>
+                                            Ditolak HR
+                                        </span>
+                                    @elseif($att->isOnTime())
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-teal-50 text-teal-600 border border-teal-200">
+                                            <span class="w-1 h-1 rounded-full bg-teal-500"></span>
+                                            Tepat Waktu
                                         </span>
                                     @else
-                                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-500 border border-slate-200">
-                                            <span class="w-1 h-1 rounded-full bg-slate-400"></span>
-                                            Selesai
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-rose-50 text-rose-600 border border-rose-200">
+                                            <span class="w-1 h-1 rounded-full bg-rose-500"></span>
+                                            Terlambat
                                         </span>
                                     @endif
                                 </td>
-
-                                <!-- Aksi -->
                                 <td class="py-4 px-6 text-right">
-                                    <a 
-                                        href="{{ route('admin.intern-profiles.edit', $intern) }}"
-                                        class="px-2.5 py-1 text-[11px] font-medium text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 transition inline-block"
-                                    >
+                                    <a href="{{ route('admin.attendance.index', ['date' => $adminSummary['date']]) }}" class="px-2.5 py-1 text-[11px] font-medium text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 transition inline-block">
                                         Detail
                                     </a>
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="5" class="py-10 text-center text-slate-400">
-                                    Belum ada data peserta magang yang terdaftar di database.
+                                <td colspan="5" class="py-10 text-center text-xs text-slate-400">
+                                    <svg class="w-8 h-8 mx-auto text-slate-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                    Belum ada peserta yang melakukan presensi hari ini.
                                 </td>
                             </tr>
                         @endforelse
@@ -202,9 +213,9 @@
 
             <!-- Footer Tabel Dinamis -->
             <div class="px-6 py-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400">
-                <span>Menampilkan {{ $recentInterns->count() }} dari {{ $stats['active_interns'] }} peserta aktif</span>
+                <span>Menampilkan {{ $adminSummary['attendances']->count() }} dari {{ $adminSummary['total_present'] }} kehadiran hari ini</span>
                 <span class="font-semibold text-sky-600">
-                    {{ $stats['total_active'] > 0 ? round(($stats['active_interns'] / $stats['total_active']) * 100) : 0 }}% proporsi peserta magang
+                    {{ $adminSummary['total_active_interns'] > 0 ? round(($adminSummary['total_present'] / $adminSummary['total_active_interns']) * 100, 1) : 0 }}% tingkat kehadiran
                 </span>
             </div>
         </div>
@@ -217,60 +228,133 @@
                     <h3 class="text-sm font-bold text-slate-900">Status Monitoring Magang</h3>
                     <p class="text-[11px] text-slate-400 mt-0.5">Ringkasan operasional dan penugasan sistem</p>
                 </div>
-                <span class="text-[11px] font-semibold text-sky-600 bg-sky-50 px-2.5 py-0.5 rounded-full">
-                    Sistem Aktif
-                </span>
-            </div>
-
-            <!-- Item 1: Periode Magang Mendekati Selesai -->
-            <div class="p-4 rounded-xl border border-slate-100 bg-slate-50/50 space-y-2.5">
-                <div class="flex items-center justify-between">
-                    <span class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                        <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                        </svg>
-                        Masa Magang Mendekati Akhir
+                <div class="flex items-center gap-2">
+                    <span class="text-[11px] font-semibold {{ $adminSummary['pending_leaves_count'] > 0 ? 'text-rose-500 bg-rose-50' : 'text-slate-500 bg-slate-100' }} px-2.5 py-0.5 rounded-full">
+                        {{ $adminSummary['pending_leaves_count'] }} Menunggu
                     </span>
-                    <span class="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded">
-                        {{ $stats['near_end_interns'] }} Peserta
-                    </span>
-                </div>
-                <p class="text-xs text-slate-500">
-                    {{ $stats['near_end_interns'] }} peserta magang terdata akan mengakhiri masa magang dalam 30 hari ke depan.
-                </p>
-                <div class="pt-1">
-                    <a href="{{ route('admin.intern-profiles.index') }}" class="block text-center py-2 bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition">
-                        Kelola Profil Peserta Magang &rarr;
+                    <a href="{{ route('admin.leave.index') }}" class="text-xs text-[#015987] font-semibold hover:underline">
+                        Semua &rsaquo;
                     </a>
                 </div>
             </div>
 
-            <!-- Item 2: Ringkasan Pengelolaan Akun Pengguna -->
-            <div class="p-4 rounded-xl border border-slate-100 bg-slate-50/50 space-y-2.5">
-                <div class="flex items-center justify-between">
-                    <span class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                        <svg class="w-4 h-4 text-[#015987]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
-                        </svg>
-                        Kelola Akses &amp; Akun
-                    </span>
-                    <span class="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">
-                        {{ $stats['total_active'] }} Aktif
-                    </span>
+            @forelse($adminSummary['pending_leaves_list'] as $leave)
+                <!-- Item Permohonan Izin -->
+                <div class="p-5 rounded-xl border border-slate-100 bg-slate-50/50 space-y-3.5">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-7 h-7 rounded-full {{ $leave->isSick() ? 'bg-rose-100 text-rose-600' : 'bg-sky-100 text-[#015987]' }} font-bold text-[10px] flex items-center justify-center">
+                                {{ strtoupper(substr($leave->intern->name ?? 'P', 0, 2)) }}
+                            </div>
+                            <div>
+                                <span class="text-xs font-bold text-[#015987]">{{ $leave->intern->name ?? 'Peserta' }}</span>
+                                <span class="block text-[10px] text-slate-400">{{ \Carbon\Carbon::parse($leave->start_date)->translatedFormat('d M') }} - {{ \Carbon\Carbon::parse($leave->end_date)->translatedFormat('d M Y') }} ({{ $leave->duration_days }} hari)</span>
+                            </div>
+                        </div>
+                        <span class="text-[10px] font-bold {{ $leave->isSick() ? 'text-rose-500 bg-rose-50' : 'text-sky-600 bg-sky-50' }} px-2 py-0.5 rounded">
+                            {{ $leave->isSick() ? 'Sakit' : 'Izin' }}
+                        </span>
+                    </div>
+
+                    <p class="text-xs text-slate-600">
+                        {{ $leave->reason }}
+                    </p>
+
+                    <!-- Tombol Lampiran Dokumen -->
+                    @if($leave->evidence)
+                        <a href="{{ route('media.private.show', $leave->evidence_media_id) }}" target="_blank" class="flex items-center justify-between px-3.5 py-2.5 bg-white rounded-xl border border-slate-200/80 text-xs text-slate-600 hover:border-slate-300 transition group">
+                            <span class="flex items-center gap-2 truncate text-[11px]">
+                                <svg class="w-3.5 h-3.5 text-slate-400 group-hover:text-[#015987]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                </svg>
+                                <span class="truncate">{{ $leave->evidence->original_name }}</span>
+                            </span>
+                            <span class="text-slate-400 text-xs group-hover:text-slate-600">&rsaquo;</span>
+                        </a>
+                    @endif
+
+                    <!-- Tombol Aksi: Setujui & Tolak -->
+                    <div class="grid grid-cols-2 gap-2.5 pt-1">
+                        <form method="POST" action="{{ route('admin.leave.review', $leave) }}" onsubmit="return confirm('Apakah Anda yakin ingin menyetujui pengajuan izin ini?')">
+                            @csrf
+                            <input type="hidden" name="decision" value="approved">
+                            <button type="submit" class="w-full py-2 bg-[#015987] hover:bg-[#01486e] text-white text-xs font-semibold rounded-xl shadow-xs transition">
+                                Setujui
+                            </button>
+                        </form>
+                        <button type="button" onclick="openRejectModal({{ $leave->id }}, '{{ addslashes($leave->intern->name ?? 'Peserta') }}')" class="w-full py-2 bg-white hover:bg-rose-50 text-rose-500 border border-rose-200 text-xs font-semibold rounded-xl transition">
+                            Tolak
+                        </button>
+                    </div>
                 </div>
-                <p class="text-xs text-slate-500">
-                    Total {{ $stats['total_active'] }} akun aktif (Admin, PIC, dan Intern) terotorisasi login ke sistem WANTRACE.
-                </p>
-                <div class="pt-1">
-                    <a href="{{ route('admin.users.index') }}" class="block text-center py-2 bg-[#015987] hover:bg-[#014467] text-white text-xs font-bold rounded-xl transition">
-                        Buka Manajemen Akun &rarr;
-                    </a>
+            @empty
+                <div class="py-10 text-center text-xs text-slate-400 space-y-2">
+                    <svg class="w-8 h-8 mx-auto text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <p>Tidak ada permohonan izin/sakit yang menunggu verifikasi saat ini.</p>
                 </div>
-            </div>
+            @endforelse
 
         </div>
 
     </div>
 
 </div>
+
+<!-- Modal Tolak Permohonan Izin -->
+<div id="rejectModal" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xl max-w-md w-full p-6 space-y-4">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+            <h4 class="text-sm font-bold text-slate-900">Tolak Permohonan Izin</h4>
+            <button type="button" onclick="closeRejectModal()" class="text-slate-400 hover:text-slate-600">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+
+        <form id="rejectForm" method="POST" action="" class="space-y-4">
+            @csrf
+            <input type="hidden" name="decision" value="rejected">
+            
+            <p class="text-xs text-slate-600">
+                Anda akan menolak permohonan izin dari <strong id="rejectInternName" class="text-slate-900"></strong>. Sesuai ketentuan, alasan penolakan wajib dicatat.
+            </p>
+
+            <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1.5">Alasan Penolakan <span class="text-rose-500">*</span></label>
+                <textarea name="review_notes" rows="3" required placeholder="Tuliskan catatan alasan penolakan permohonan..." class="w-full text-xs p-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"></textarea>
+            </div>
+
+            <div class="flex items-center justify-end gap-2 pt-2">
+                <button type="button" onclick="closeRejectModal()" class="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl text-xs font-medium hover:bg-slate-50 transition">
+                    Batal
+                </button>
+                <button type="submit" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-semibold shadow-xs transition">
+                    Konfirmasi Tolak
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@push('scripts')
+<script>
+    function openRejectModal(id, name) {
+        const modal = document.getElementById('rejectModal');
+        const form = document.getElementById('rejectForm');
+        const nameSpan = document.getElementById('rejectInternName');
+        
+        form.action = `/admin/izin/${id}/review`;
+        nameSpan.textContent = name;
+        modal.classList.remove('hidden');
+    }
+
+    function closeRejectModal() {
+        const modal = document.getElementById('rejectModal');
+        modal.classList.add('hidden');
+    }
+</script>
+@endpush
 @endsection

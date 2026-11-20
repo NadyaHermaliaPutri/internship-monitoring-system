@@ -15,7 +15,7 @@ class LoginTest extends TestCase
         $response = $this->get('/login');
 
         $response->assertStatus(200);
-        $response->assertSee('Sistem Monitoring Magang');
+        $response->assertSee('WANTRACE');
     }
 
     public function test_admin_user_can_authenticate_and_redirect_to_admin_dashboard(): void

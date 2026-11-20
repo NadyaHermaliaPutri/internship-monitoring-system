@@ -7,6 +7,7 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -59,6 +60,66 @@ class User extends Authenticatable
         return $this->role === 'intern';
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Relasi Eloquent Modul 2 (Presensi, Izin, Penugasan PIC, & File)
+    |--------------------------------------------------------------------------
+    */
+
+    /**
+     * Data presensi yang dimiliki peserta magang.
+     */
+    public function attendances(): HasMany
+    {
+        return $this->hasMany(Attendance::class, 'intern_user_id');
+    }
+
+    /**
+     * Data pengajuan izin/sakit yang diajukan peserta magang.
+     */
+    public function leaveRequests(): HasMany
+    {
+        return $this->hasMany(LeaveRequest::class, 'intern_user_id');
+    }
+
+    /**
+     * File privat yang diunggah pengguna.
+     */
+    public function mediaFiles(): HasMany
+    {
+        return $this->hasMany(MediaFile::class, 'owner_user_id');
+    }
+
+    /**
+     * Penugasan PIC untuk peserta magang (jika role = intern).
+     */
+    public function internPicAssignments(): HasMany
+    {
+        return $this->hasMany(PicAssignment::class, 'intern_user_id');
+    }
+
+    /**
+     * Penugasan peserta yang dibimbing oleh PIC (jika role = pic).
+     */
+    public function picAssignments(): HasMany
+    {
+        return $this->hasMany(PicAssignment::class, 'pic_user_id');
+    }
+
+    /**
+     * Memeriksa apakah PIC ini aktif membimbing peserta tertentu.
+     */
+    public function isCurrentlyAssignedTo(int $internUserId): bool
+    {
+        if (! $this->isPic()) {
+            return false;
+        }
+
+        return $this->picAssignments()
+            ->active()
+            ->where('intern_user_id', $internUserId)
+            ->exists();
+    }
     public function internProfile(): \Illuminate\Database\Eloquent\Relations\HasOne
     {
         return $this->hasOne(InternProfile::class);

@@ -1,0 +1,65 @@
+<?php
+
+namespace App\Policies;
+
+use App\Models\Attendance;
+use App\Models\LeaveRequest;
+use App\Models\MediaFile;
+use App\Models\User;
+
+class MediaFilePolicy
+{
+    /**
+     * Menentukan apakah pengguna diizinkan mengakses/melihat file privat tertentu.
+     * Sesuai aturan:
+     * - Admin/HR: memiliki akses ke seluruh file bukti privat.
+     * - Pemilik file: dapat mengakses berkas miliknya sendiri.
+     * - PIC: hanya dapat melihat bukti peserta magang yang sedang aktif dibimbingnya.
+     * - Peserta lain: dilarang keras (403 Forbidden).
+     */
+    public function view(User $user, MediaFile $mediaFile): bool
+    {
+        // 1. Admin/HR memiliki akses penuh
+        if ($user->isAdmin()) {
+            return true;
+        }
+
+        // 2. Pemilik file dapat mengakses miliknya
+        if ($user->id === $mediaFile->owner_user_id) {
+            return true;
+        }
+
+        // 3. Hak akses PIC untuk peserta bimbingan aktif
+        if ($user->isPic()) {
+            if ($mediaFile->category === 'attendance_photo') {
+                $attendance = Attendance::where('photo_media_id', $mediaFile->id)->first();
+                if ($attendance && $user->isCurrentlyAssignedTo($attendance->intern_user_id)) {
+                    return true;
+                }
+            } elseif ($mediaFile->category === 'leave_evidence') {
+                $leave = LeaveRequest::where('evidence_media_id', $mediaFile->id)->first();
+                if ($leave && $user->isCurrentlyAssignedTo($leave->intern_user_id)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Pengunggahan file ditangani oleh controller/service masing-masing entitas.
+     */
+    public function create(User $user): bool
+    {
+        return true;
+    }
+
+    /**
+     * Penghapusan file hanya oleh Admin atau pemilik.
+     */
+    public function delete(User $user, MediaFile $mediaFile): bool
+    {
+        return $user->isAdmin() || $user->id === $mediaFile->owner_user_id;
+    }
+}
