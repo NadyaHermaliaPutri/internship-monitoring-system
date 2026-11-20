@@ -156,11 +156,13 @@ class LeaveRequestController extends Controller
                 reviewNotes: $validated['review_notes'] ?? null
             );
 
-            $statusText = $validated['decision'] === 'approved' ? 'Disetujui' : 'Ditolak';
+            $message = $validated['decision'] === 'approved'
+                ? 'Pengajuan izin/sakit berhasil disetujui.'
+                : 'Pengajuan izin/sakit berhasil ditolak.';
 
             return redirect()
                 ->back()
-                ->with('success', "Permohonan {$leaveRequest->intern->name} berhasil diproses dengan status: {$statusText}.");
+                ->with('success', $message);
         } catch (Exception $e) {
             return redirect()
                 ->back()

@@ -49,25 +49,29 @@ class AttendanceService
             );
         }
 
-        // 2. Validasi Izin/Sakit yang sudah Disetujui
-        $hasApprovedLeave = LeaveRequest::where('intern_user_id', $intern->id)
-            ->activeOnDate($todayDate)
-            ->exists();
-
-        if ($hasApprovedLeave) {
-            throw new InvalidArgumentException('Anda memiliki pengajuan izin/sakit yang telah disetujui untuk hari ini.');
-        }
-
-        // 3. Validasi Duplikasi: 1 presensi per peserta per tanggal (kecuali jika ditolak HR hari ini)
+        // 2. Cari presensi hari ini jika sudah pernah tercatat
         $existing = Attendance::where('intern_user_id', $intern->id)
             ->whereDate('attendance_date', $todayDate)
             ->first();
 
-        if ($existing) {
-            if ($existing->verification_status !== 'rejected') {
-                throw new InvalidArgumentException('Anda sudah melakukan presensi masuk untuk hari ini.');
+        $isResubmission = $existing && $existing->verification_status === 'rejected';
+
+        // 3. Validasi Izin/Sakit yang sudah Disetujui (hanya untuk check-in awal, bukan resubmission presensi ditolak)
+        if (! $isResubmission) {
+            $hasApprovedLeave = LeaveRequest::where('intern_user_id', $intern->id)
+                ->activeOnDate($todayDate)
+                ->exists();
+
+            if ($hasApprovedLeave) {
+                throw new InvalidArgumentException('Anda memiliki pengajuan izin/sakit yang telah disetujui untuk hari ini.');
             }
 
+            if ($existing) {
+                throw new InvalidArgumentException('Anda sudah melakukan presensi masuk untuk hari ini.');
+            }
+        }
+
+        if ($isResubmission) {
             // Kasus Resubmission: Presensi hari ini sebelumnya ditolak HR, peserta foto ulang
             return DB::transaction(function () use ($intern, $photoData, $existing) {
                 if ($photoData instanceof UploadedFile) {

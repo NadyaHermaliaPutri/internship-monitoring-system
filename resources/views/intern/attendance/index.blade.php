@@ -269,8 +269,8 @@
                         </p>
                     </div>
 
-                {{-- KONDISI 3: ADA IZIN/SAKIT YANG SUDAH DISETUJUI --}}
-                @elseif($approvedLeaveToday)
+                {{-- KONDISI 3: ADA IZIN/SAKIT YANG SUDAH DISETUJUI (HANYA JIKA TIDAK DITOLAK HR HARI INI) --}}
+                @elseif($approvedLeaveToday && ! ($todayAttendance && $todayAttendance->isRejected()))
                     <div class="p-8 rounded-2xl bg-sky-50/60 border border-sky-200 text-center space-y-3">
                         <div class="w-12 h-12 rounded-full bg-sky-100 text-[#015987] mx-auto flex items-center justify-center">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

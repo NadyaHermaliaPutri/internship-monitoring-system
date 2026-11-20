@@ -238,7 +238,7 @@ class AttendanceRecapService
             'day_status' => $dayStatus,
             'attendance_today' => $attendanceToday,
             'is_rejected_today' => $attendanceToday?->isRejected() ?? false,
-            'can_resubmit_today' => ($attendanceToday?->isRejected() ?? false) && ($dayStatus['is_working_day'] ?? true) && ! $approvedLeaveToday,
+            'can_resubmit_today' => ($attendanceToday?->isRejected() ?? false) && ($dayStatus['is_working_day'] ?? true),
             'approved_leave_today' => $approvedLeaveToday,
             'pending_leaves_count' => $pendingLeavesCount,
             'latest_leave' => $latestLeave,
