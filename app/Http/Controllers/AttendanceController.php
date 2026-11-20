@@ -148,7 +148,7 @@ class AttendanceController extends Controller
 
         // Query presensi peserta pada tanggal terpilih
         $attendanceQuery = Attendance::with(['intern', 'photo', 'reviewer'])
-            ->where('attendance_date', $selectedDate)
+            ->whereDate('attendance_date', $selectedDate)
             ->orderByDesc('checked_in_at');
 
         if ($statusFilter && in_array($statusFilter, ['on_time', 'late'], true)) {

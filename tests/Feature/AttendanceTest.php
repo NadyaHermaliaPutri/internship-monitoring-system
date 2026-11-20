@@ -7,6 +7,7 @@ use App\Models\AuditLog;
 use App\Models\CalendarException;
 use App\Models\LeaveRequest;
 use App\Models\MediaFile;
+use App\Models\PicAssignment;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -611,5 +612,152 @@ class AttendanceTest extends TestCase
         $this->assertEquals(1, $daily['total_present']);
         $this->assertEquals(1, $daily['on_time_count']);
         $this->assertEquals(1, $daily['rejected_count']);
+    }
+
+    public function test_admin_can_view_attendance_index_with_populated_data(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $intern1 = User::factory()->create(['name' => 'Peserta Satu', 'role' => 'intern', 'is_active' => true]);
+        $intern2 = User::factory()->create(['name' => 'Peserta Dua', 'role' => 'intern', 'is_active' => true]);
+
+        $media1 = MediaFile::create([
+            'disk' => 'local_private',
+            'file_path' => 'presensi/photo1.jpg',
+            'file_name' => 'photo1.jpg',
+            'original_name' => 'photo1.jpg',
+            'mime_type' => 'image/jpeg',
+            'file_size_bytes' => 1024,
+            'category' => 'attendance_photo',
+            'owner_user_id' => $intern1->id,
+        ]);
+        $media2 = MediaFile::create([
+            'disk' => 'local_private',
+            'file_path' => 'presensi/photo2.jpg',
+            'file_name' => 'photo2.jpg',
+            'original_name' => 'photo2.jpg',
+            'mime_type' => 'image/jpeg',
+            'file_size_bytes' => 1024,
+            'category' => 'attendance_photo',
+            'owner_user_id' => $intern2->id,
+        ]);
+
+        Carbon::setTestNow(Carbon::parse('2026-11-18 09:00:00', 'Asia/Jakarta'));
+
+        // Presensi 1: on_time dan sudah direview
+        Attendance::create([
+            'intern_user_id' => $intern1->id,
+            'attendance_date' => '2026-11-18',
+            'checked_in_at' => '2026-11-18 08:00:00',
+            'status' => 'on_time',
+            'verification_status' => 'submitted',
+            'reviewed_by' => $admin->id,
+            'notes' => 'Catatan review admin',
+            'photo_media_id' => $media1->id,
+        ]);
+
+        // Presensi 2: rejected
+        Attendance::create([
+            'intern_user_id' => $intern2->id,
+            'attendance_date' => '2026-11-18',
+            'checked_in_at' => '2026-11-18 08:15:00',
+            'status' => 'late',
+            'verification_status' => 'rejected',
+            'reviewed_by' => $admin->id,
+            'notes' => 'Wajah tidak tampak jelas',
+            'photo_media_id' => $media2->id,
+        ]);
+
+        $response = $this->actingAs($admin)->get('/admin/presensi?date=2026-11-18');
+
+        $response->assertOk();
+        $response->assertSee('Peserta Satu');
+        $response->assertSee('Peserta Dua');
+        $response->assertSee('Tepat Waktu');
+        $response->assertSee('Ditolak HR');
+        $response->assertSee('Foto');
+        $response->assertSee('Koreksi');
+        $response->assertSee('Perlu Foto Ulang');
+    }
+
+    public function test_pic_can_view_assigned_interns_attendance_with_data(): void
+    {
+        $pic = User::factory()->create(['role' => 'pic', 'is_active' => true]);
+        $assignedIntern = User::factory()->create(['name' => 'Peserta Binaan A', 'role' => 'intern', 'is_active' => true]);
+        $unassignedIntern = User::factory()->create(['name' => 'Peserta Lain B', 'role' => 'intern', 'is_active' => true]);
+
+        PicAssignment::create([
+            'pic_user_id' => $pic->id,
+            'intern_user_id' => $assignedIntern->id,
+            'start_date' => '2026-11-01',
+            'end_date' => null,
+            'assigned_by' => $pic->id,
+        ]);
+
+        $media = MediaFile::create([
+            'disk' => 'local_private',
+            'file_path' => 'presensi/binaan.jpg',
+            'file_name' => 'binaan.jpg',
+            'original_name' => 'binaan.jpg',
+            'mime_type' => 'image/jpeg',
+            'file_size_bytes' => 1024,
+            'category' => 'attendance_photo',
+            'owner_user_id' => $assignedIntern->id,
+        ]);
+
+        Carbon::setTestNow(Carbon::parse('2026-11-18 09:00:00', 'Asia/Jakarta'));
+
+        Attendance::create([
+            'intern_user_id' => $assignedIntern->id,
+            'attendance_date' => '2026-11-18',
+            'checked_in_at' => '2026-11-18 08:04:00',
+            'status' => 'on_time',
+            'verification_status' => 'submitted',
+            'notes' => 'Presensi hadir binaan',
+            'photo_media_id' => $media->id,
+        ]);
+
+        $response = $this->actingAs($pic)->get('/pic/presensi?date=2026-11-18');
+
+        $response->assertOk();
+        $response->assertSee('Peserta Binaan A');
+        $response->assertSee('Tepat Waktu');
+        $response->assertSee('Lihat Foto');
+        $response->assertDontSee('Peserta Lain B');
+    }
+
+    public function test_intern_can_view_attendance_index_with_populated_history(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $intern = User::factory()->create(['role' => 'intern', 'is_active' => true]);
+
+        $media = MediaFile::create([
+            'disk' => 'local_private',
+            'file_path' => 'presensi/history.jpg',
+            'file_name' => 'history.jpg',
+            'original_name' => 'history.jpg',
+            'mime_type' => 'image/jpeg',
+            'file_size_bytes' => 1024,
+            'category' => 'attendance_photo',
+            'owner_user_id' => $intern->id,
+        ]);
+
+        Carbon::setTestNow(Carbon::parse('2026-11-18 10:00:00', 'Asia/Jakarta'));
+
+        Attendance::create([
+            'intern_user_id' => $intern->id,
+            'attendance_date' => '2026-11-17',
+            'checked_in_at' => '2026-11-17 08:12:00',
+            'status' => 'late',
+            'verification_status' => 'submitted',
+            'notes' => 'Terlambat karena hujan deras',
+            'photo_media_id' => $media->id,
+        ]);
+
+        $response = $this->actingAs($intern)->get('/intern/presensi');
+
+        $response->assertOk();
+        $response->assertSee('Riwayat Presensi Anda');
+        $response->assertSee('Terlambat');
+        $response->assertSee('Terlambat karena hujan deras');
     }
 }

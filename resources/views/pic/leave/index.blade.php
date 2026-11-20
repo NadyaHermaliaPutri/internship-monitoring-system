@@ -198,7 +198,7 @@
                             <!-- Durasi -->
                             <td class="py-4 px-4 whitespace-nowrap">
                                 <span class="inline-block px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-bold text-[11px]">
-                                    {{ $item->getDurationDays() }} Hari
+                                    {{ $item->duration_days }} Hari
                                 </span>
                             </td>
 
