@@ -5,6 +5,7 @@ use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\EwsController;
 use App\Http\Controllers\InternProfileController;
 use App\Http\Controllers\LeaveRequestController;
 use App\Http\Controllers\LogbookController;
@@ -32,6 +33,10 @@ Route::middleware('auth')->group(function () {
     // ==============================================================
     Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'admin'])->name('dashboard');
+
+        // Early Warning System (EWS) - Modul 4
+        Route::get('/ews', [EwsController::class, 'adminIndex'])->name('ews.index');
+        Route::put('/ews/settings', [EwsController::class, 'adminUpdateSettings'])->name('ews.settings.update');
 
         // Manajemen Akun Pengguna (CRUD)
         Route::resource('users', UserController::class)->except(['show', 'destroy']);
@@ -71,6 +76,9 @@ Route::middleware('auth')->group(function () {
     // ==============================================================
     Route::middleware('role:pic')->prefix('pic')->name('pic.')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'pic'])->name('dashboard');
+
+        // Early Warning System (EWS) - Modul 4
+        Route::get('/ews', [EwsController::class, 'picIndex'])->name('ews.index');
         Route::prefix('presensi')->name('attendance.')->group(function () {
             Route::get('/', [AttendanceController::class, 'picIndex'])->name('index');
         });

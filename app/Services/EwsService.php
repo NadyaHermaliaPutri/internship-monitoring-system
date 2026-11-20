@@ -3,8 +3,8 @@
 namespace App\Services;
 
 use App\Enums\LogbookSource;
-use App\Enums\TaskStatus;
 use App\Models\Attendance;
+use App\Models\EwsSetting;
 use App\Models\Logbook;
 use App\Models\PicAssignment;
 use App\Models\Task;
@@ -16,30 +16,78 @@ class EwsService
 {
     public function __construct(
         protected WorkCalendarService $calendarService,
-        protected AttendanceRecapService $recapService
+        protected AttendanceRecapService $recapService,
+        protected AuditLogService $auditLogService
     ) {}
 
     /**
-     * Jam batas toleransi presensi masuk (WIB). Default: 08:05.
+     * Jam batas cutoff EWS presensi masuk (WIB). Default: 09:00.
+     * Catatan: 08:05 adalah batas keterlambatan check-in (on_time vs late),
+     * sedangkan 09:00 (editable oleh Admin) adalah batas alarm EWS "Belum Presensi".
      */
     public function getCutoffPresensiTime(): string
     {
-        return config('wantrace.work_hours.tolerance_cutoff', '08:05');
+        try {
+            return EwsSetting::getSettings()->attendance_cutoff_time ?? '09:00';
+        } catch (\Throwable) {
+            return '09:00';
+        }
     }
 
     /**
-     * Jam batas pengisian logbook harian (WIB). Default: 17:00.
+     * Jam batas cutoff EWS pengisian logbook harian (WIB). Default: 17:00.
      */
     public function getCutoffLogbookTime(): string
     {
-        return config('wantrace.work_hours.end', '17:00');
+        try {
+            return EwsSetting::getSettings()->logbook_cutoff_time ?? '17:00';
+        } catch (\Throwable) {
+            return '17:00';
+        }
+    }
+
+    /**
+     * Memperbarui pengaturan cutoff EWS dan mencatat riwayat ke tabel audit_logs.
+     */
+    public function updateCutoffSettings(string $attendanceCutoff, string $logbookCutoff, User $admin): EwsSetting
+    {
+        $setting = EwsSetting::getSettings();
+
+        $oldValues = [
+            'attendance_cutoff_time' => $setting->attendance_cutoff_time,
+            'logbook_cutoff_time' => $setting->logbook_cutoff_time,
+        ];
+
+        $setting->attendance_cutoff_time = $attendanceCutoff;
+        $setting->logbook_cutoff_time = $logbookCutoff;
+        $setting->updated_by = $admin->id;
+        $setting->save();
+
+        $newValues = [
+            'attendance_cutoff_time' => $setting->attendance_cutoff_time,
+            'logbook_cutoff_time' => $setting->logbook_cutoff_time,
+        ];
+
+        $this->auditLogService->log(
+            action: 'ews_settings_updated',
+            entityType: 'ews_settings',
+            entityId: $setting->id,
+            oldValues: $oldValues,
+            newValues: $newValues,
+            actor: $admin
+        );
+
+        return $setting;
     }
 
     /**
      * Indikator 1: Peserta yang belum melakukan presensi masuk.
      * Syarat:
-     * - Hari kerja resmi (bukan libur/weekend).
-     * - Waktu server sudah melewati cutoff presensi (08:05 WIB).
+     * - Hari kerja resmi (bukan libur/weekend, kecuali working_day override).
+     * - Jika tanggal = hari ini: waktu server (WIB) sudah mencapai atau melewati cutoff presensi EWS (default 09:00).
+     *   Sebelum jam cutoff, hasilnya kosong/belum terpicu.
+     * - Jika tanggal < hari ini (historis): cutoff hari tersebut dianggap telah berlalu.
+     * - Jika tanggal > hari ini (masa depan): tidak memicu alarm harian.
      * - Peserta aktif (role = intern, is_active = true).
      * - Tidak memiliki izin/sakit yang sudah disetujui (excused).
      * - Belum memiliki record presensi berstatus selain rejected.
@@ -49,26 +97,27 @@ class EwsService
         $timezone = config('wantrace.timezone', 'Asia/Jakarta');
         $now = Carbon::now($timezone);
         $targetDate = $date ?? $now->format('Y-m-d');
+        $today = $now->format('Y-m-d');
 
-        // Jika hari libur / akhir pekan, tidak ada kewajiban presensi
+        // Jika hari libur / akhir pekan (tanpa override working_day), tidak ada kewajiban presensi
         if (! $this->calendarService->isWorkingDay($targetDate)) {
             return collect();
         }
 
+        // Tanggal di masa depan tidak memicu indikator harian
+        if ($targetDate > $today) {
+            return collect();
+        }
+
         // Jika tanggal adalah hari ini, cek apakah jam cutoff sudah terlewati
-        if ($targetDate === $now->format('Y-m-d')) {
-            $cutoff = Carbon::parse($targetDate . ' ' . $this->getCutoffPresensiTime() . ':59', $timezone);
-            if ($now->lessThanOrEqualTo($cutoff)) {
+        if ($targetDate === $today) {
+            if ($now->format('H:i') < $this->getCutoffPresensiTime()) {
                 return collect();
             }
-        } elseif ($targetDate > $now->format('Y-m-d')) {
-            // Tanggal di masa depan tidak dievaluasi
-            return collect();
         }
 
         // Ambil peserta magang aktif sesuai cakupan (semua untuk Admin, atau bimbingan aktif untuk PIC)
         $interns = $this->getTargetInterns($picUserId);
-
         $warnings = collect();
 
         foreach ($interns as $intern) {
@@ -90,7 +139,7 @@ class EwsService
                     'level' => 'danger',
                     'intern' => $intern,
                     'title' => 'Belum Presensi Masuk',
-                    'detail' => 'Belum melakukan check-in melewati batas toleransi ' . $this->getCutoffPresensiTime() . ' WIB.',
+                    'detail' => 'Belum melakukan check-in melewati batas cutoff EWS ' . $this->getCutoffPresensiTime() . ' WIB.',
                     'date' => $targetDate,
                 ]);
             }
@@ -102,8 +151,11 @@ class EwsService
     /**
      * Indikator 2: Peserta yang belum mengisi logbook harian manual.
      * Syarat:
-     * - Hari kerja resmi (bukan libur/weekend).
-     * - Waktu server sudah melewati cutoff logbook (17:00 WIB).
+     * - Hari kerja resmi (bukan libur/weekend, kecuali working_day override).
+     * - Jika tanggal = hari ini: waktu server (WIB) sudah mencapai atau melewati cutoff logbook EWS (default 17:00).
+     *   Sebelum jam cutoff, hasilnya kosong/belum terpicu.
+     * - Jika tanggal < hari ini (historis): cutoff hari tersebut dianggap telah berlalu.
+     * - Jika tanggal > hari ini (masa depan): tidak memicu alarm harian.
      * - Peserta aktif (role = intern, is_active = true).
      * - Tidak memiliki izin/sakit yang sudah disetujui (excused).
      * - Belum membuat logbook dengan source = 'manual' pada tanggal bersangkutan.
@@ -113,24 +165,26 @@ class EwsService
         $timezone = config('wantrace.timezone', 'Asia/Jakarta');
         $now = Carbon::now($timezone);
         $targetDate = $date ?? $now->format('Y-m-d');
+        $today = $now->format('Y-m-d');
 
         // Jika hari libur / akhir pekan, tidak ada kewajiban logbook harian
         if (! $this->calendarService->isWorkingDay($targetDate)) {
             return collect();
         }
 
-        // Jika tanggal adalah hari ini, cek apakah jam cutoff sudah terlewati
-        if ($targetDate === $now->format('Y-m-d')) {
-            $cutoff = Carbon::parse($targetDate . ' ' . $this->getCutoffLogbookTime() . ':00', $timezone);
-            if ($now->lessThanOrEqualTo($cutoff)) {
-                return collect();
-            }
-        } elseif ($targetDate > $now->format('Y-m-d')) {
+        // Tanggal di masa depan tidak memicu indikator harian
+        if ($targetDate > $today) {
             return collect();
         }
 
-        $interns = $this->getTargetInterns($picUserId);
+        // Jika tanggal adalah hari ini, cek apakah jam cutoff sudah terlewati
+        if ($targetDate === $today) {
+            if ($now->format('H:i') < $this->getCutoffLogbookTime()) {
+                return collect();
+            }
+        }
 
+        $interns = $this->getTargetInterns($picUserId);
         $warnings = collect();
 
         foreach ($interns as $intern) {
@@ -151,7 +205,7 @@ class EwsService
                     'level' => 'warning',
                     'intern' => $intern,
                     'title' => 'Logbook Harian Belum Diisi',
-                    'detail' => 'Belum mencatat aktivitas logbook manual melewati jam operasional ' . $this->getCutoffLogbookTime() . ' WIB.',
+                    'detail' => 'Belum mencatat aktivitas logbook manual melewati batas cutoff EWS ' . $this->getCutoffLogbookTime() . ' WIB.',
                     'date' => $targetDate,
                 ]);
             }
@@ -162,13 +216,16 @@ class EwsService
 
     /**
      * Indikator 3: Tugas yang sudah melewati tenggat waktu (overdue) dan belum accepted.
+     * Hanya mengevaluasi tugas milik peserta magang aktif (is_active = true).
      */
     public function getOverdueTasks(?int $picUserId = null): Collection
     {
         $timezone = config('wantrace.timezone', 'Asia/Jakarta');
         $now = Carbon::now($timezone);
 
-        $query = Task::overdue()->with(['intern', 'pic']);
+        $query = Task::overdue()
+            ->whereHas('intern', fn ($q) => $q->where('is_active', true))
+            ->with(['intern', 'pic']);
 
         if ($picUserId !== null) {
             $query->where('pic_user_id', $picUserId);
@@ -195,22 +252,29 @@ class EwsService
     }
 
     /**
-     * Ringkasan seluruh sinyal EWS untuk Dashboard Admin / HR.
+     * Ringkasan seluruh sinyal EWS untuk Halaman & Dashboard Admin / HR.
      */
     public function getAdminEwsSummary(?string $date = null): array
     {
-        $unsubmitted = $this->getUnsubmittedAttendance($date, null);
-        $missingLogbooks = $this->getMissingLogbooks($date, null);
+        $timezone = config('wantrace.timezone', 'Asia/Jakarta');
+        $now = Carbon::now($timezone);
+        $targetDate = $date ?? $now->format('Y-m-d');
+
+        $unsubmitted = $this->getUnsubmittedAttendance($targetDate, null);
+        $missingLogbooks = $this->getMissingLogbooks($targetDate, null);
         $overdueTasks = $this->getOverdueTasks(null);
 
         $allWarnings = $overdueTasks->concat($unsubmitted)->concat($missingLogbooks);
 
         return [
+            'target_date' => $targetDate,
             'unsubmitted_attendance_count' => $unsubmitted->count(),
             'missing_logbook_count' => $missingLogbooks->count(),
             'overdue_tasks_count' => $overdueTasks->count(),
             'total_warning_count' => $allWarnings->count(),
             'warnings_list' => $allWarnings->values(),
+            'cutoff_attendance' => $this->getCutoffPresensiTime(),
+            'cutoff_logbook' => $this->getCutoffLogbookTime(),
         ];
     }
 
@@ -219,18 +283,25 @@ class EwsService
      */
     public function getPicEwsSummary(int $picUserId, ?string $date = null): array
     {
-        $unsubmitted = $this->getUnsubmittedAttendance($date, $picUserId);
-        $missingLogbooks = $this->getMissingLogbooks($date, $picUserId);
+        $timezone = config('wantrace.timezone', 'Asia/Jakarta');
+        $now = Carbon::now($timezone);
+        $targetDate = $date ?? $now->format('Y-m-d');
+
+        $unsubmitted = $this->getUnsubmittedAttendance($targetDate, $picUserId);
+        $missingLogbooks = $this->getMissingLogbooks($targetDate, $picUserId);
         $overdueTasks = $this->getOverdueTasks($picUserId);
 
         $allWarnings = $overdueTasks->concat($unsubmitted)->concat($missingLogbooks);
 
         return [
+            'target_date' => $targetDate,
             'unsubmitted_attendance_count' => $unsubmitted->count(),
             'missing_logbook_count' => $missingLogbooks->count(),
             'overdue_tasks_count' => $overdueTasks->count(),
             'total_warning_count' => $allWarnings->count(),
             'warnings_list' => $allWarnings->values(),
+            'cutoff_attendance' => $this->getCutoffPresensiTime(),
+            'cutoff_logbook' => $this->getCutoffLogbookTime(),
         ];
     }
 

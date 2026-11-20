@@ -135,6 +135,7 @@
             @php
                 $rolePrefix = auth()->user()->role ?? 'admin';
                 $isDashboardActive = request()->routeIs('*.dashboard');
+                $isEwsActive = request()->routeIs('*.ews.*');
                 $isLogbookActive = request()->routeIs('*.logbooks.*');
                 $isTaskActive = request()->routeIs('*.tasks.*');
                 $isAdminCalendarActive = request()->routeIs('admin.calendar.*');
@@ -174,6 +175,34 @@
                         @endif
                     </a>
                 </div>
+
+                <!-- Menu Early Warning (EWS) - Khusus Admin & PIC -->
+                @if(in_array(auth()->user()?->role, ['admin', 'pic'], true))
+                    <div class="relative w-full pl-5 {{ $isEwsActive ? 'z-10' : '' }}">
+                        <a href="{{ route($rolePrefix . '.ews.index') }}" class="relative flex items-center gap-3 py-3 pl-4 pr-6 {{ $isEwsActive ? 'bg-[#eef4f8] text-[#015987] font-bold' : 'text-sky-100 hover:bg-white/10 font-medium' }} text-xs rounded-l-full w-full shadow-none transition">
+                            @if($isEwsActive)
+                                <span class="hidden lg:block absolute -top-5 right-0 w-5 h-5 pointer-events-none">
+                                    <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">
+                                        <path d="M20 0 L20 20 L0 20 A20 20 0 0 0 20 0 Z" fill="#eef4f8"/>
+                                    </svg>
+                                </span>
+                            @endif
+
+                            <svg class="w-4 h-4 {{ $isEwsActive ? 'text-[#015987]' : 'text-sky-200' }} flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                            </svg>
+                            <span>Early Warning (EWS)</span>
+
+                            @if($isEwsActive)
+                                <span class="hidden lg:block absolute -bottom-5 right-0 w-5 h-5 pointer-events-none">
+                                    <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">
+                                        <path d="M20 20 L20 0 L0 0 A20 20 0 0 1 20 20 Z" fill="#eef4f8"/>
+                                    </svg>
+                                </span>
+                            @endif
+                        </a>
+                    </div>
+                @endif
 
                 <!-- Menu Logbook Harian (Semua Role) -->
                 <div class="relative w-full pl-5 {{ $isLogbookActive ? 'z-10' : '' }}">
