@@ -147,7 +147,7 @@ class CalendarController extends Controller
                 actor: $admin
             );
 
-            $message = 'Pengecualian tanggal kalender berhasil diperbarui.';
+            $message = 'Pengecualian kalender kerja berhasil diperbarui.';
         } else {
             $newException = CalendarException::create([
                 'exception_date' => $dateStr,
@@ -171,7 +171,7 @@ class CalendarController extends Controller
                 actor: $admin
             );
 
-            $message = 'Pengecualian kalender berhasil ditambahkan.';
+            $message = 'Pengecualian kalender kerja berhasil ditambahkan.';
         }
 
         $carbonDate = Carbon::parse($dateStr);
@@ -208,6 +208,6 @@ class CalendarController extends Controller
 
         return redirect()
             ->route('admin.calendar.index', ['year' => $date->year, 'month' => $date->month])
-            ->with('success', "Pengecualian tanggal {$date->translatedFormat('d F Y')} berhasil dihapus. Tanggal kembali ke aturan default.");
+            ->with('success', 'Pengecualian kalender kerja berhasil dihapus.');
     }
 }

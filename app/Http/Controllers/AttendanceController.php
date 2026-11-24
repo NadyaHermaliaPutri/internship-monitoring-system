@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Attendance\RejectAttendanceRequest;
 use App\Http\Requests\Attendance\StoreAttendanceRequest;
 use App\Http\Requests\Attendance\UpdateAttendanceRequest;
 use App\Models\Attendance;
@@ -48,11 +49,15 @@ class AttendanceController extends Controller
         // Periksa apakah peserta sudah melakukan check-in hari ini
         $todayAttendance = Attendance::with('photo')
             ->where('intern_user_id', $intern->id)
-            ->where('attendance_date', $todayDate)
+            ->whereDate('attendance_date', $todayDate)
             ->first();
 
-        // Kondisi apakah form/kamera aktif untuk check-in
-        $canCheckIn = $isWorkingDay && is_null($approvedLeaveToday) && is_null($todayAttendance);
+        $isRejectedToday = ! is_null($todayAttendance) && $todayAttendance->isRejected();
+
+        // Kondisi apakah form/kamera aktif untuk check-in:
+        // Aktif jika presensi hari ini berstatus ditolak (prioritas utama foto ulang),
+        // ATAU jika belum pernah check-in hari ini dan tidak sedang izin/sakit yang disetujui.
+        $canCheckIn = $isWorkingDay && ($isRejectedToday || (is_null($approvedLeaveToday) && is_null($todayAttendance)));
 
         // Filter riwayat presensi
         $selectedMonth = (int) $request->input('month', $now->month);
@@ -86,6 +91,7 @@ class AttendanceController extends Controller
             'isWorkingDay',
             'approvedLeaveToday',
             'todayAttendance',
+            'isRejectedToday',
             'canCheckIn',
             'attendances',
             'monthlyRecap',
@@ -106,14 +112,24 @@ class AttendanceController extends Controller
             $photoFile = $request->file('photo');
             $notes = $request->input('notes');
 
+            $todayDate = $this->calendarService->getNow()->format('Y-m-d');
+            $wasRejected = Attendance::where('intern_user_id', $intern->id)
+                ->whereDate('attendance_date', $todayDate)
+                ->where('verification_status', 'rejected')
+                ->exists();
+
             $attendance = $this->attendanceService->checkIn($intern, $photoFile, $notes);
 
             $timeFormatted = $attendance->checked_in_at->format('H:i:s');
             $statusLabel = $attendance->isOnTime() ? 'Tepat Waktu' : 'Terlambat';
 
+            $successMessage = $wasRejected
+                ? 'Foto presensi ulang berhasil dikirim.'
+                : "Presensi masuk berhasil dicatat pada pukul {$timeFormatted} WIB dengan status {$statusLabel}.";
+
             return redirect()
                 ->route('intern.attendance.index')
-                ->with('success', "Presensi masuk berhasil dicatat pada pukul {$timeFormatted} WIB dengan status {$statusLabel}.");
+                ->with('success', $successMessage);
         } catch (Exception $e) {
             return redirect()
                 ->route('intern.attendance.index')
@@ -143,7 +159,7 @@ class AttendanceController extends Controller
 
         // Query presensi peserta pada tanggal terpilih
         $attendanceQuery = Attendance::with(['intern', 'photo', 'reviewer'])
-            ->where('attendance_date', $selectedDate)
+            ->whereDate('attendance_date', $selectedDate)
             ->orderByDesc('checked_in_at');
 
         if ($statusFilter && in_array($statusFilter, ['on_time', 'late'], true)) {
@@ -189,7 +205,36 @@ class AttendanceController extends Controller
 
         return redirect()
             ->back()
-            ->with('success', "Status presensi peserta {$attendance->intern->name} berhasil diperbarui menjadi {$validated['status']} dan dicatat ke audit log.");
+            ->with('success', 'Status presensi peserta berhasil diperbarui.');
+    }
+
+    /**
+     * Memproses penolakan presensi peserta oleh Admin/HR.
+     */
+    public function adminReject(RejectAttendanceRequest $request, Attendance $attendance): RedirectResponse
+    {
+        $admin = $request->user();
+
+        Gate::authorize('reject', $attendance);
+
+        $validated = $request->validated();
+
+        $this->attendanceService->rejectAttendance(
+            attendance: $attendance,
+            admin: $admin,
+            reason: $validated['notes'],
+            ipAddress: $request->ip()
+        );
+
+        $todayDate = $this->calendarService->getNow()->format('Y-m-d');
+        $isToday = $attendance->attendance_date->format('Y-m-d') === $todayDate;
+        $message = $isToday
+            ? 'Presensi peserta berhasil ditolak. Akses kamera peserta untuk hari ini telah dibuka kembali untuk foto ulang.'
+            : 'Presensi peserta berhasil ditolak.';
+
+        return redirect()
+            ->back()
+            ->with('success', $message);
     }
 
     /*

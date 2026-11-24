@@ -51,9 +51,12 @@ class AttendanceRecapService
             ->whereDate('attendance_date', $date)
             ->get();
 
-        $onTimeCount = $attendances->where('status', 'on_time')->count();
-        $lateCount = $attendances->where('status', 'late')->count();
-        $totalPresent = $attendances->count();
+        // Presensi sah (bukan yang sedang berstatus rejected)
+        $validAttendances = $attendances->where('verification_status', '!=', 'rejected');
+        $onTimeCount = $validAttendances->where('status', 'on_time')->count();
+        $lateCount = $validAttendances->where('status', 'late')->count();
+        $totalPresent = $validAttendances->count();
+        $rejectedCount = $attendances->where('verification_status', 'rejected')->count();
 
         // Izin/Sakit yang disetujui pada tanggal tersebut
         $approvedLeaves = LeaveRequest::with('intern')
@@ -72,6 +75,8 @@ class AttendanceRecapService
             'total_present' => $totalPresent,
             'on_time_count' => $onTimeCount,
             'late_count' => $lateCount,
+            'rejected_count' => $rejectedCount,
+            'rejected_count' => $rejectedCount,
             'approved_leaves_count' => $approvedLeaves->count(),
             'pending_leaves_count' => $pendingLeavesCount,
             'attendances' => $attendances,
@@ -97,9 +102,11 @@ class AttendanceRecapService
             ->whereDate('attendance_date', '<=', $endDate->format('Y-m-d'))
             ->get();
 
-        $onTimeCount = $attendances->where('status', 'on_time')->count();
-        $lateCount = $attendances->where('status', 'late')->count();
-        $totalPresent = $attendances->count();
+        $validAttendances = $attendances->where('verification_status', '!=', 'rejected');
+        $onTimeCount = $validAttendances->where('status', 'on_time')->count();
+        $lateCount = $validAttendances->where('status', 'late')->count();
+        $totalPresent = $validAttendances->count();
+        $rejectedCount = $attendances->where('verification_status', 'rejected')->count();
 
         // Izin/Sakit yang disetujui di bulan tersebut
         $approvedLeaves = LeaveRequest::where('intern_user_id', $internUserId)
@@ -139,6 +146,7 @@ class AttendanceRecapService
             'total_present' => $totalPresent,
             'on_time_count' => $onTimeCount,
             'late_count' => $lateCount,
+            'rejected_count' => $rejectedCount,
             'sick_days_count' => $sickDaysCount,
             'leave_days_count' => $leaveDaysCount,
             'attendance_rate' => $attendanceRate,
@@ -170,7 +178,7 @@ class AttendanceRecapService
 
         $attendances = Attendance::with(['intern', 'photo'])
             ->whereIn('intern_user_id', $assignedInternUserIds)
-            ->where('attendance_date', $date)
+            ->whereDate('attendance_date', $date)
             ->get();
 
         $approvedLeaves = LeaveRequest::with('intern')
@@ -178,14 +186,122 @@ class AttendanceRecapService
             ->activeOnDate($date)
             ->get();
 
+        $validAttendances = $attendances->where('verification_status', '!=', 'rejected');
+
         return [
             'date' => $date,
             'total_assigned_interns' => count($assignedInternUserIds),
-            'total_present' => $attendances->count(),
-            'on_time_count' => $attendances->where('status', 'on_time')->count(),
-            'late_count' => $attendances->where('status', 'late')->count(),
+            'total_present' => $validAttendances->count(),
+            'on_time_count' => $validAttendances->where('status', 'on_time')->count(),
+            'late_count' => $validAttendances->where('status', 'late')->count(),
+            'rejected_count' => $attendances->where('verification_status', 'rejected')->count(),
             'attendances' => $attendances,
             'approved_leaves' => $approvedLeaves,
         ];
+    }
+
+    /**
+     * Data rekap harian untuk Dashboard Peserta Magang (Intern).
+     */
+    public function getInternDailyDashboard(User $intern): array
+    {
+        $timezone = config('wantrace.timezone', 'Asia/Jakarta');
+        $today = Carbon::now($timezone)->format('Y-m-d');
+        $dayStatus = $this->calendarService->getDayStatus($today);
+
+        // Presensi hari ini
+        $attendanceToday = Attendance::with('photo')
+            ->where('intern_user_id', $intern->id)
+            ->whereDate('attendance_date', $today)
+            ->first();
+
+        // Izin/Sakit yang disetujui hari ini
+        $approvedLeaveToday = $this->getApprovedLeaveOnDate($intern->id, $today);
+
+        // Jumlah izin pending milik peserta
+        $pendingLeavesCount = LeaveRequest::where('intern_user_id', $intern->id)
+            ->where('status', 'pending')
+            ->count();
+
+        // Izin terbaru milik peserta
+        $latestLeave = LeaveRequest::with('evidence')
+            ->where('intern_user_id', $intern->id)
+            ->latest('id')
+            ->first();
+
+        // Rekap bulanan untuk persentase kehadiran
+        $now = Carbon::now($timezone);
+        $monthlyRecap = $this->getInternMonthlyRecap($intern->id, $now->year, $now->month);
+
+        return [
+            'date' => $today,
+            'day_status' => $dayStatus,
+            'attendance_today' => $attendanceToday,
+            'is_rejected_today' => $attendanceToday?->isRejected() ?? false,
+            'can_resubmit_today' => ($attendanceToday?->isRejected() ?? false) && ($dayStatus['is_working_day'] ?? true),
+            'approved_leave_today' => $approvedLeaveToday,
+            'pending_leaves_count' => $pendingLeavesCount,
+            'latest_leave' => $latestLeave,
+            'monthly_recap' => $monthlyRecap,
+        ];
+    }
+
+    /**
+     * Data rekap harian untuk Dashboard Admin / HR.
+     */
+    public function getAdminDailyDashboard(): array
+    {
+        $timezone = config('wantrace.timezone', 'Asia/Jakarta');
+        $today = Carbon::now($timezone)->format('Y-m-d');
+        $overallRecap = $this->getDailyOverallRecap($today);
+
+        // Seluruh izin pending yang menunggu review HR
+        $pendingLeavesCount = LeaveRequest::where('status', 'pending')->count();
+        $pendingLeaves = LeaveRequest::with(['intern', 'evidence'])
+            ->where('status', 'pending')
+            ->latest('id')
+            ->take(5)
+            ->get();
+
+        $overallRecap['pending_leaves_count'] = $pendingLeavesCount;
+        $overallRecap['pending_leaves_list'] = $pendingLeaves;
+
+        return $overallRecap;
+    }
+
+    /**
+     * Data rekap harian untuk Dashboard Pembimbing PIC.
+     */
+    public function getPicDailyDashboard(User $pic): array
+    {
+        $timezone = config('wantrace.timezone', 'Asia/Jakarta');
+        $today = Carbon::now($timezone)->format('Y-m-d');
+        $dayStatus = $this->calendarService->getDayStatus($today);
+
+        $assignedInternUserIds = $pic->picAssignments()
+            ->active()
+            ->pluck('intern_user_id')
+            ->unique()
+            ->values()
+            ->toArray();
+
+        $assignedInterns = User::whereIn('id', $assignedInternUserIds)
+            ->where('role', 'intern')
+            ->where('is_active', true)
+            ->get();
+
+        $assignedDailySummary = $this->getPicAssignedInternsDailySummary($pic->id, $today);
+
+        $pendingLeaves = LeaveRequest::with(['intern', 'evidence'])
+            ->whereIn('intern_user_id', $assignedInternUserIds)
+            ->where('status', 'pending')
+            ->latest('id')
+            ->get();
+
+        return array_merge($assignedDailySummary, [
+            'day_status' => $dayStatus,
+            'assigned_interns' => $assignedInterns,
+            'pending_leaves' => $pendingLeaves,
+        ]);
     }
 }

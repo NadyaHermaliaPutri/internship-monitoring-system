@@ -120,4 +120,13 @@ class User extends Authenticatable
             ->where('intern_user_id', $internUserId)
             ->exists();
     }
+    public function internProfile(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(InternProfile::class);
+    }
+
+    public function picProfile(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(PicProfile::class);
+    }
 }

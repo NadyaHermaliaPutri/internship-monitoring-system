@@ -303,7 +303,7 @@
                             <!-- Durasi -->
                             <td class="py-4 px-4 whitespace-nowrap">
                                 <span class="inline-block px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-bold text-[11px]">
-                                    {{ $item->getDurationDays() }} Hari
+                                    {{ $item->duration_days }} Hari
                                 </span>
                             </td>
 
@@ -399,7 +399,7 @@
                                 @else
                                     <button 
                                         type="button" 
-                                        onclick="openDetailModal('{{ addslashes($item->intern->name ?? 'Peserta') }}', '{{ $item->isSick() ? 'Sakit' : 'Izin' }}', '{{ $item->start_date->translatedFormat('d M Y') }} s/d {{ $item->end_date->translatedFormat('d M Y') }}', '{{ $item->getDurationDays() }} Hari', '{{ addslashes($item->reason) }}', '{{ $item->status }}', '{{ addslashes($item->reviewer->name ?? 'Admin') }}', '{{ $item->reviewed_at?->translatedFormat('d F Y, H:i') }} WIB', '{{ addslashes($item->review_notes ?? '-') }}')"
+                                        onclick="openDetailModal('{{ addslashes($item->intern->name ?? 'Peserta') }}', '{{ $item->isSick() ? 'Sakit' : 'Izin' }}', '{{ $item->start_date->translatedFormat('d M Y') }} s/d {{ $item->end_date->translatedFormat('d M Y') }}', '{{ $item->duration_days }} Hari', '{{ addslashes($item->reason) }}', '{{ $item->status }}', '{{ addslashes($item->reviewer->name ?? 'Admin') }}', '{{ $item->reviewed_at?->translatedFormat('d F Y, H:i') }} WIB', '{{ addslashes($item->review_notes ?? '-') }}')"
                                         class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition inline-flex items-center gap-1"
                                     >
                                         <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">

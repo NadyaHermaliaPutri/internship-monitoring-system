@@ -49,22 +49,69 @@ class AttendanceService
             );
         }
 
-        // 2. Validasi Izin/Sakit yang sudah Disetujui
-        $hasApprovedLeave = LeaveRequest::where('intern_user_id', $intern->id)
-            ->activeOnDate($todayDate)
-            ->exists();
-
-        if ($hasApprovedLeave) {
-            throw new InvalidArgumentException('Anda memiliki pengajuan izin/sakit yang telah disetujui untuk hari ini.');
-        }
-
-        // 3. Validasi Duplikasi: 1 presensi per peserta per tanggal
+        // 2. Cari presensi hari ini jika sudah pernah tercatat
         $existing = Attendance::where('intern_user_id', $intern->id)
-            ->where('attendance_date', $todayDate)
+            ->whereDate('attendance_date', $todayDate)
             ->first();
 
-        if ($existing) {
-            throw new InvalidArgumentException('Anda sudah melakukan presensi masuk untuk hari ini.');
+        $isResubmission = $existing && $existing->verification_status === 'rejected';
+
+        // 3. Validasi Izin/Sakit yang sudah Disetujui (hanya untuk check-in awal, bukan resubmission presensi ditolak)
+        if (! $isResubmission) {
+            $hasApprovedLeave = LeaveRequest::where('intern_user_id', $intern->id)
+                ->activeOnDate($todayDate)
+                ->exists();
+
+            if ($hasApprovedLeave) {
+                throw new InvalidArgumentException('Anda memiliki pengajuan izin/sakit yang telah disetujui untuk hari ini.');
+            }
+
+            if ($existing) {
+                throw new InvalidArgumentException('Anda sudah melakukan presensi masuk untuk hari ini.');
+            }
+        }
+
+        if ($isResubmission) {
+            // Kasus Resubmission: Presensi hari ini sebelumnya ditolak HR, peserta foto ulang
+            return DB::transaction(function () use ($intern, $photoData, $existing) {
+                if ($photoData instanceof UploadedFile) {
+                    $media = $this->mediaStorageService->storeUploadedFile($photoData, $intern, 'attendance_photo');
+                } else {
+                    $media = $this->mediaStorageService->storeBase64Image($photoData, $intern, 'attendance_photo');
+                }
+
+                $oldPhotoMediaId = $existing->photo_media_id;
+                $oldNotes = $existing->notes;
+                $oldVerificationStatus = $existing->verification_status;
+
+                // Update record yang sama: ganti photo_media_id, set verification_status ke 'submitted'
+                // checked_in_at dan status (on_time/late) TETAP MEMPERTAHANKAN WAKTU DAN STATUS AWAL
+                $existing->update([
+                    'photo_media_id' => $media->id,
+                    'verification_status' => 'submitted',
+                    'reviewed_by' => null,
+                    'notes' => null,
+                ]);
+
+                // Catat ke audit log
+                $this->auditLogService->log(
+                    action: 'attendance_resubmitted',
+                    entityType: 'attendance',
+                    entityId: $existing->id,
+                    oldValues: [
+                        'photo_media_id' => $oldPhotoMediaId,
+                        'verification_status' => $oldVerificationStatus,
+                        'rejection_notes' => $oldNotes,
+                    ],
+                    newValues: [
+                        'photo_media_id' => $media->id,
+                        'verification_status' => 'submitted',
+                    ],
+                    actor: $intern
+                );
+
+                return $existing->fresh();
+            });
         }
 
         // 4. Evaluasi Status Keterlambatan Berdasarkan Waktu Server Asia/Jakarta
@@ -85,6 +132,7 @@ class AttendanceService
                     'attendance_date' => $todayDate,
                     'checked_in_at' => $now,
                     'status' => $status,
+                    'verification_status' => 'submitted',
                     'photo_media_id' => $media->id,
                     'reviewed_by' => null,
                     'notes' => $notes,
@@ -152,6 +200,61 @@ class AttendanceService
         // Audit Trail penting
         $this->auditLogService->log(
             action: 'attendance_corrected',
+            entityType: 'attendance',
+            entityId: $attendance->id,
+            oldValues: $oldValues,
+            newValues: $newValues,
+            actor: $admin
+        );
+
+        return $attendance->fresh();
+    }
+
+    /**
+     * Menolak presensi oleh Admin/HR (misal foto buram, manipulasi, atau tidak valid).
+     *
+     * @param Attendance $attendance
+     * @param User $admin
+     * @param string $reason
+     * @param string|null $ipAddress
+     * @return Attendance
+     * @throws InvalidArgumentException
+     */
+    public function rejectAttendance(
+        Attendance $attendance,
+        User $admin,
+        string $reason,
+        ?string $ipAddress = null
+    ): Attendance {
+        if (! $admin->isAdmin()) {
+            throw new InvalidArgumentException('Hanya Admin/HR yang berwenang menolak presensi.');
+        }
+
+        if (trim($reason) === '') {
+            throw new InvalidArgumentException('Alasan penolakan presensi wajib diisi.');
+        }
+
+        $oldValues = [
+            'verification_status' => $attendance->verification_status,
+            'notes' => $attendance->notes,
+            'reviewed_by' => $attendance->reviewed_by,
+        ];
+
+        $attendance->update([
+            'verification_status' => 'rejected',
+            'reviewed_by' => $admin->id,
+            'notes' => $reason,
+        ]);
+
+        $newValues = [
+            'verification_status' => 'rejected',
+            'notes' => $reason,
+            'reviewed_by' => $admin->id,
+        ];
+
+        // Audit Trail Penolakan
+        $this->auditLogService->log(
+            action: 'attendance_rejected',
             entityType: 'attendance',
             entityId: $attendance->id,
             oldValues: $oldValues,
