@@ -446,7 +446,7 @@
             @csrf
 
             <div class="p-3 bg-amber-50 rounded-xl border border-amber-200 text-amber-800 text-[11px] leading-relaxed">
-                Menolak presensi akan membuka kembali akses kamera peserta untuk mengambil foto selfie ulang hari ini. Jam check-in awal dan status tepat waktu/terlambat tetap dipertahankan.
+                Menolak presensi akan membuka kembali akses kamera peserta untuk mengambil foto selfie ulang hari ini. Jam Masuk awal dan status tepat waktu/terlambat tetap dipertahankan.
             </div>
 
             <!-- Catatan / Alasan Penolakan -->

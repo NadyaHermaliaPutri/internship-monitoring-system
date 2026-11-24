@@ -149,7 +149,7 @@
                     <thead>
                         <tr class="border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                             <th class="py-4 px-6">Nama Peserta</th>
-                            <th class="py-4 px-5">Jam Check-In</th>
+                            <th class="py-4 px-5">Jam Masuk</th>
                             <th class="py-4 px-5 text-center">Foto Bukti</th>
                             <th class="py-4 px-5">Status</th>
                             <th class="py-4 px-6 text-right">Aksi</th>
