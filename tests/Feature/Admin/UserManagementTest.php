@@ -63,7 +63,7 @@ class UserManagementTest extends TestCase
         $response = $this->actingAs($this->admin)->get('/admin/users');
 
         $response->assertStatus(200);
-        $response->assertSee('Manajemen Akun Pengguna');
+        $response->assertSee('Kelola Akun');
         $response->assertSee($this->admin->email);
         $response->assertSee($this->pic->email);
         $response->assertSee($this->intern->email);
@@ -82,7 +82,7 @@ class UserManagementTest extends TestCase
         $response = $this->actingAs($this->admin)->get('/admin/users/create');
 
         $response->assertStatus(200);
-        $response->assertSee('Tambah Akun Pengguna Baru');
+        $response->assertSee('Tambah Akun Baru');
     }
 
     public function test_admin_can_store_new_user_with_hashed_password(): void

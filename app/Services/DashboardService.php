@@ -40,12 +40,20 @@ class DashboardService
         }
 
         // 2. Statistik Akun Pengguna
+        $totalActiveInterns = User::where('role', 'intern')->where('is_active', true)->count();
+        $totalActivePics    = User::where('role', 'pic')->where('is_active', true)->count();
+        $totalActiveAdmins  = User::where('role', 'admin')->where('is_active', true)->count();
+        $totalActive        = User::where('is_active', true)->count();
+        $inactiveUsers      = User::where('is_active', false)->count();
+
         $stats = [
-            'total_active_interns' => User::where('role', 'intern')->where('is_active', true)->count(),
-            'total_active_pics'    => User::where('role', 'pic')->where('is_active', true)->count(),
-            'total_active_admins'  => User::where('role', 'admin')->where('is_active', true)->count(),
-            'total_active'         => User::where('is_active', true)->count(),
-            'inactive_users'       => User::where('is_active', false)->count(),
+            'total_active_interns' => $totalActiveInterns,
+            'intern_active'        => $totalActiveInterns,
+            'total_active_pics'    => $totalActivePics,
+            'pic_active'           => $totalActivePics,
+            'total_active_admins'  => $totalActiveAdmins,
+            'total_active'         => $totalActive,
+            'inactive_users'       => $inactiveUsers,
         ];
 
         // 3. Ringkasan Tugas Magang Global

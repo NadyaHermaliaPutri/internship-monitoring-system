@@ -228,6 +228,10 @@ class DashboardTest extends TestCase
         $response->assertSee('Tepat Waktu');
         $response->assertSee('Urusan keluarga mendesak');
         $response->assertSee('1 Menunggu');
+        $response->assertSee('Jam Check-In');
+        $response->assertSee('Foto Bukti');
+        $response->assertSee('PIC Mentor Aktif');
+        $response->assertSee('Pengajuan Izin &amp; Sakit', false);
     }
 
     public function test_admin_dashboard_shows_global_data_and_task_metrics(): void

@@ -142,7 +142,7 @@
             </span>
             <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-700 font-semibold shadow-2xs">
                 <span class="w-2 h-2 rounded-full bg-sky-500"></span>
-                <span>{{ $stats['total_active_pics'] ?? 0 }} PIC Mentor</span>
+                <span>{{ $stats['pic_active'] ?? $stats['total_active_pics'] ?? 0 }} PIC Mentor Aktif</span>
             </span>
             <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-700 font-semibold shadow-2xs">
                 <span class="w-2 h-2 rounded-full bg-slate-400"></span>
@@ -164,15 +164,26 @@
                 <!-- Header Kartu -->
                 <div class="p-5 sm:p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
-                        <div class="flex items-center gap-2">
+                        <div class="flex flex-wrap items-center gap-2">
                             <h3 class="text-sm font-bold text-[#015987]">Presensi Harian Peserta</h3>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                {{ $adminSummary['total_present'] }} Hadir
+                            </span>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-teal-50 text-teal-700 border border-teal-200">
+                                {{ $adminSummary['on_time_count'] }} Tepat Waktu
+                            </span>
+                            @if(($adminSummary['late_count'] ?? 0) > 0)
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-rose-50 text-rose-700 border border-rose-200">
+                                    {{ $adminSummary['late_count'] }} Terlambat
+                                </span>
+                            @endif
                             @if(! empty($search))
                                 <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-sky-100 text-[#015987] border border-sky-200">
                                     Filter: "{{ $search }}"
                                 </span>
                             @endif
                         </div>
-                        <p class="text-[11px] text-slate-400 mt-0.5">Tanggal: {{ \Carbon\Carbon::parse($adminSummary['date'])->translatedFormat('l, d F Y') }}</p>
+                        <p class="text-[11px] text-slate-400 mt-1">Tanggal: {{ \Carbon\Carbon::parse($adminSummary['date'])->translatedFormat('l, d F Y') }}</p>
                     </div>
 
                     <div class="flex items-center gap-2">
@@ -223,7 +234,7 @@
                         <thead>
                             <tr class="border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                                 <th class="py-4 px-6">Nama Peserta</th>
-                                <th class="py-4 px-5">Waktu Masuk</th>
+                                <th class="py-4 px-5">Jam Check-In</th>
                                 <th class="py-4 px-5 text-center">Foto Bukti</th>
                                 <th class="py-4 px-5">Status</th>
                                 <th class="py-4 px-6 text-right">Aksi</th>
