@@ -30,7 +30,7 @@ class StoreTaskRequest extends FormRequest
                 'integer',
                 function (string $attribute, mixed $value, Closure $fail) use ($taskService, $picId) {
                     if (! is_numeric($value) || ! $taskService->isInternAssignableByPic($picId, (int) $value)) {
-                        $fail('Peserta yang dipilih harus berstatus aktif dan berada dalam penugasan aktif Anda.');
+                        $fail('Peserta yang dipilih harus memiliki role peserta magang dan berstatus aktif.');
                     }
                 },
             ],

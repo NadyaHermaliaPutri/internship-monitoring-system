@@ -20,7 +20,7 @@ return new class extends Migration
             $table->dateTime('reviewed_at');
             $table->timestamps();
 
-            $table->index('task_submission_id');
+            $table->unique('task_submission_id');
             $table->index('reviewed_by');
             $table->index('decision');
         });

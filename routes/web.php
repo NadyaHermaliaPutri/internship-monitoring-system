@@ -84,9 +84,10 @@ Route::middleware('auth')->group(function () {
             Route::get('/', [LeaveRequestController::class, 'picIndex'])->name('index');
         });
 
-        // Modul 3: Monitoring Logbook Peserta Bimbingan (PIC)
+        // Modul 3: Monitoring & Review Logbook Peserta Bimbingan (PIC)
         Route::get('/logbooks', [LogbookController::class, 'index'])->name('logbooks.index');
         Route::get('/logbooks/{logbook}', [LogbookController::class, 'show'])->name('logbooks.show');
+        Route::post('/logbooks/{logbook}/review', [LogbookController::class, 'review'])->name('logbooks.review');
 
         Route::get('/tasks', [TaskController::class, 'index'])->name('tasks.index');
         Route::get('/tasks/create', [TaskController::class, 'create'])->name('tasks.create');

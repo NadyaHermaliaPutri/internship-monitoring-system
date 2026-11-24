@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Enums\LogbookSource;
 use App\Enums\LogbookStatus;
+use App\Http\Requests\Logbook\ReviewLogbookRequest;
 use App\Http\Requests\Logbook\StoreLogbookRequest;
 use App\Http\Requests\Logbook\UpdateLogbookRequest;
 use App\Models\Logbook;
+use App\Models\Task;
 use App\Models\User;
 use App\Services\LogbookService;
 use Illuminate\Http\RedirectResponse;
@@ -22,8 +24,8 @@ class LogbookController extends Controller
 
     /**
      * Menampilkan halaman riwayat logbook sesuai cakupan role:
-     * - Intern: logbook miliknya sendiri + form input cepat
-     * - PIC: logbook peserta yang berada dalam periode pic_assignments miliknya
+     * - Intern: logbook miliknya sendiri
+     * - PIC: logbook terkait tugasnya + logbook mandiri peserta yang terkait dengannya
      * - Admin: seluruh logbook peserta
      */
     public function index(Request $request): View
@@ -33,7 +35,12 @@ class LogbookController extends Controller
         Gate::authorize('viewAny', Logbook::class);
 
         $query = Logbook::query()
-            ->with(['intern:id,name,email', 'reviewer:id,name'])
+            ->with([
+                'intern:id,name,email',
+                'reviewer:id,name',
+                'task.pic:id,name',
+                'relatedTask.pic:id,name',
+            ])
             ->withCount('revisions')
             ->visibleTo($user);
 
@@ -95,10 +102,16 @@ class LogbookController extends Controller
         } elseif ($user->isPic()) {
             $internOptions = User::query()
                 ->where('role', 'intern')
-                ->whereIn('id', function ($sub) use ($user) {
-                    $sub->select('intern_user_id')
-                        ->from('pic_assignments')
-                        ->where('pic_user_id', $user->id);
+                ->where(function ($q) use ($user) {
+                    $q->whereIn('id', function ($sub) use ($user) {
+                        $sub->select('intern_user_id')
+                            ->from('pic_assignments')
+                            ->where('pic_user_id', $user->id);
+                    })->orWhereIn('id', function ($sub) use ($user) {
+                        $sub->select('intern_user_id')
+                            ->from('tasks')
+                            ->where('pic_user_id', $user->id);
+                    });
                 })
                 ->orderBy('name')
                 ->get(['id', 'name']);
@@ -121,10 +134,21 @@ class LogbookController extends Controller
     {
         Gate::authorize('create', Logbook::class);
 
+        /** @var User $intern */
+        $intern = $request->user();
+
+        $taskOptions = Task::query()
+            ->with('pic:id,name')
+            ->where('intern_user_id', $intern->id)
+            ->orderByDesc('assigned_at')
+            ->orderByDesc('id')
+            ->get(['id', 'pic_user_id', 'title', 'status']);
+
         return view('logbooks.create', [
             'todayDate' => $this->logbookService->todayDateString(),
             'earliestDate' => $this->logbookService->earliestAllowedDateString(),
             'maxBackdateDays' => Logbook::MAX_BACKDATE_DAYS,
+            'taskOptions' => $taskOptions,
         ]);
     }
 
@@ -153,6 +177,8 @@ class LogbookController extends Controller
         $logbook->load([
             'intern:id,name,email',
             'reviewer:id,name',
+            'task.pic:id,name',
+            'relatedTask.pic:id,name',
             'revisions.editor:id,name',
         ]);
 
@@ -164,17 +190,28 @@ class LogbookController extends Controller
     /**
      * Menampilkan form edit logbook (hanya pemilik & status pending/revision_requested & source manual).
      */
-    public function edit(Logbook $logbook): View
+    public function edit(Request $request, Logbook $logbook): View
     {
         Gate::authorize('update', $logbook);
 
+        /** @var User $intern */
+        $intern = $request->user();
+
         $logbook->load('revisions');
+
+        $taskOptions = Task::query()
+            ->with('pic:id,name')
+            ->where('intern_user_id', $intern->id)
+            ->orderByDesc('assigned_at')
+            ->orderByDesc('id')
+            ->get(['id', 'pic_user_id', 'title', 'status']);
 
         return view('logbooks.edit', [
             'logbook' => $logbook,
             'todayDate' => $this->logbookService->todayDateString(),
             'earliestDate' => $this->logbookService->earliestAllowedDateString(),
             'maxBackdateDays' => Logbook::MAX_BACKDATE_DAYS,
+            'taskOptions' => $taskOptions,
         ]);
     }
 
@@ -191,5 +228,24 @@ class LogbookController extends Controller
         return redirect()
             ->route('intern.logbooks.show', $logbook)
             ->with('status', 'Perubahan logbook berhasil disimpan dan riwayat revisi telah tercatat.');
+    }
+
+    /**
+     * Meninjau (menyetujui atau meminta revisi) logbook manual peserta oleh PIC yang berwenang.
+     */
+    public function review(ReviewLogbookRequest $request, Logbook $logbook): RedirectResponse
+    {
+        /** @var User $pic */
+        $pic = $request->user();
+
+        $reviewed = $this->logbookService->reviewLogbook($logbook, $pic, $request->validated());
+
+        $message = $reviewed->status === LogbookStatus::Approved
+            ? 'Logbook harian peserta berhasil disetujui (Approved) dan telah dikunci.'
+            : 'Permintaan revisi logbook beserta catatan berhasil dikirim kepada peserta.';
+
+        return redirect()
+            ->route('pic.logbooks.show', $logbook)
+            ->with('status', $message);
     }
 }

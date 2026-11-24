@@ -2,7 +2,6 @@
 
 namespace App\Policies;
 
-use App\Enums\LogbookStatus;
 use App\Models\Logbook;
 use App\Models\User;
 
@@ -20,7 +19,10 @@ class LogbookPolicy
      * Melihat detail satu logbook:
      * - Admin: seluruh logbook
      * - Intern: hanya miliknya sendiri
-     * - PIC: hanya logbook peserta yang berada dalam periode penugasannya di pic_assignments
+     * - PIC:
+     *   * source = task_assignment -> hanya PIC pembuat tugas pada task_id
+     *   * source = manual & related_task_id terisi -> hanya PIC pembuat tugas pada related_task_id
+     *   * source = manual & related_task_id = null (mandiri) -> semua PIC yang terkait dengan peserta (pic_assignments aktif / pernah memberi tugas)
      */
     public function view(User $user, Logbook $logbook): bool
     {
@@ -37,11 +39,7 @@ class LogbookPolicy
         }
 
         if ($user->isPic()) {
-            return Logbook::isPicAuthorizedForInternOnDate(
-                $user->id,
-                $logbook->intern_user_id,
-                $logbook->log_date->toDateString()
-            );
+            return $logbook->isViewableByPic($user->id);
         }
 
         return false;
@@ -75,8 +73,9 @@ class LogbookPolicy
 
     /**
      * Review / Approval logbook:
-     * - Hanya boleh dilakukan oleh PIC aktif yang berwenang atas peserta pada tanggal logbook tersebut
-     * - Hanya untuk logbook manual dengan status pending (logbook otomatis tidak masuk alur approval)
+     * - Hanya untuk logbook manual berstatus pending
+     * - Jika related_task_id terisi: hanya PIC pembuat tugas tersebut
+     * - Jika related_task_id = null (mandiri): hanya PIC pembimbing utama di pic_assignments aktif pada log_date
      */
     public function review(User $user, Logbook $logbook): bool
     {
@@ -84,15 +83,7 @@ class LogbookPolicy
             return false;
         }
 
-        if (! $logbook->isManual() || $logbook->status !== LogbookStatus::Pending) {
-            return false;
-        }
-
-        return Logbook::isPicAuthorizedForInternOnDate(
-            $user->id,
-            $logbook->intern_user_id,
-            $logbook->log_date->toDateString()
-        );
+        return $logbook->isReviewableByPic($user->id);
     }
 
     /**

@@ -27,26 +27,52 @@
         <form method="POST" action="{{ route('intern.logbooks.store') }}" class="space-y-5">
             @csrf
 
-            <div>
-                <label for="log_date" class="block text-xs font-bold text-slate-700 mb-1.5">
-                    Tanggal Kegiatan <span class="text-rose-500">*</span>
-                </label>
-                <input
-                    type="date"
-                    id="log_date"
-                    name="log_date"
-                    value="{{ old('log_date', $todayDate) }}"
-                    min="{{ $earliestDate }}"
-                    max="{{ $todayDate }}"
-                    required
-                    class="w-full px-3.5 py-2.5 text-xs rounded-xl border @error('log_date') border-rose-400 bg-rose-50/40 @else border-slate-200 bg-slate-50/60 @enderror text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-[#015987] transition"
-                >
-                <p class="text-[11px] text-slate-400 mt-1">
-                    Rentang diizinkan: {{ \Carbon\Carbon::parse($earliestDate)->translatedFormat('d M Y') }} s/d {{ \Carbon\Carbon::parse($todayDate)->translatedFormat('d M Y') }} (WIB)
-                </p>
-                @error('log_date')
-                    <p class="text-[11px] text-rose-600 font-semibold mt-1">{{ $message }}</p>
-                @enderror
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label for="log_date" class="block text-xs font-bold text-slate-700 mb-1.5">
+                        Tanggal Kegiatan <span class="text-rose-500">*</span>
+                    </label>
+                    <input
+                        type="date"
+                        id="log_date"
+                        name="log_date"
+                        value="{{ old('log_date', $todayDate) }}"
+                        min="{{ $earliestDate }}"
+                        max="{{ $todayDate }}"
+                        required
+                        class="w-full px-3.5 py-2.5 text-xs rounded-xl border @error('log_date') border-rose-400 bg-rose-50/40 @else border-slate-200 bg-slate-50/60 @enderror text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-[#015987] transition"
+                    >
+                    <p class="text-[11px] text-slate-400 mt-1">
+                        Rentang diizinkan: {{ \Carbon\Carbon::parse($earliestDate)->translatedFormat('d M Y') }} s/d {{ \Carbon\Carbon::parse($todayDate)->translatedFormat('d M Y') }} (WIB)
+                    </p>
+                    @error('log_date')
+                        <p class="text-[11px] text-rose-600 font-semibold mt-1">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <div>
+                    <label for="related_task_id" class="block text-xs font-bold text-slate-700 mb-1.5">
+                        Terkait Tugas PIC <span class="text-slate-400 font-normal">(Opsional)</span>
+                    </label>
+                    <select
+                        id="related_task_id"
+                        name="related_task_id"
+                        class="w-full px-3.5 py-2.5 text-xs rounded-xl border @error('related_task_id') border-rose-400 bg-rose-50/40 @else border-slate-200 bg-slate-50/60 @enderror text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-[#015987] transition"
+                    >
+                        <option value="">Kegiatan Mandiri / Umum (Tidak terkait tugas tertentu)</option>
+                        @foreach ($taskOptions as $taskOption)
+                            <option value="{{ $taskOption->id }}" @selected((string) old('related_task_id') === (string) $taskOption->id)>
+                                {{ $taskOption->title }} — PIC: {{ $taskOption->pic?->name ?? 'PIC' }}
+                            </option>
+                        @endforeach
+                    </select>
+                    <p class="text-[11px] text-slate-400 mt-1">
+                        Jika dipilih, logbook ini hanya ditinjau oleh PIC pemberi tugas tersebut.
+                    </p>
+                    @error('related_task_id')
+                        <p class="text-[11px] text-rose-600 font-semibold mt-1">{{ $message }}</p>
+                    @enderror
+                </div>
             </div>
 
             <div>

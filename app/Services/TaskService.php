@@ -32,49 +32,28 @@ class TaskService
     }
 
     /**
-     * Memeriksa apakah peserta adalah user role=intern, is_active=true,
-     * dan memiliki penugasan aktif kepada PIC terkait di pic_assignments pada tanggal hari ini (Asia/Jakarta).
+     * Memeriksa apakah peserta adalah user role=intern dan is_active=true.
+     * Dalam model Multi-PIC, setiap PIC aktif dapat memberikan tugas kepada seluruh peserta magang aktif.
      */
     public function isInternAssignableByPic(int $picUserId, int $internUserId, ?string $onDate = null): bool
     {
-        $intern = User::query()
+        return User::query()
             ->whereKey($internUserId)
             ->where('role', 'intern')
             ->where('is_active', true)
-            ->first();
-
-        if (! $intern) {
-            return false;
-        }
-
-        $date = $onDate ?? $this->now()->toDateString();
-
-        return Logbook::isPicAuthorizedForInternOnDate($picUserId, $internUserId, $date);
+            ->exists();
     }
 
     /**
-     * Mengambil daftar peserta aktif yang sedang berada dalam penugasan aktif PIC pada hari ini (Asia/Jakarta).
+     * Mengambil daftar seluruh peserta magang aktif (role=intern, is_active=true) untuk pemilihan tugas Multi-PIC.
      *
      * @return Collection<int, User>
      */
     public function getActiveAssignedInternsForPic(int $picUserId): Collection
     {
-        $today = $this->now()->toDateString();
-
         return User::query()
             ->where('role', 'intern')
             ->where('is_active', true)
-            ->whereExists(function ($sub) use ($picUserId, $today) {
-                $sub->select(DB::raw(1))
-                    ->from('pic_assignments')
-                    ->whereColumn('pic_assignments.intern_user_id', 'users.id')
-                    ->where('pic_assignments.pic_user_id', $picUserId)
-                    ->whereDate('pic_assignments.start_date', '<=', $today)
-                    ->where(function ($q) use ($today) {
-                        $q->whereNull('pic_assignments.end_date')
-                            ->orWhereDate('pic_assignments.end_date', '>=', $today);
-                    });
-            })
             ->orderBy('name')
             ->get(['id', 'name', 'email']);
     }

@@ -6,6 +6,7 @@ use App\Enums\TaskReviewDecision;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use LogicException;
 
 #[Fillable([
     'task_submission_id',
@@ -22,6 +23,21 @@ class TaskReview extends Model
             'decision' => TaskReviewDecision::class,
             'reviewed_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Guard Immutability (Append-Only):
+     * Riwayat peninjauan PIC tidak pernah boleh di-update atau dihapus setelah tersimpan.
+     */
+    protected static function booted(): void
+    {
+        static::updating(function (): void {
+            throw new LogicException('Riwayat review tugas (TaskReview) bersifat append-only dan tidak boleh diubah.');
+        });
+
+        static::deleting(function (): void {
+            throw new LogicException('Riwayat review tugas (TaskReview) bersifat historis dan tidak boleh dihapus.');
+        });
     }
 
     /**

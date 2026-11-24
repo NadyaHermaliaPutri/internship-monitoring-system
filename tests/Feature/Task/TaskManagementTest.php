@@ -79,53 +79,57 @@ class TaskManagementTest extends TestCase
         $this->assertSame(0, Logbook::query()->forEwsFulfillment($intern->id, '2026-11-18')->count());
     }
 
-    public function test_creating_task_validates_target_intern_role_active_status_pic_assignment_and_future_deadline(): void
+    public function test_creating_task_validates_target_intern_role_active_status_and_future_deadline_and_supports_multi_pic(): void
     {
-        $pic = User::factory()->create(['role' => 'pic', 'is_active' => true]);
-        $unassignedIntern = User::factory()->create(['role' => 'intern', 'is_active' => true]);
+        $picA = User::factory()->create(['role' => 'pic', 'is_active' => true]);
+        $picB = User::factory()->create(['role' => 'pic', 'is_active' => true]);
+        $anotherPicAsTarget = User::factory()->create(['role' => 'pic', 'is_active' => true]);
         $inactiveIntern = User::factory()->create(['role' => 'intern', 'is_active' => false]);
-        $expiredAssignmentIntern = User::factory()->create(['role' => 'intern', 'is_active' => true]);
+        $activeIntern = User::factory()->create(['role' => 'intern', 'is_active' => true]);
 
-        $this->assignInternToPic($pic, $inactiveIntern);
-        $this->assignInternToPic($pic, $expiredAssignmentIntern, '2026-10-01', '2026-10-31');
-
-        // 1. Peserta belum pernah ditugaskan ke PIC ini
-        $this->actingAs($pic)->post(route('pic.tasks.store'), [
-            'intern_user_id' => $unassignedIntern->id,
-            'title' => 'Tugas Uji',
-            'description' => 'Deskripsi tugas uji validasi peserta.',
+        // 1. Target bukan role intern (mis. memilih user ber-role pic) -> ditolak
+        $this->actingAs($picA)->post(route('pic.tasks.store'), [
+            'intern_user_id' => $anotherPicAsTarget->id,
+            'title' => 'Tugas Uji Role',
+            'description' => 'Deskripsi tugas uji validasi role peserta.',
             'deadline_at' => '2026-11-20 17:00:00',
         ])->assertSessionHasErrors('intern_user_id');
 
-        // 2. Peserta nonaktif (is_active = false)
-        $this->actingAs($pic)->post(route('pic.tasks.store'), [
+        // 2. Peserta nonaktif (is_active = false) -> ditolak
+        $this->actingAs($picA)->post(route('pic.tasks.store'), [
             'intern_user_id' => $inactiveIntern->id,
-            'title' => 'Tugas Uji',
+            'title' => 'Tugas Uji Nonaktif',
             'description' => 'Deskripsi tugas uji validasi peserta nonaktif.',
             'deadline_at' => '2026-11-20 17:00:00',
         ])->assertSessionHasErrors('intern_user_id');
 
-        // 3. Periode pic_assignments sudah berakhir
-        $this->actingAs($pic)->post(route('pic.tasks.store'), [
-            'intern_user_id' => $expiredAssignmentIntern->id,
-            'title' => 'Tugas Uji',
-            'description' => 'Deskripsi tugas uji periode berakhir.',
-            'deadline_at' => '2026-11-20 17:00:00',
-        ])->assertSessionHasErrors('intern_user_id');
-
-        // 4. Deadline di masa lalu (<= sekarang 10:00 WIB)
-        $validIntern = User::factory()->create(['role' => 'intern', 'is_active' => true]);
-        $this->assignInternToPic($pic, $validIntern);
-
-        $this->actingAs($pic)->post(route('pic.tasks.store'), [
-            'intern_user_id' => $validIntern->id,
+        // 3. Deadline di masa lalu (<= sekarang 10:00 WIB) -> ditolak
+        $this->actingAs($picA)->post(route('pic.tasks.store'), [
+            'intern_user_id' => $activeIntern->id,
             'title' => 'Tugas Uji Deadline Lewat',
             'description' => 'Deskripsi tugas uji deadline masa lalu.',
             'deadline_at' => '2026-11-18 09:30:00',
         ])->assertSessionHasErrors('deadline_at');
 
         $this->assertDatabaseCount('tasks', 0);
-        $this->assertDatabaseCount('logbooks', 0);
+
+        // 4. Multi-PIC: PIC A dan PIC B sama-sama dapat membuat tugas untuk peserta aktif yang sama (tanpa harus ada di pic_assignments)
+        $this->actingAs($picA)->post(route('pic.tasks.store'), [
+            'intern_user_id' => $activeIntern->id,
+            'title' => 'Tugas dari PIC A',
+            'description' => 'Deskripsi tugas dari PIC A untuk peserta.',
+            'deadline_at' => '2026-11-21 17:00:00',
+        ])->assertSessionHasNoErrors();
+
+        $this->actingAs($picB)->post(route('pic.tasks.store'), [
+            'intern_user_id' => $activeIntern->id,
+            'title' => 'Tugas dari PIC B',
+            'description' => 'Deskripsi tugas dari PIC B untuk peserta yang sama.',
+            'deadline_at' => '2026-11-22 17:00:00',
+        ])->assertSessionHasNoErrors();
+
+        $this->assertDatabaseCount('tasks', 2);
+        $this->assertDatabaseCount('logbooks', 2);
     }
 
     public function test_updating_task_or_extending_deadline_does_not_duplicate_auto_logbook_and_updates_overdue_status(): void

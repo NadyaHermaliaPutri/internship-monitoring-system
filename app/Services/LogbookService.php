@@ -53,10 +53,12 @@ class LogbookService
     /**
      * Menyimpan entri logbook manual baru milik peserta.
      *
-     * @param  array{log_date: string, title: string, activity_description: string, result?: ?string}  $data
+     * @param  array{log_date: string, title: string, activity_description: string, result?: ?string, related_task_id?: ?int}  $data
      */
     public function createManualEntry(User $intern, array $data): Logbook
     {
+        $relatedTaskId = ! empty($data['related_task_id']) ? (int) $data['related_task_id'] : null;
+
         return Logbook::create([
             'intern_user_id' => $intern->id,
             'log_date' => $data['log_date'],
@@ -65,6 +67,7 @@ class LogbookService
             'result' => $data['result'] ?? null,
             'source' => LogbookSource::Manual,
             'task_id' => null,
+            'related_task_id' => $relatedTaskId,
             'status' => LogbookStatus::Pending,
         ]);
     }
@@ -73,7 +76,7 @@ class LogbookService
      * Memperbarui logbook manual peserta sekaligus menyimpan snapshot ke logbook_revisions.
      * Jika status sebelumnya revision_requested, status dikembalikan menjadi pending.
      *
-     * @param  array{log_date: string, title: string, activity_description: string, result?: ?string}  $data
+     * @param  array{log_date: string, title: string, activity_description: string, result?: ?string, related_task_id?: ?int}  $data
      */
     public function updateManualEntry(Logbook $logbook, User $actor, array $data): Logbook
     {
@@ -101,11 +104,16 @@ class LogbookService
                 'revised_by' => $actor->id,
             ]);
 
+            $relatedTaskId = array_key_exists('related_task_id', $data)
+                ? (! empty($data['related_task_id']) ? (int) $data['related_task_id'] : null)
+                : $locked->related_task_id;
+
             $locked->update([
                 'log_date' => $data['log_date'],
                 'title' => $data['title'],
                 'activity_description' => $data['activity_description'],
                 'result' => $data['result'] ?? null,
+                'related_task_id' => $relatedTaskId,
                 'status' => LogbookStatus::Pending,
             ]);
 
@@ -139,5 +147,65 @@ class LogbookService
                 'status' => null,
             ]
         );
+    }
+
+    /**
+     * Meninjau logbook manual peserta oleh PIC yang berwenang (dalam DB::transaction + lockForUpdate):
+     * - Hanya logbook manual (source = manual) berstatus pending yang dapat direview
+     * - Keputusan approved: mengunci status menjadi approved
+     * - Keputusan revision_requested: wajib menyertakan review_note (min 5 karakter)
+     *
+     * @param  array{decision: string, review_note?: ?string}  $data
+     */
+    public function reviewLogbook(Logbook $logbook, User $pic, array $data): Logbook
+    {
+        return DB::transaction(function () use ($logbook, $pic, $data) {
+            /** @var Logbook $locked */
+            $locked = Logbook::query()->whereKey($logbook->id)->lockForUpdate()->firstOrFail();
+
+            if (! $locked->isManual()) {
+                throw ValidationException::withMessages([
+                    'source' => 'Logbook otomatis dari penugasan PIC tidak memerlukan dan tidak dapat melalui proses approval.',
+                ]);
+            }
+
+            if ($locked->status !== LogbookStatus::Pending) {
+                throw ValidationException::withMessages([
+                    'status' => 'Hanya logbook berstatus Menunggu Review (Pending) yang dapat ditinjau oleh PIC.',
+                ]);
+            }
+
+            if (! $pic->isPic() || ! $pic->is_active || ! $locked->isReviewableByPic($pic->id)) {
+                throw ValidationException::withMessages([
+                    'logbook' => 'Anda tidak berwenang meninjau logbook ini.',
+                ]);
+            }
+
+            $decision = LogbookStatus::from($data['decision']);
+            if (! in_array($decision, [LogbookStatus::Approved, LogbookStatus::RevisionRequested], true)) {
+                throw ValidationException::withMessages([
+                    'decision' => 'Keputusan review hanya boleh Disetujui (Approved) atau Perlu Revisi (Revision Requested).',
+                ]);
+            }
+
+            $note = isset($data['review_note']) && trim((string) $data['review_note']) !== ''
+                ? trim((string) $data['review_note'])
+                : null;
+
+            if ($decision === LogbookStatus::RevisionRequested && ($note === null || mb_strlen($note) < 5)) {
+                throw ValidationException::withMessages([
+                    'review_note' => 'Catatan revisi wajib diisi minimal 5 karakter ketika meminta revisi logbook.',
+                ]);
+            }
+
+            $locked->update([
+                'status' => $decision,
+                'reviewed_by' => $pic->id,
+                'reviewed_at' => Carbon::now(Logbook::TIMEZONE),
+                'review_note' => $note,
+            ]);
+
+            return $locked->refresh();
+        });
     }
 }

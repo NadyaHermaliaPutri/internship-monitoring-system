@@ -115,12 +115,15 @@ class TaskStatusTransitionTest extends TestCase
         ]);
         $this->assertSame(TaskStatus::Accepted, $task1->fresh()->status);
 
-        // Jalur 2: assigned -> submitted (fleksibel) -> revision_requested -> resubmitted -> accepted
+        // Jalur 2: assigned -> in_progress -> submitted -> revision_requested -> resubmitted -> revision_requested -> resubmitted -> accepted
         $task2 = Task::factory()->create([
             'pic_user_id' => $pic->id,
             'intern_user_id' => $intern->id,
             'status' => TaskStatus::Assigned,
         ]);
+
+        $this->actingAs($intern)->patch(route('intern.tasks.start', $task2));
+        $this->assertSame(TaskStatus::InProgress, $task2->fresh()->status);
 
         $this->actingAs($intern)->post(route('intern.tasks.submissions.store', $task2), [
             'submission_url' => 'https://github.com/ptwan/repo/pull/2',
@@ -134,14 +137,45 @@ class TaskStatusTransitionTest extends TestCase
         $this->assertSame(TaskStatus::RevisionRequested, $task2->fresh()->status);
 
         $this->actingAs($intern)->post(route('intern.tasks.submissions.store', $task2), [
-            'submission_url' => 'https://github.com/ptwan/repo/pull/2-rev',
+            'submission_url' => 'https://github.com/ptwan/repo/pull/2-rev1',
         ]);
         $this->assertSame(TaskStatus::Resubmitted, $task2->fresh()->status);
 
+        // Peserta tidak bisa submit lagi saat status sedang resubmitted (menunggu review PIC)
+        $this->actingAs($intern)->post(route('intern.tasks.submissions.store', $task2), [
+            'submission_url' => 'https://github.com/ptwan/repo/pull/2-duplicate',
+        ])->assertForbidden();
+
+        // PIC meminta revisi lagi dari status resubmitted -> revision_requested
+        $this->actingAs($pic)->post(route('pic.tasks.reviews.store', $task2), [
+            'decision' => TaskReviewDecision::RevisionRequested->value,
+            'feedback' => 'Masih ada satu field yang belum tervalidasi.',
+        ]);
+        $this->assertSame(TaskStatus::RevisionRequested, $task2->fresh()->status);
+
+        // Peserta resubmit ke-3 (revision_requested -> resubmitted)
+        $this->actingAs($intern)->post(route('intern.tasks.submissions.store', $task2), [
+            'submission_url' => 'https://github.com/ptwan/repo/pull/2-rev2',
+        ]);
+        $this->assertSame(TaskStatus::Resubmitted, $task2->fresh()->status);
+
+        // PIC menerima dari status resubmitted -> accepted
         $this->actingAs($pic)->post(route('pic.tasks.reviews.store', $task2), [
             'decision' => TaskReviewDecision::Accepted->value,
         ]);
         $this->assertSame(TaskStatus::Accepted, $task2->fresh()->status);
+
+        // Jalur 3 (Opsi A Fleksibel): assigned -> submitted -> accepted
+        $task3 = Task::factory()->create([
+            'pic_user_id' => $pic->id,
+            'intern_user_id' => $intern->id,
+            'status' => TaskStatus::Assigned,
+        ]);
+
+        $this->actingAs($intern)->post(route('intern.tasks.submissions.store', $task3), [
+            'submission_url' => 'https://github.com/ptwan/repo/pull/3',
+        ]);
+        $this->assertSame(TaskStatus::Submitted, $task3->fresh()->status);
     }
 
     public function test_blocks_http_tampering_and_illegal_transitions_by_intern_pic_and_admin(): void

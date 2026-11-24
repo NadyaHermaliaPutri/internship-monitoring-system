@@ -64,10 +64,15 @@ class MediaFilePolicy
     }
 
     /**
-     * Penghapusan file hanya oleh Admin atau pemilik.
+     * Penghapusan file hanya oleh Admin atau pemilik, KECUALI untuk kategori task_evidence
+     * yang merupakan bagian dari riwayat pengumpulan tugas (append-only / immutable history).
      */
     public function delete(User $user, MediaFile $mediaFile): bool
     {
+        if ($mediaFile->category === 'task_evidence') {
+            return false;
+        }
+
         return $user->isAdmin() || $user->id === $mediaFile->owner_user_id;
     }
 }

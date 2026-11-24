@@ -129,8 +129,8 @@
                 <label for="source" class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Sumber</label>
                 <select id="source" name="source" class="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 bg-white text-slate-700">
                     <option value="">Semua Sumber</option>
-                    <option value="manual" @selected(request('source') === 'manual')>Manual Peserta</option>
-                    <option value="task_assignment" @selected(request('source') === 'task_assignment')>Otomatis Penugasan PIC</option>
+                    <option value="manual" @selected(request('source') === 'manual')>Aktivitas Mandiri</option>
+                    <option value="task_assignment" @selected(request('source') === 'task_assignment')>Penugasan PIC</option>
                 </select>
             </div>
 
@@ -190,41 +190,48 @@
             <div class="hidden md:block overflow-x-auto rounded-2xl border border-slate-200/80">
                 <table class="w-full text-left border-collapse">
                     <thead>
-                        <tr class="bg-[#015987]/5 border-b border-slate-200/80 text-[11px] font-bold text-[#015987] uppercase tracking-wider">
-                            <th class="py-3.5 px-4 whitespace-nowrap">Tanggal</th>
+                        <tr class="bg-[#015987]/5 border-b border-slate-200/80 text-[11px] font-bold text-[#015987] uppercase tracking-wider text-center">
+                            <th class="py-3.5 px-4 whitespace-nowrap text-center">Tanggal</th>
                             @if (! $user->isIntern())
-                                <th class="py-3.5 px-4 whitespace-nowrap">Peserta</th>
+                                <th class="py-3.5 px-4 whitespace-nowrap text-center">Peserta</th>
                             @endif
-                            <th class="py-3.5 px-4 whitespace-nowrap">Sumber</th>
-                            <th class="py-3.5 px-4 w-full">Judul &amp; Ringkasan</th>
-                            <th class="py-3.5 px-4 whitespace-nowrap">Status</th>
-                            <th class="py-3.5 px-4 text-right whitespace-nowrap">Aksi</th>
+                            <th class="py-3.5 px-4 whitespace-nowrap text-center">Sumber</th>
+                            <th class="py-3.5 px-4 w-full text-center">Judul &amp; Ringkasan</th>
+                            <th class="py-3.5 px-4 whitespace-nowrap text-center">Status</th>
+                            <th class="py-3.5 px-4 whitespace-nowrap text-center">Aksi</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100 text-xs">
                         @foreach ($logbooks as $item)
-                            <tr class="hover:bg-slate-50/80 transition align-middle">
+                            @php
+                                $needsPicReview = $user->isPic() && $user->can('review', $item);
+                            @endphp
+                            <tr class="{{ $needsPicReview ? 'bg-amber-50/35' : '' }} hover:bg-slate-50/80 transition align-middle">
                                 {{-- Tanggal --}}
-                                <td class="py-3.5 px-4 whitespace-nowrap font-bold text-[#015987]">
+                                <td class="py-3.5 px-4 whitespace-nowrap font-bold text-[#015987] text-center">
                                     {{ $item->log_date->translatedFormat('d M Y') }}
                                 </td>
 
                                 {{-- Peserta (PIC & Admin) --}}
                                 @if (! $user->isIntern())
-                                    <td class="py-3.5 px-4 whitespace-nowrap font-semibold text-slate-800">
+                                    <td class="py-3.5 px-4 whitespace-nowrap font-semibold text-slate-800 text-center">
                                         {{ $item->intern?->name }}
                                     </td>
                                 @endif
 
                                 {{-- Sumber --}}
-                                <td class="py-3.5 px-4 whitespace-nowrap">
+                                <td class="py-3.5 px-4 whitespace-nowrap text-center">
                                     @if ($item->isTaskAssignment())
                                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-sky-50 text-sky-700 border border-sky-200">
-                                            Otomatis Penugasan PIC
+                                            Penugasan PIC
+                                        </span>
+                                    @elseif ($item->relatedTask)
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200" title="Terkait Tugas: {{ $item->relatedTask->title }}">
+                                            Terkait Tugas ({{ $item->relatedTask->pic?->name ?? 'PIC' }})
                                         </span>
                                     @else
                                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-700 border border-slate-200/70">
-                                            Manual Peserta
+                                            Kegiatan Mandiri / Umum
                                         </span>
                                     @endif
                                 </td>
@@ -242,10 +249,15 @@
                                     <p class="text-[11px] text-slate-500 line-clamp-1 mt-0.5">
                                         {{ $item->activity_description }}
                                     </p>
+                                    @if ($item->relatedTask)
+                                        <p class="text-[10px] text-[#015987] font-semibold truncate mt-0.5">
+                                            Tugas: {{ $item->relatedTask->title }} (PIC: {{ $item->relatedTask->pic?->name ?? 'PIC' }})
+                                        </p>
+                                    @endif
                                 </td>
 
                                 {{-- Status --}}
-                                <td class="py-3.5 px-4 whitespace-nowrap">
+                                <td class="py-3.5 px-4 whitespace-nowrap text-center">
                                     @if ($item->isManual() && $item->status)
                                         @php
                                             $statusClasses = match ($item->status->value) {
@@ -265,14 +277,23 @@
                                 </td>
 
                                 {{-- Aksi --}}
-                                <td class="py-3.5 px-4 whitespace-nowrap text-right">
-                                    <div class="inline-flex items-center justify-end gap-2">
-                                        <a
-                                            href="{{ route($rolePrefix . '.logbooks.show', $item) }}"
-                                            class="px-3 py-1.5 rounded-xl border border-slate-200 hover:border-[#015987] text-xs font-semibold text-[#015987] transition"
-                                        >
-                                            Detail
-                                        </a>
+                                <td class="py-3.5 px-4 whitespace-nowrap text-center">
+                                    <div class="inline-flex items-center justify-center gap-2">
+                                        @if ($needsPicReview)
+                                            <a
+                                                href="{{ route('pic.logbooks.show', $item) }}"
+                                                class="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-xs font-bold text-white shadow-xs transition"
+                                            >
+                                                Review Logbook
+                                            </a>
+                                        @else
+                                            <a
+                                                href="{{ route($rolePrefix . '.logbooks.show', $item) }}"
+                                                class="px-3 py-1.5 rounded-xl border border-slate-200 hover:border-[#015987] text-xs font-semibold text-[#015987] transition"
+                                            >
+                                                Detail
+                                            </a>
+                                        @endif
 
                                         @can('update', $item)
                                             <a
@@ -323,11 +344,11 @@
                         <div class="flex flex-wrap items-center gap-1.5">
                             @if ($item->isTaskAssignment())
                                 <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-sky-50 text-sky-700 border border-sky-200">
-                                    Otomatis Penugasan PIC
+                                    Penugasan PIC
                                 </span>
                             @else
                                 <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-700">
-                                    Manual Peserta
+                                    Aktivitas Mandiri
                                 </span>
                             @endif
 

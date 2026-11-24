@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use LogicException;
 
 #[Fillable([
     'task_id',
@@ -25,6 +26,21 @@ class TaskSubmission extends Model
             'submission_number' => 'integer',
             'submitted_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Guard Immutability (Append-Only):
+     * Riwayat pengumpulan tugas tidak pernah boleh di-update atau dihapus setelah tersimpan.
+     */
+    protected static function booted(): void
+    {
+        static::updating(function (): void {
+            throw new LogicException('Riwayat pengumpulan tugas (TaskSubmission) bersifat append-only dan tidak boleh diubah.');
+        });
+
+        static::deleting(function (): void {
+            throw new LogicException('Riwayat pengumpulan tugas (TaskSubmission) bersifat historis dan tidak boleh dihapus.');
+        });
     }
 
     /**
