@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="theme-color" content="#015987">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="WANTRACE">
@@ -729,6 +730,22 @@
                 installBtn.classList.add('hidden');
                 installBtn.classList.remove('inline-flex');
             });
+
+            // 5. Pengaman Form Submit Saat Offline (Mencegah Kehilangan Data / Gagal Request Tanpa Feedback)
+            document.addEventListener('submit', (event) => {
+                if (!navigator.onLine) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    if (typeof window.showErrorAlert === 'function') {
+                        window.showErrorAlert(
+                            'Koneksi Internet Terputus',
+                            'Aktivitas ini membutuhkan koneksi internet aktif. Transaksi tidak dapat diproses secara offline. Pastikan perangkat Anda terhubung kembali ke internet.'
+                        );
+                    } else {
+                        alert('Koneksi Internet Terputus: Aktivitas ini membutuhkan koneksi internet aktif.');
+                    }
+                }
+            }, true);
         })();
     </script>
 

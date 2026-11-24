@@ -16,8 +16,50 @@ use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    return redirect()->route('login');
+    if (! auth()->check()) {
+        return redirect()->route('login');
+    }
+
+    $user = auth()->user();
+
+    if (! $user->is_active) {
+        auth()->logout();
+        request()->session()->invalidate();
+        request()->session()->regenerateToken();
+
+        return redirect()->route('login')->withErrors([
+            'email' => 'Akun Anda dinonaktifkan. Silakan hubungi Administrator.',
+        ]);
+    }
+
+    return match ($user->role) {
+        'admin' => redirect()->route('admin.dashboard'),
+        'pic' => redirect()->route('pic.dashboard'),
+        'intern' => redirect()->route('intern.dashboard'),
+        default => abort(403, 'Peran pengguna tidak valid.'),
+    };
 });
+
+// ==============================================================
+// PWA ASSETS & SERVICE WORKER (AKSES PUBLIK)
+// ==============================================================
+Route::get('/manifest.webmanifest', function () {
+    return response()->file(public_path('manifest.webmanifest'), [
+        'Content-Type' => 'application/manifest+json',
+    ]);
+})->name('pwa.manifest');
+
+Route::get('/sw.js', function () {
+    return response()->file(public_path('sw.js'), [
+        'Content-Type' => 'application/javascript',
+    ]);
+})->name('pwa.sw');
+
+Route::get('/offline.html', function () {
+    return response()->file(public_path('offline.html'), [
+        'Content-Type' => 'text/html',
+    ]);
+})->name('pwa.offline');
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'create'])->name('login');
