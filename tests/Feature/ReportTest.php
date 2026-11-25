@@ -287,4 +287,63 @@ class ReportTest extends TestCase
         $this->assertCount(1, $reportData['attendances']);
         $this->assertEquals('Peserta A', $reportData['attendances']->first()->intern->name);
     }
+
+    /**
+     * 10. Laporan tugas memperkaya informasi dengan riwayat pengumpulan (TaskSubmission) dan review PIC (TaskReview).
+     */
+    public function test_task_report_includes_submission_count_and_latest_review_details(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $pic = User::factory()->create(['role' => 'pic', 'is_active' => true]);
+        $intern = User::factory()->create(['role' => 'intern', 'name' => 'Peserta Tugas', 'is_active' => true]);
+
+        $task = Task::create([
+            'pic_user_id' => $pic->id,
+            'intern_user_id' => $intern->id,
+            'title' => 'Implementasi Modul Ekspor',
+            'description' => 'Membuat fitur ekspor PDF dan Excel.',
+            'assigned_at' => '2026-11-10 09:00:00',
+            'deadline_at' => '2026-11-20 17:00:00',
+            'status' => TaskStatus::RevisionRequested,
+        ]);
+
+        $submission = \App\Models\TaskSubmission::create([
+            'task_id' => $task->id,
+            'submitted_by' => $intern->id,
+            'submission_number' => 1,
+            'submission_note' => 'Sudah selesai tahap awal.',
+            'submitted_at' => '2026-11-15 14:00:00',
+        ]);
+
+        \App\Models\TaskReview::create([
+            'task_submission_id' => $submission->id,
+            'reviewed_by' => $pic->id,
+            'decision' => \App\Enums\TaskReviewDecision::RevisionRequested,
+            'feedback' => 'Tolong rapikan format tabel PDF.',
+            'reviewed_at' => '2026-11-16 10:00:00',
+        ]);
+
+        $response = $this->actingAs($admin)->get('/admin/laporan?report_type=task&start_date=2026-11-01&end_date=2026-11-30');
+        $response->assertOk();
+
+        // Cek data di view
+        $reportData = $response->viewData('reportData');
+        $retrievedTask = $reportData['tasks']->first();
+        $this->assertEquals(1, $retrievedTask->submissions_count);
+        $this->assertNotNull($retrievedTask->latestSubmission);
+        $this->assertEquals(1, $retrievedTask->latestSubmission->submission_number);
+        $this->assertNotNull($retrievedTask->latestSubmission->latestReview);
+        $this->assertEquals(\App\Enums\TaskReviewDecision::RevisionRequested, $retrievedTask->latestSubmission->latestReview->decision);
+
+        // Cek teks pada HTML preview
+        $response->assertSee('Versi ke-1 (Total 1x)');
+        $response->assertSee('Perlu Revisi');
+
+        // Cek teks pada ekspor PDF & Excel
+        $pdfResponse = $this->actingAs($admin)->get('/admin/laporan/export-pdf?report_type=task&start_date=2026-11-01&end_date=2026-11-30');
+        $pdfResponse->assertOk();
+
+        $excelResponse = $this->actingAs($admin)->get('/admin/laporan/export-excel?report_type=task&start_date=2026-11-01&end_date=2026-11-30');
+        $excelResponse->assertOk();
+    }
 }

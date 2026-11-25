@@ -400,13 +400,18 @@
                             <th class="py-3 px-4">Peserta Penerima</th>
                             <th class="py-3 px-4">PIC Pemberi</th>
                             <th class="py-3 px-4">Penugasan &amp; Deadline</th>
+                            <th class="py-3 px-4">Pengumpulan &amp; Review</th>
                             <th class="py-3 px-4">Status Terkini</th>
                             <th class="py-3 px-4">Penyelesaian</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
                         @forelse($reportData['tasks'] as $idx => $row)
-                            @php $isOverdue = $row->isOverdue(); @endphp
+                            @php 
+                                $isOverdue = $row->isOverdue(); 
+                                $latestSub = $row->latestSubmission;
+                                $latestRev = $latestSub?->latestReview;
+                            @endphp
                             <tr class="hover:bg-slate-50/50 transition">
                                 <td class="py-3 px-4 text-center text-slate-400 font-medium">{{ $idx + 1 }}</td>
                                 <td class="py-3 px-4 max-w-xs">
@@ -422,6 +427,21 @@
                                     <div class="font-semibold {{ $isOverdue ? 'text-rose-600 font-bold' : 'text-slate-700' }}">
                                         Deadline: {{ $row->deadline_at?->translatedFormat('d M Y, H:i') ?? '-' }}
                                     </div>
+                                </td>
+                                <td class="py-3 px-4">
+                                    @if($row->submissions_count > 0 && $latestSub)
+                                        <div class="font-medium text-slate-700">
+                                            Versi ke-{{ $latestSub->submission_number }} (Total {{ $row->submissions_count }}x)
+                                        </div>
+                                        <div class="text-[10px] text-slate-400">{{ $latestSub->submitted_at?->translatedFormat('d/m/Y H:i') }}</div>
+                                        @if($latestRev)
+                                            <div class="text-[10px] mt-0.5 font-semibold {{ $latestRev->decision?->value === 'approved' ? 'text-emerald-600' : 'text-amber-600' }}">
+                                                Review: {{ $latestRev->decision?->label() ?? $latestRev->decision?->value }}
+                                            </div>
+                                        @endif
+                                    @else
+                                        <span class="text-slate-400 text-[11px]">Belum dikumpulkan</span>
+                                    @endif
                                 </td>
                                 <td class="py-3 px-4">
                                     <div class="flex flex-col gap-1 items-start">

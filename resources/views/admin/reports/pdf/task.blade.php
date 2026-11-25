@@ -30,18 +30,21 @@
         <thead>
             <tr>
                 <th style="width: 4%;" class="text-center">No</th>
-                <th style="width: 22%;">Judul Tugas</th>
-                <th style="width: 16%;">Peserta Penerima</th>
-                <th style="width: 14%;">PIC Pemberi</th>
-                <th style="width: 16%;">Penugasan &amp; Tenggat</th>
-                <th style="width: 14%;">Status Saat Ini</th>
-                <th style="width: 14%;">Tanggal Selesai</th>
+                <th style="width: 20%;">Judul Tugas</th>
+                <th style="width: 14%;">Peserta Penerima</th>
+                <th style="width: 12%;">PIC Pemberi</th>
+                <th style="width: 14%;">Penugasan &amp; Tenggat</th>
+                <th style="width: 14%;">Pengumpulan &amp; Review</th>
+                <th style="width: 11%;">Status Terkini</th>
+                <th style="width: 11%;">Tanggal Selesai</th>
             </tr>
         </thead>
         <tbody>
             @forelse($data['tasks'] as $index => $item)
                 @php
                     $isOverdue = $item->isOverdue();
+                    $latestSub = $item->latestSubmission;
+                    $latestRev = $latestSub?->latestReview;
                 @endphp
                 <tr>
                     <td class="text-center">{{ $index + 1 }}</td>
@@ -58,6 +61,23 @@
                         <div style="font-size: 9px; font-weight: bold; color: {{ $isOverdue ? '#dc2626' : '#475569' }};">
                             Deadline: {{ $item->deadline_at?->translatedFormat('d M Y, H:i') ?? '-' }}
                         </div>
+                    </td>
+                    <td>
+                        @if($item->submissions_count > 0 && $latestSub)
+                            <div style="font-size: 9px; font-weight: bold;">
+                                Versi {{ $latestSub->submission_number }} ({{ $item->submissions_count }}x kirim)
+                            </div>
+                            <div style="font-size: 8px; color: #64748b;">
+                                {{ $latestSub->submitted_at?->translatedFormat('d/m/Y H:i') }}
+                            </div>
+                            @if($latestRev)
+                                <div style="font-size: 8px; font-weight: bold; color: {{ $latestRev->decision?->value === 'approved' ? '#16a34a' : '#d97706' }};">
+                                    {{ $latestRev->decision?->label() ?? $latestRev->decision?->value }}
+                                </div>
+                            @endif
+                        @else
+                            <span style="color: #94a3b8; font-size: 9px;">Belum dikumpulkan</span>
+                        @endif
                     </td>
                     <td>
                         @if($item->status?->value === 'accepted')

@@ -56,13 +56,18 @@
             <th style="font-weight: bold; border: 1px solid #000000;">Peserta Penerima</th>
             <th style="font-weight: bold; border: 1px solid #000000;">PIC Pemberi</th>
             <th style="font-weight: bold; border: 1px solid #000000;">Waktu Diberikan &amp; Deadline</th>
+            <th style="font-weight: bold; border: 1px solid #000000;">Riwayat Pengumpulan &amp; Review</th>
             <th style="font-weight: bold; border: 1px solid #000000;">Status Terkini</th>
             <th style="font-weight: bold; border: 1px solid #000000;">Waktu Selesai (Accepted)</th>
         </tr>
     </thead>
     <tbody>
         @forelse($data['tasks'] as $index => $item)
-            @php $isOverdue = $item->isOverdue(); @endphp
+            @php 
+                $isOverdue = $item->isOverdue(); 
+                $latestSub = $item->latestSubmission;
+                $latestRev = $latestSub?->latestReview;
+            @endphp
             <tr>
                 <td style="text-align: center; border: 1px solid #cccccc;">{{ $index + 1 }}</td>
                 <td style="border: 1px solid #cccccc;">{{ $item->title }}</td>
@@ -71,6 +76,13 @@
                 <td style="border: 1px solid #cccccc;">
                     Diberikan: {{ $item->assigned_at?->format('Y-m-d H:i') ?? '-' }} | 
                     Deadline: {{ $item->deadline_at?->format('Y-m-d H:i') ?? '-' }}
+                </td>
+                <td style="border: 1px solid #cccccc;">
+                    @if($item->submissions_count > 0 && $latestSub)
+                        Versi {{ $latestSub->submission_number }} ({{ $item->submissions_count }}x kirim, {{ $latestSub->submitted_at?->format('Y-m-d H:i') }}){{ $latestRev ? ' | Review: ' . ($latestRev->decision?->label() ?? $latestRev->decision?->value) : '' }}
+                    @else
+                        Belum dikumpulkan
+                    @endif
                 </td>
                 <td style="border: 1px solid #cccccc;">
                     {{ strtoupper($item->status?->value ?? '-') }}

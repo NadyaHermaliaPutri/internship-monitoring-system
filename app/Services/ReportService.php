@@ -196,7 +196,13 @@ class ReportService
     {
         $now = Carbon::now(config('wantrace.timezone', 'Asia/Jakarta'));
 
-        $query = Task::with(['intern', 'pic', 'acceptedByUser'])
+        $query = Task::with([
+            'intern',
+            'pic',
+            'acceptedByUser',
+            'latestSubmission.latestReview',
+        ])
+            ->withCount('submissions')
             ->where(function ($q) use ($startDate, $endDate) {
                 $q->whereBetween('assigned_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
                     ->orWhereBetween('deadline_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
