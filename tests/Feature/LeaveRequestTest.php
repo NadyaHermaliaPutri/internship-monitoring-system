@@ -485,4 +485,75 @@ class LeaveRequestTest extends TestCase
         $response->assertSee('Sakit typhus butuh bedrest');
         $response->assertDontSee('Peserta Lain B');
     }
+
+    public function test_intern_leave_index_shows_submission_time_and_hides_wib_badge(): void
+    {
+        $intern = User::factory()->create(['role' => 'intern', 'is_active' => true]);
+
+        LeaveRequest::create([
+            'intern_user_id' => $intern->id,
+            'leave_type' => 'leave',
+            'start_date' => '2026-11-25',
+            'end_date' => '2026-11-25',
+            'reason' => 'Urusan kampus',
+            'status' => 'pending',
+        ]);
+
+        $response = $this->actingAs($intern)->get('/intern/izin');
+        $response->assertOk();
+        $response->assertSee('Diajukan:');
+        $response->assertSee('WIB');
+        $response->assertDontSee('WIB Time');
+        $response->assertDontSee('Format Bukti');
+    }
+
+    public function test_admin_leave_index_paginates_and_filters_by_date(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $intern = User::factory()->create(['role' => 'intern', 'is_active' => true]);
+
+        // 10 items in Nov 2026 + 1 item in Dec 2026 = 11 total
+        for ($d = 1; $d <= 10; $d++) {
+            $date = sprintf('2026-11-%02d', $d);
+            LeaveRequest::create([
+                'intern_user_id' => $intern->id,
+                'leave_type' => 'leave',
+                'start_date' => $date,
+                'end_date' => $date,
+                'reason' => "Izin November {$d}",
+                'status' => 'pending',
+            ]);
+        }
+
+        LeaveRequest::create([
+            'intern_user_id' => $intern->id,
+            'leave_type' => 'sick',
+            'start_date' => '2026-12-05',
+            'end_date' => '2026-12-06',
+            'reason' => 'Sakit Desember',
+            'status' => 'pending',
+        ]);
+
+        // Page 1 -> 10 items
+        $page1 = $this->actingAs($admin)->get('/admin/izin');
+        $page1->assertOk();
+        $page1->assertDontSee('Seluruh berkas bukti medis disimpan privat pada disk terproteksi');
+        $page1->assertSee('Diajukan:');
+        $page1->assertViewHas('leaveRequests', function ($paginator) {
+            return $paginator->total() === 11 && $paginator->perPage() === 10 && $paginator->count() === 10;
+        });
+
+        // Page 2 -> 1 item
+        $page2 = $this->actingAs($admin)->get('/admin/izin?page=2');
+        $page2->assertOk();
+        $page2->assertViewHas('leaveRequests', function ($paginator) {
+            return $paginator->currentPage() === 2 && $paginator->count() === 1;
+        });
+
+        // Date filter -> only December item
+        $filtered = $this->actingAs($admin)->get('/admin/izin?date_from=2026-12-01&date_to=2026-12-31');
+        $filtered->assertOk();
+        $filtered->assertSee('Sakit Desember');
+        $filtered->assertDontSee('Izin November 1');
+    }
 }
