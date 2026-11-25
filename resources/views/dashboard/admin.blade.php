@@ -9,7 +9,7 @@
 <div class="space-y-8">
 
     <!-- ============================================================== -->
-    <!-- 1. KARTU STATISTIK RINGKASAN (100% DINAMIS DARI DATABASE)      -->
+    <!-- 1. KARTU STATISTIK RINGKASAN
     <!-- ============================================================== -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         
@@ -133,6 +133,7 @@
                     {{ $adminSummary['day_status']['reason'] ?? 'Operasional PT WAN Teknologi Internasional' }} &bull; Jam Kerja 08.00 - 17.00 WIB
                 </p>
             </div>
+            </div>
         </div>
 
         <div class="flex flex-wrap items-center gap-2 sm:gap-3 text-xs">
@@ -234,7 +235,7 @@
                         <thead>
                             <tr class="border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                                 <th class="py-4 px-6">Nama Peserta</th>
-                                <th class="py-4 px-5">Jam Check-In</th>
+                                <th class="py-4 px-5">Jam Masuk</th>
                                 <th class="py-4 px-5 text-center">Foto Bukti</th>
                                 <th class="py-4 px-5">Status</th>
                                 <th class="py-4 px-6 text-right">Aksi</th>

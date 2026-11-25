@@ -30,7 +30,7 @@ class StoreTaskRequest extends FormRequest
                 'integer',
                 function (string $attribute, mixed $value, Closure $fail) use ($taskService, $picId) {
                     if (! is_numeric($value) || ! $taskService->isInternAssignableByPic($picId, (int) $value)) {
-                        $fail('Peserta yang dipilih harus berstatus aktif dan berada dalam penugasan aktif Anda.');
+                        $fail('Peserta yang dipilih harus memiliki role peserta magang dan berstatus aktif.');
                     }
                 },
             ],
@@ -59,6 +59,12 @@ class StoreTaskRequest extends FormRequest
                     }
                 },
             ],
+            // Hardening anti-tampering: tolak eksplisit percobaan menyisipkan kolom status/audit lewat payload HTTP
+            'status' => ['prohibited'],
+            'accepted_at' => ['prohibited'],
+            'accepted_by' => ['prohibited'],
+            'pic_user_id' => ['prohibited'],
+            'assigned_at' => ['prohibited'],
         ];
     }
 

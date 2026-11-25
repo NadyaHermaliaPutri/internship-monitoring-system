@@ -5,6 +5,7 @@ namespace App\Policies;
 use App\Models\Attendance;
 use App\Models\LeaveRequest;
 use App\Models\MediaFile;
+use App\Models\TaskSubmission;
 use App\Models\User;
 
 class MediaFilePolicy
@@ -41,6 +42,13 @@ class MediaFilePolicy
                 if ($leave && $user->isCurrentlyAssignedTo($leave->intern_user_id)) {
                     return true;
                 }
+            } elseif ($mediaFile->category === 'task_evidence') {
+                return TaskSubmission::query()
+                    ->where('evidence_media_id', $mediaFile->id)
+                    ->whereHas('task', function ($q) use ($user) {
+                        $q->where('pic_user_id', $user->id);
+                    })
+                    ->exists();
             }
         }
 
@@ -56,10 +64,15 @@ class MediaFilePolicy
     }
 
     /**
-     * Penghapusan file hanya oleh Admin atau pemilik.
+     * Penghapusan file hanya oleh Admin atau pemilik, KECUALI untuk kategori task_evidence
+     * yang merupakan bagian dari riwayat pengumpulan tugas (append-only / immutable history).
      */
     public function delete(User $user, MediaFile $mediaFile): bool
     {
+        if ($mediaFile->category === 'task_evidence') {
+            return false;
+        }
+
         return $user->isAdmin() || $user->id === $mediaFile->owner_user_id;
     }
 }

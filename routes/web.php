@@ -1,6 +1,5 @@
 <?php
 
-use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\CalendarController;
@@ -12,6 +11,8 @@ use App\Http\Controllers\LogbookController;
 use App\Http\Controllers\PrivateMediaController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\TaskController;
+use App\Http\Controllers\TaskReviewController;
+use App\Http\Controllers\TaskSubmissionController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -135,9 +136,20 @@ Route::middleware('auth')->group(function () {
         Route::prefix('izin')->name('leave.')->group(function () {
             Route::get('/', [LeaveRequestController::class, 'picIndex'])->name('index');
         });
+
+        // Modul 3: Monitoring & Review Logbook Peserta Bimbingan (PIC)
         Route::get('/logbooks', [LogbookController::class, 'index'])->name('logbooks.index');
         Route::get('/logbooks/{logbook}', [LogbookController::class, 'show'])->name('logbooks.show');
-        Route::resource('tasks', TaskController::class);
+        Route::post('/logbooks/{logbook}/review', [LogbookController::class, 'review'])->name('logbooks.review');
+
+        // Modul 3: Pembuatan, Pengelolaan, & Review Tugas (PIC)
+        Route::get('/tasks', [TaskController::class, 'index'])->name('tasks.index');
+        Route::get('/tasks/create', [TaskController::class, 'create'])->name('tasks.create');
+        Route::post('/tasks', [TaskController::class, 'store'])->name('tasks.store');
+        Route::get('/tasks/{task}', [TaskController::class, 'show'])->name('tasks.show');
+        Route::get('/tasks/{task}/edit', [TaskController::class, 'edit'])->name('tasks.edit');
+        Route::put('/tasks/{task}', [TaskController::class, 'update'])->name('tasks.update');
+        Route::post('/tasks/{task}/reviews', [TaskReviewController::class, 'store'])->name('tasks.reviews.store');
     });
 
     // ==============================================================
@@ -153,9 +165,19 @@ Route::middleware('auth')->group(function () {
             Route::get('/', [LeaveRequestController::class, 'internIndex'])->name('index');
             Route::post('/', [LeaveRequestController::class, 'internStore'])->name('store');
         });
-        Route::resource('logbooks', LogbookController::class);
+
+        // Modul 3: Pengisian & Manajemen Logbook (Peserta Magang — Tanpa Destroy)
+        Route::get('/logbooks', [LogbookController::class, 'index'])->name('logbooks.index');
+        Route::get('/logbooks/create', [LogbookController::class, 'create'])->name('logbooks.create');
+        Route::post('/logbooks', [LogbookController::class, 'store'])->name('logbooks.store');
+        Route::get('/logbooks/{logbook}', [LogbookController::class, 'show'])->name('logbooks.show');
+        Route::get('/logbooks/{logbook}/edit', [LogbookController::class, 'edit'])->name('logbooks.edit');
+        Route::put('/logbooks/{logbook}', [LogbookController::class, 'update'])->name('logbooks.update');
+
+        // Modul 3: Daftar, Mulai, & Pengumpulan Tugas (Peserta Magang)
         Route::get('/tasks', [TaskController::class, 'index'])->name('tasks.index');
         Route::get('/tasks/{task}', [TaskController::class, 'show'])->name('tasks.show');
         Route::patch('/tasks/{task}/start', [TaskController::class, 'start'])->name('tasks.start');
+        Route::post('/tasks/{task}/submissions', [TaskSubmissionController::class, 'store'])->name('tasks.submissions.store');
     });
 });

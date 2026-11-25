@@ -51,6 +51,13 @@ class UpdateTaskRequest extends FormRequest
                     }
                 },
             ],
+            // Hardening anti-tampering: PIC tidak boleh memanipulasi status, pemilik peserta, atau metadata accepted lewat endpoint update
+            'status' => ['prohibited'],
+            'accepted_at' => ['prohibited'],
+            'accepted_by' => ['prohibited'],
+            'pic_user_id' => ['prohibited'],
+            'intern_user_id' => ['prohibited'],
+            'assigned_at' => ['prohibited'],
         ];
     }
 

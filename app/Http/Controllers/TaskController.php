@@ -142,6 +142,9 @@ class TaskController extends Controller
             'intern:id,name,email',
             'acceptedByUser:id,name',
             'assignmentLogbook',
+            'submissions.evidenceMedia',
+            'submissions.submitter:id,name',
+            'submissions.reviews.reviewer:id,name',
         ]);
 
         return view('tasks.show', [
