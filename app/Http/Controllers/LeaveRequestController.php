@@ -119,7 +119,17 @@ class LeaveRequestController extends Controller
             });
         }
 
-        $leaveRequests = $query->paginate(12)->withQueryString();
+        $dateFrom = $request->input('date_from');
+        $dateTo   = $request->input('date_to');
+
+        if ($dateFrom) {
+            $query->where('end_date', '>=', $dateFrom);
+        }
+        if ($dateTo) {
+            $query->where('start_date', '<=', $dateTo);
+        }
+
+        $leaveRequests = $query->paginate(10)->withQueryString();
 
         // Statistik keseluruhan
         $totalPending = LeaveRequest::pending()->count();
@@ -132,6 +142,8 @@ class LeaveRequestController extends Controller
             'statusFilter',
             'typeFilter',
             'search',
+            'dateFrom',
+            'dateTo',
             'totalPending',
             'totalApproved',
             'totalRejected',
@@ -205,7 +217,17 @@ class LeaveRequestController extends Controller
             $query->where('leave_type', $typeFilter);
         }
 
-        $leaveRequests = $query->paginate(12)->withQueryString();
+        $dateFrom = $request->input('date_from');
+        $dateTo   = $request->input('date_to');
+
+        if ($dateFrom) {
+            $query->where('end_date', '>=', $dateFrom);
+        }
+        if ($dateTo) {
+            $query->where('start_date', '<=', $dateTo);
+        }
+
+        $leaveRequests = $query->paginate(10)->withQueryString();
 
         return view('pic.leave.index', compact(
             'leaveRequests',

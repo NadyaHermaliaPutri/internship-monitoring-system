@@ -64,21 +64,60 @@ class AttendanceController extends Controller
         $selectedYear = (int) $request->input('year', $now->year);
         $statusFilter = $request->input('status');
 
-        $historyQuery = Attendance::with(['photo', 'reviewer'])
+        // Ambil riwayat presensi
+        $attendanceQuery = Attendance::with(['photo', 'reviewer'])
             ->where('intern_user_id', $intern->id)
             ->orderByDesc('attendance_date');
 
         if ($request->filled('month')) {
-            $historyQuery->whereMonth('attendance_date', $selectedMonth);
+            $attendanceQuery->whereMonth('attendance_date', $selectedMonth);
         }
         if ($request->filled('year')) {
-            $historyQuery->whereYear('attendance_date', $selectedYear);
+            $attendanceQuery->whereYear('attendance_date', $selectedYear);
         }
         if ($request->filled('status') && in_array($statusFilter, ['on_time', 'late'], true)) {
-            $historyQuery->where('status', $statusFilter);
+            $attendanceQuery->where('status', $statusFilter);
         }
 
-        $attendances = $historyQuery->paginate(10)->withQueryString();
+        // Ambil riwayat izin/sakit (semua status) untuk unified history
+        $leaveQuery = \App\Models\LeaveRequest::with(['evidence', 'reviewer'])
+            ->where('intern_user_id', $intern->id);
+
+        if ($request->filled('month')) {
+            $leaveQuery->where(function ($q) use ($selectedMonth) {
+                $q->whereMonth('start_date', $selectedMonth)
+                  ->orWhereMonth('end_date', $selectedMonth);
+            });
+        }
+        if ($request->filled('year')) {
+            $leaveQuery->where(function ($q) use ($selectedYear) {
+                $q->whereYear('start_date', $selectedYear)
+                  ->orWhereYear('end_date', $selectedYear);
+            });
+        }
+
+        // Gabungkan dan sort manual untuk unified history (paginate 5/page)
+        $allAttendances = $attendanceQuery->get()->map(fn ($a) => ['type' => 'attendance', 'date' => $a->attendance_date, 'data' => $a]);
+        $allLeaves      = $leaveQuery->get()->map(fn ($l) => ['type' => 'leave', 'date' => $l->created_at->toDateString(), 'data' => $l]);
+
+        $unified = $allAttendances->merge($allLeaves)
+            ->sortByDesc('date')
+            ->values();
+
+        $perPage     = 5;
+        $currentPage = (int) $request->input('page', 1);
+        $sliced      = $unified->slice(($currentPage - 1) * $perPage, $perPage)->values();
+
+        $unifiedHistory = new \Illuminate\Pagination\LengthAwarePaginator(
+            $sliced,
+            $unified->count(),
+            $perPage,
+            $currentPage,
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
+
+        // Jaga backward-compat: variabel lama $attendances tidak dipakai di view baru
+        $attendances = $unifiedHistory;
 
         // Rekapitulasi kehadiran bulanan peserta
         $monthlyRecap = $this->recapService->getInternMonthlyRecap($intern->id, $selectedYear, $selectedMonth);
@@ -93,7 +132,7 @@ class AttendanceController extends Controller
             'todayAttendance',
             'isRejectedToday',
             'canCheckIn',
-            'attendances',
+            'unifiedHistory',
             'monthlyRecap',
             'selectedMonth',
             'selectedYear',
@@ -173,7 +212,7 @@ class AttendanceController extends Controller
             });
         }
 
-        $attendances = $attendanceQuery->get();
+        $attendances = $attendanceQuery->paginate(10)->withQueryString();
 
         return view('admin.attendance.index', compact(
             'selectedDate',
