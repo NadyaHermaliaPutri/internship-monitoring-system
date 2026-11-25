@@ -210,9 +210,6 @@
                 <h3 class="text-sm sm:text-base font-bold text-[#015987]">
                     Daftar Presensi Masuk
                 </h3>
-                <p class="text-[11px] text-slate-400 mt-0.5">
-                    Tanggal {{ Carbon\Carbon::parse($selectedDate)->translatedFormat('l, d F Y') }} • Menampilkan {{ $attendances->count() }} dari {{ $attendances->total() }} catatan presensi
-                </p>
             </div>
 
             <div class="flex items-center gap-2">
