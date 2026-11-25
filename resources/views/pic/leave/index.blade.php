@@ -193,6 +193,9 @@
                                 @if($item->start_date->ne($item->end_date))
                                     <p class="text-[11px] text-slate-400">s/d {{ $item->end_date->translatedFormat('d M Y') }}</p>
                                 @endif
+                                <p class="text-[10px] text-slate-400 mt-1">
+                                    Diajukan: {{ $item->created_at->timezone('Asia/Jakarta')->translatedFormat('d M Y, H:i') }} WIB
+                                </p>
                             </td>
 
                             <!-- Durasi -->
