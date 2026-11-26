@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\LogbookActivityStatus;
 use App\Enums\LogbookSource;
 use App\Enums\LogbookStatus;
 use Database\Factories\LogbookFactory;
@@ -19,6 +20,8 @@ use Illuminate\Support\Facades\DB;
     'title',
     'activity_description',
     'result',
+    'evidence_media_id',
+    'activity_status',
     'source',
     'task_id',
     'related_task_id',
@@ -40,6 +43,7 @@ class Logbook extends Model
     {
         return [
             'log_date' => 'date:Y-m-d',
+            'activity_status' => LogbookActivityStatus::class,
             'source' => LogbookSource::class,
             'status' => LogbookStatus::class,
             'reviewed_at' => 'datetime',
@@ -71,6 +75,14 @@ class Logbook extends Model
     }
 
     /**
+     * Bukti gambar / screenshot hasil kegiatan yang disimpan di storage privat.
+     */
+    public function evidenceMedia(): BelongsTo
+    {
+        return $this->belongsTo(MediaFile::class, 'evidence_media_id');
+    }
+
+    /**
      * Tugas terkait apabila logbook ini berasal dari penugasan otomatis PIC (source = task_assignment).
      */
     public function task(): BelongsTo
@@ -99,6 +111,13 @@ class Logbook extends Model
     public function canBeEditedByIntern(): bool
     {
         return $this->isManual() && ($this->status?->isEditableByIntern() ?? false);
+    }
+
+    public function canBeCompletedByIntern(): bool
+    {
+        return $this->isManual()
+            && ($this->status?->isEditableByIntern() ?? false)
+            && $this->activity_status === LogbookActivityStatus::SedangDikerjakan;
     }
 
     public function canBeReviewedByPic(): bool

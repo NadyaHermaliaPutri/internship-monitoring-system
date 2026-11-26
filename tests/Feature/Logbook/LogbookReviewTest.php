@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Logbook;
 
+use App\Enums\LogbookActivityStatus;
 use App\Enums\LogbookStatus;
 use App\Models\Logbook;
 use App\Models\Task;
@@ -98,6 +99,7 @@ class LogbookReviewTest extends TestCase
             'intern_user_id' => $intern->id,
             'log_date' => '2026-11-20',
             'status' => LogbookStatus::Pending,
+            'activity_status' => LogbookActivityStatus::SedangDikerjakan,
         ]);
 
         $response = $this->actingAs($pic)->post(route('pic.logbooks.review', $logbook), [
@@ -109,9 +111,23 @@ class LogbookReviewTest extends TestCase
 
         $logbook->refresh();
         $this->assertSame(LogbookStatus::Approved, $logbook->status);
+        $this->assertSame(LogbookActivityStatus::Selesai, $logbook->activity_status);
         $this->assertSame($pic->id, $logbook->reviewed_by);
         $this->assertNotNull($logbook->reviewed_at);
         $this->assertSame('Aktivitas harian sudah jelas dan disetujui.', $logbook->review_note);
+
+        // Di halaman detail & daftar PIC, status disetujui hanya menampilkan 1 badge "Disetujui" (tanpa "Sedang Dikerjakan")
+        $this->actingAs($intern)
+            ->get(route('intern.logbooks.show', $logbook))
+            ->assertOk()
+            ->assertSee('Disetujui')
+            ->assertDontSee('Sedang Dikerjakan');
+
+        $this->actingAs($pic)
+            ->get(route('pic.logbooks.index'))
+            ->assertOk()
+            ->assertSee('Disetujui')
+            ->assertDontSee('Sedang Dikerjakan');
 
         // Setelah approved, peserta tidak bisa mengedit lagi (403 Forbidden)
         $this->actingAs($intern)->get(route('intern.logbooks.edit', $logbook))->assertForbidden();
@@ -283,6 +299,7 @@ class LogbookReviewTest extends TestCase
             'related_task_id' => $taskOtherIntern->id,
             'title' => 'Coba Pakai Tugas Orang Lain',
             'activity_description' => 'Mencoba menautkan logbook ke tugas milik peserta lain.',
+            'result' => 'Percobaan hasil.',
         ])->assertSessionHasErrors('related_task_id');
 
         // 2. Peserta membuat logbook terkait tugas PIC B (walaupun PIC B tidak ada di pic_assignments)
@@ -291,6 +308,7 @@ class LogbookReviewTest extends TestCase
             'related_task_id' => $taskPicB->id,
             'title' => 'Mengerjakan Slicing UI Tugas PIC B',
             'activity_description' => 'Membuat komponen tabel untuk tugas yang diberikan PIC B.',
+            'result' => 'Komponen tabel tugas PIC B selesai.',
         ])->assertRedirect(route('intern.logbooks.index'));
 
         $logbookForPicB = Logbook::where('title', 'Mengerjakan Slicing UI Tugas PIC B')->firstOrFail();
@@ -316,6 +334,7 @@ class LogbookReviewTest extends TestCase
             'related_task_id' => null,
             'title' => 'Townhall & Belajar Mandiri',
             'activity_description' => 'Mengikuti pertemuan mingguan perusahaan dan membaca dokumentasi.',
+            'result' => 'Ringkasan catatan townhall selesai.',
         ])->assertRedirect(route('intern.logbooks.index'));
 
         $independentLogbook = Logbook::where('title', 'Townhall & Belajar Mandiri')->firstOrFail();

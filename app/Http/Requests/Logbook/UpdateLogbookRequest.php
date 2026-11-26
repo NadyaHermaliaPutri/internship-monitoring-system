@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Logbook;
 
+use App\Enums\LogbookActivityStatus;
 use App\Models\Logbook;
 use App\Services\LogbookService;
 use Closure;
@@ -27,6 +28,20 @@ class UpdateLogbookRequest extends FormRequest
         $earliest = $logbookService->earliestAllowedDateString();
         $today = $logbookService->todayDateString();
         $internId = (int) $this->user()?->id;
+        $maxSizeKb = (int) config('wantrace.uploads.logbook_evidence.max_size_kb', 5120);
+        $allowedMimes = implode(',', config('wantrace.uploads.logbook_evidence.mimes', ['jpg', 'jpeg', 'png', 'webp']));
+
+        /** @var Logbook|null $logbook */
+        $logbook = $this->route('logbook');
+        $hasExistingEvidence = $logbook instanceof Logbook && $logbook->evidence_media_id !== null;
+
+        $resultRules = ['nullable', 'string', 'max:2000'];
+        $evidenceRules = ['nullable', 'file', 'image', 'mimes:'.$allowedMimes, 'max:'.$maxSizeKb];
+
+        if (! $hasExistingEvidence) {
+            $resultRules[] = 'required_without:evidence_file';
+            $evidenceRules[] = 'required_without:result';
+        }
 
         return [
             'log_date' => [
@@ -46,8 +61,11 @@ class UpdateLogbookRequest extends FormRequest
                 Rule::exists('tasks', 'id')->where('intern_user_id', $internId),
             ],
             'title' => ['required', 'string', 'max:150'],
-            'activity_description' => ['required', 'string', 'min:10', 'max:5000'],
-            'result' => ['nullable', 'string', 'max:2000'],
+            'activity_description' => ['nullable', 'string', 'max:5000'],
+            'activity_status' => ['nullable', 'string', Rule::in(LogbookActivityStatus::values())],
+            'result' => $resultRules,
+            'evidence_file' => $evidenceRules,
+            'evidence_media_id' => ['prohibited'],
             'source' => ['prohibited'],
             'task_id' => ['prohibited'],
             'status' => ['prohibited'],

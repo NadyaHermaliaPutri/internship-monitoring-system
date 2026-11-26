@@ -23,13 +23,6 @@
 
 <div class="max-w-4xl mx-auto space-y-6">
 
-    @if (session('status'))
-        <div class="flex items-center gap-2.5 px-4 py-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold shadow-xs">
-            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-            <span>{{ session('status') }}</span>
-        </div>
-    @endif
-
     {{-- Banner Status Final Accepted --}}
     @if ($task->status->value === 'accepted')
         <div class="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 flex flex-wrap items-center justify-between gap-3">
@@ -163,21 +156,57 @@
             <div class="p-4 rounded-xl bg-slate-50/70 border border-slate-100 text-xs text-slate-800 whitespace-pre-line leading-relaxed">{{ $task->description }}</div>
         </div>
 
-        {{-- Keterkaitan Logbook Otomatis --}}
-        @if ($task->assignmentLogbook)
-            <div class="p-4 rounded-xl bg-sky-50/60 border border-sky-200/70 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div class="space-y-0.5">
-                    <p class="text-xs font-bold text-[#015987]">Tercatat Otomatis pada Logbook Harian Peserta</p>
-                    <p class="text-[11px] text-slate-600">
-                        Tanggal Logbook: {{ $task->assignmentLogbook->log_date->translatedFormat('d M Y') }} • {{ $task->assignmentLogbook->title }}
-                    </p>
+        {{-- Lampiran Tugas dari PIC (Opsional) --}}
+        @if ($task->attachmentMedia)
+            <div class="p-4 rounded-xl bg-slate-50/80 border border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div class="flex items-start gap-3 min-w-0">
+                    <div class="w-9 h-9 rounded-xl bg-[#015987]/10 text-[#015987] flex items-center justify-center shrink-0">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/>
+                        </svg>
+                    </div>
+                    <div class="min-w-0">
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Lampiran Tugas dari PIC</p>
+                        <p class="text-xs font-bold text-slate-800 break-all mt-0.5">
+                            {{ $task->attachmentMedia->original_name }}
+                        </p>
+                        <p class="text-[11px] text-slate-500 mt-0.5">
+                            Ukuran: {{ $task->attachmentMedia->formatted_size }}
+                        </p>
+                    </div>
                 </div>
-                <a
-                    href="{{ route($rolePrefix . '.logbooks.show', $task->assignmentLogbook) }}"
-                    class="inline-flex items-center px-3.5 py-2 rounded-xl bg-white border border-sky-200 text-xs font-bold text-[#015987] hover:bg-sky-50 transition"
-                >
-                    Lihat Catatan Logbook &rarr;
-                </a>
+
+                <div class="flex flex-wrap items-center gap-2 shrink-0">
+                    @if ($task->attachmentMedia->isImage() || $task->attachmentMedia->isPdf())
+                        <a
+                            href="{{ route('media.private.show', $task->attachmentMedia) }}"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="inline-flex items-center justify-center px-3.5 py-2 rounded-xl bg-white border border-slate-200 hover:border-[#015987] text-xs font-bold text-[#015987] transition"
+                        >
+                            Lihat
+                        </a>
+                    @endif
+                    <a
+                        href="{{ route('media.private.show', ['mediaFile' => $task->attachmentMedia->id, 'download' => 1]) }}"
+                        class="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-[#015987] hover:bg-[#014467] text-xs font-bold text-white shadow-xs transition"
+                    >
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4"/>
+                        </svg>
+                        <span>Unduh Lampiran</span>
+                    </a>
+                </div>
+            </div>
+        @endif
+
+        {{-- Indikator ringkas keterkaitan logbook otomatis (tanpa tautan bolak-balik) --}}
+        @if ($task->assignmentLogbook)
+            <div class="flex items-center gap-2 text-[11px] text-slate-500 pt-1">
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-sky-50 text-[#015987] border border-sky-200/70 font-semibold">
+                    <span class="w-1.5 h-1.5 rounded-full bg-[#015987]"></span>
+                    <span>Tercatat otomatis di logbook tanggal {{ $task->assignmentLogbook->log_date->translatedFormat('d M Y') }}</span>
+                </span>
             </div>
         @endif
 

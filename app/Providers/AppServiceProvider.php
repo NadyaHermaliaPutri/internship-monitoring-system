@@ -6,7 +6,9 @@ use App\Models\InternProfile;
 use App\Models\User;
 use App\Policies\InternProfilePolicy;
 use App\Policies\UserPolicy;
+use App\Services\HeaderNotificationService;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -32,5 +34,15 @@ class AppServiceProvider extends ServiceProvider
 
         // Policy: Akses ke data akun pengguna (tabel users)
         Gate::policy(User::class, UserPolicy::class);
+
+        // View Composer: Notifikasi real-time tombol lonceng pada header layout
+        View::composer('layouts.app', function ($view) {
+            $user = auth()->user();
+            $headerNotifications = $user instanceof User
+                ? app(HeaderNotificationService::class)->forUser($user)
+                : ['count' => 0, 'items' => []];
+
+            $view->with('headerNotifications', $headerNotifications);
+        });
     }
 }

@@ -59,12 +59,12 @@ class TaskService
     }
 
     /**
-     * Membuat tugas baru dengan status 'assigned' sekaligus mencatat 1 record otomatis
-     * di tabel logbooks dalam 1 DB Transaction yang sama.
+     * Membuat tugas baru dengan status 'assigned' sekaligus menyimpan file lampiran (opsional)
+     * dan mencatat 1 record otomatis di tabel logbooks dalam 1 DB Transaction yang sama.
      *
      * @param  array{intern_user_id: int, title: string, description: string, deadline_at: string}  $data
      */
-    public function createTask(User $pic, array $data): Task
+    public function createTask(User $pic, array $data, ?UploadedFile $attachmentFile = null): Task
     {
         $assignedAt = $this->now();
         $deadlineAt = Carbon::parse($data['deadline_at'], Task::TIMEZONE);
@@ -75,7 +75,7 @@ class TaskService
             ]);
         }
 
-        return DB::transaction(function () use ($pic, $data, $assignedAt, $deadlineAt) {
+        return DB::transaction(function () use ($pic, $data, $assignedAt, $deadlineAt, $attachmentFile) {
             $task = Task::create([
                 'pic_user_id' => $pic->id,
                 'intern_user_id' => (int) $data['intern_user_id'],
@@ -85,6 +85,18 @@ class TaskService
                 'deadline_at' => $deadlineAt,
                 'status' => TaskStatus::Assigned,
             ]);
+
+            if ($attachmentFile !== null) {
+                $mediaFile = $this->mediaStorageService->storeUploadedFile(
+                    file: $attachmentFile,
+                    owner: $pic,
+                    category: 'task_attachment'
+                );
+
+                // Diisi secara eksplisit via service (attachment_media_id sengaja tidak berada di $fillable)
+                $task->attachment_media_id = $mediaFile->id;
+                $task->save();
+            }
 
             $logbookTitle = Str::limit('Penugasan PIC: '.$task->title, 150, '');
             $logbookDescription = sprintf(
@@ -108,14 +120,14 @@ class TaskService
     }
 
     /**
-     * Memperbarui detail tugas (judul, deskripsi, atau perpanjangan deadline_at) oleh PIC.
+     * Memperbarui detail tugas (judul, deskripsi, deadline_at, atau file lampiran baru) oleh PIC.
      * Tidak membuat baris logbook otomatis baru (anti-duplikasi).
      *
      * @param  array{title: string, description: string, deadline_at: string}  $data
      */
-    public function updateTask(Task $task, array $data): Task
+    public function updateTask(Task $task, array $data, ?UploadedFile $attachmentFile = null, ?User $actor = null): Task
     {
-        return DB::transaction(function () use ($task, $data) {
+        return DB::transaction(function () use ($task, $data, $attachmentFile, $actor) {
             /** @var Task $locked */
             $locked = Task::query()->whereKey($task->id)->lockForUpdate()->firstOrFail();
 
@@ -132,6 +144,18 @@ class TaskService
                 'description' => $data['description'],
                 'deadline_at' => $deadlineAt,
             ]);
+
+            if ($attachmentFile !== null) {
+                $owner = $actor ?? $locked->pic()->firstOrFail();
+                $mediaFile = $this->mediaStorageService->storeUploadedFile(
+                    file: $attachmentFile,
+                    owner: $owner,
+                    category: 'task_attachment'
+                );
+
+                $locked->attachment_media_id = $mediaFile->id;
+                $locked->save();
+            }
 
             return $locked->refresh();
         });

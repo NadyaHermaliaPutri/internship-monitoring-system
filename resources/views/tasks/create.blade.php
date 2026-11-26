@@ -24,7 +24,7 @@
                 Saat ini belum ada peserta magang aktif yang berada dalam periode penugasan Anda.
             </div>
         @else
-            <form method="POST" action="{{ route('pic.tasks.store') }}" class="space-y-5">
+            <form method="POST" action="{{ route('pic.tasks.store') }}" enctype="multipart/form-data" class="space-y-5">
                 @csrf
 
                 <div>
@@ -37,7 +37,7 @@
                         required
                         class="w-full px-3.5 py-2.5 text-xs rounded-xl border @error('intern_user_id') border-rose-400 bg-rose-50/40 @else border-slate-200 bg-slate-50/60 @enderror text-slate-800"
                     >
-                        <option value="">-- Pilih Peserta Bimbingan Aktif --</option>
+                        <option value="">-- Pilih Peserta Magang Aktif --</option>
                         @foreach ($internOptions as $internOption)
                             <option value="{{ $internOption->id }}" @selected((string) old('intern_user_id') === (string) $internOption->id)>
                                 {{ $internOption->name }} ({{ $internOption->email }})
@@ -70,7 +70,7 @@
 
                 <div>
                     <label for="deadline_at" class="block text-xs font-bold text-slate-700 mb-1.5">
-                        Batas Waktu Pengumpulan (Deadline WIB) <span class="text-rose-500">*</span>
+                        Batas Waktu Pengumpulan <span class="text-rose-500">*</span>
                     </label>
                     <input
                         type="datetime-local"
@@ -98,6 +98,25 @@
                         class="w-full px-3.5 py-2.5 text-xs rounded-xl border @error('description') border-rose-400 bg-rose-50/40 @else border-slate-200 bg-slate-50/60 @enderror text-slate-800"
                     >{{ old('description') }}</textarea>
                     @error('description')
+                        <p class="text-[11px] text-rose-600 font-semibold mt-1">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <div>
+                    <label for="attachment_file" class="block text-xs font-bold text-slate-700 mb-1.5">
+                        Lampiran Tugas / Brief <span class="text-slate-400 font-normal">(Opsional)</span>
+                    </label>
+                    <input
+                        type="file"
+                        id="attachment_file"
+                        name="attachment_file"
+                        accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.webp,.zip,.rar"
+                        class="w-full px-3 py-2 text-xs rounded-xl border @error('attachment_file') border-rose-400 bg-rose-50/40 @else border-slate-200 bg-slate-50/60 @enderror text-slate-700 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-[#015987] file:text-white hover:file:bg-[#014467] file:cursor-pointer transition"
+                    >
+                    <p class="text-[11px] text-slate-400 mt-1">
+                        Format: PDF, DOC/DOCX, XLS/XLSX, PPT/PPTX, JPG/PNG/WEBP, ZIP/RAR • Maksimal <strong>10 MB</strong>.
+                    </p>
+                    @error('attachment_file')
                         <p class="text-[11px] text-rose-600 font-semibold mt-1">{{ $message }}</p>
                     @enderror
                 </div>
