@@ -37,6 +37,7 @@ class TaskSubmissionController extends Controller
 
         return redirect()
             ->route('intern.tasks.show', $task)
+            ->with('success_title', 'Pengumpulan Berhasil')
             ->with('status', "Pengumpulan tugas Ke-{$submission->submission_number} berhasil dikirim. Status tugas kini: {$statusLabel}.");
     }
 }

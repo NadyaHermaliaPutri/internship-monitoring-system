@@ -72,6 +72,23 @@ class LogbookPolicy
     }
 
     /**
+     * Peserta hanya dapat menandai progres kegiatan mandiri miliknya menjadi "Selesai"
+     * selama bersumber manual, belum approved (pending/revision_requested), dan progresnya masih "sedang_dikerjakan".
+     */
+    public function complete(User $user, Logbook $logbook): bool
+    {
+        if (! $user->is_active || ! $user->isIntern()) {
+            return false;
+        }
+
+        if ($logbook->intern_user_id !== $user->id) {
+            return false;
+        }
+
+        return $logbook->canBeCompletedByIntern();
+    }
+
+    /**
      * Review / Approval logbook:
      * - Hanya untuk logbook manual berstatus pending
      * - Jika related_task_id terisi: hanya PIC pembuat tugas tersebut

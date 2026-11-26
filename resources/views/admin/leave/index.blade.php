@@ -162,9 +162,9 @@
     <!-- 2. FILTER & PENCARIAN PENGAJUAN                                 -->
     <!-- ============================================================== -->
     <div class="bg-white p-5 rounded-2xl border border-slate-200/70 shadow-xs">
-        <form method="GET" action="{{ route('admin.leave.index') }}" class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
+        <form method="GET" action="{{ route('admin.leave.index') }}" class="flex flex-col gap-4">
             
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 flex-1">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
                 
                 <!-- Cari Nama / Email -->
                 <div class="relative">
@@ -207,10 +207,34 @@
                     </select>
                 </div>
 
+                <!-- Filter Dari Tanggal -->
+                <div>
+                    <input 
+                        type="date" 
+                        name="date_from" 
+                        value="{{ $dateFrom ?? '' }}" 
+                        title="Dari Tanggal"
+                        aria-label="Dari Tanggal"
+                        class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-[#015987]/20 focus:border-[#015987] transition shadow-2xs"
+                    >
+                </div>
+
+                <!-- Filter Sampai Tanggal -->
+                <div>
+                    <input 
+                        type="date" 
+                        name="date_to" 
+                        value="{{ $dateTo ?? '' }}" 
+                        title="Sampai Tanggal"
+                        aria-label="Sampai Tanggal"
+                        class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-[#015987]/20 focus:border-[#015987] transition shadow-2xs"
+                    >
+                </div>
+
             </div>
 
             <!-- Tombol Aksi Filter -->
-            <div class="flex items-center gap-2">
+            <div class="flex items-center justify-end gap-2">
                 <button type="submit" class="px-4 py-2 bg-[#015987] hover:bg-[#01486e] text-white text-xs font-semibold rounded-xl transition shadow-2xs flex items-center gap-1.5">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
@@ -218,7 +242,7 @@
                     <span>Filter Data</span>
                 </button>
 
-                @if($statusFilter || $typeFilter || $search)
+                @if($statusFilter || $typeFilter || $search || ($dateFrom ?? false) || ($dateTo ?? false))
                     <a href="{{ route('admin.leave.index') }}" class="px-3.5 py-2 border border-slate-200 hover:bg-slate-50 text-slate-600 text-xs font-semibold rounded-xl transition">
                         Reset
                     </a>
@@ -236,7 +260,7 @@
         <div class="p-6 border-b border-slate-100 flex items-center justify-between">
             <div>
                 <h3 class="text-sm font-bold text-slate-800">Daftar Permohonan Izin / Sakit Peserta Magang</h3>
-                <p class="text-xs text-slate-400 mt-0.5">Seluruh berkas bukti medis disimpan privat pada disk terproteksi</p>
+                <p class="text-xs text-slate-400 mt-0.5">Kelola dan verifikasi permohonan izin serta sakit peserta magang</p>
             </div>
             <span class="text-xs text-slate-500 font-semibold bg-slate-100 px-3 py-1 rounded-full">
                 Total: {{ $leaveRequests->total() }} Data
@@ -298,6 +322,9 @@
                                 @if($item->start_date->ne($item->end_date))
                                     <p class="text-[11px] text-slate-400">s/d {{ $item->end_date->translatedFormat('d M Y') }}</p>
                                 @endif
+                                <p class="text-[10px] text-slate-400 mt-1">
+                                    Diajukan: {{ $item->created_at->timezone('Asia/Jakarta')->translatedFormat('d M Y, H:i') }} WIB
+                                </p>
                             </td>
 
                             <!-- Durasi -->
@@ -399,7 +426,22 @@
                                 @else
                                     <button 
                                         type="button" 
-                                        onclick="openDetailModal('{{ addslashes($item->intern->name ?? 'Peserta') }}', '{{ $item->isSick() ? 'Sakit' : 'Izin' }}', '{{ $item->start_date->translatedFormat('d M Y') }} s/d {{ $item->end_date->translatedFormat('d M Y') }}', '{{ $item->duration_days }} Hari', '{{ addslashes($item->reason) }}', '{{ $item->status }}', '{{ addslashes($item->reviewer->name ?? 'Admin') }}', '{{ $item->reviewed_at?->translatedFormat('d F Y, H:i') }} WIB', '{{ addslashes($item->review_notes ?? '-') }}')"
+                                        onclick="openDetailModal({
+                                            name: '{{ addslashes($item->intern->name ?? 'Peserta') }}',
+                                            email: '{{ addslashes($item->intern->email ?? '-') }}',
+                                            type: '{{ $item->isSick() ? 'Sakit' : 'Izin' }}',
+                                            isSick: {{ $item->isSick() ? 'true' : 'false' }},
+                                            period: '{{ $item->start_date->translatedFormat('d M Y') }} s/d {{ $item->end_date->translatedFormat('d M Y') }}',
+                                            duration: '{{ $item->duration_days }} Hari',
+                                            submittedAt: '{{ $item->created_at->timezone('Asia/Jakarta')->translatedFormat('d M Y, H:i') }} WIB',
+                                            reason: '{{ addslashes($item->reason) }}',
+                                            status: '{{ $item->status }}',
+                                            reviewer: '{{ addslashes($item->reviewer->name ?? 'Admin') }}',
+                                            reviewDate: '{{ $item->reviewed_at?->timezone('Asia/Jakarta')->translatedFormat('d M Y, H:i') }} WIB',
+                                            notes: '{{ addslashes($item->review_notes ?? '') }}',
+                                            evidenceUrl: '{{ $item->evidence ? route('media.private.show', $item->evidence->id) : '' }}',
+                                            evidenceName: '{{ addslashes($item->evidence->original_name ?? '') }}'
+                                        })"
                                         class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition inline-flex items-center gap-1"
                                     >
                                         <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -532,57 +574,93 @@
 </div>
 
 <!-- ============================================================== -->
-<!-- MODAL 2: DETAIL KEPUTUSAN HISTORIS (READ-ONLY)                  -->
+<!-- MODAL 2: DETAIL KEPUTUSAN HISTORIS (REDESIGN WANTRACE)          -->
 <!-- ============================================================== -->
 <div id="detailModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-    <div class="bg-white max-w-md w-full rounded-2xl overflow-hidden shadow-2xl border border-slate-200 animate-in fade-in zoom-in duration-150">
+    <div class="bg-white max-w-lg w-full rounded-2xl overflow-hidden shadow-2xl border border-slate-200 animate-in fade-in zoom-in duration-150">
         
-        <div class="p-6 border-b border-slate-100 flex items-center justify-between">
-            <h4 class="text-sm font-bold text-[#015987]">Detail Riwayat Keputusan</h4>
-            <button type="button" onclick="closeDetailModal()" class="text-slate-400 hover:text-slate-600">
+        <!-- Header Gradient WANTRACE -->
+        <div class="px-6 py-5 bg-gradient-to-r from-[#015987] to-[#0277b5] text-white flex items-center justify-between">
+            <div class="flex items-center gap-3.5">
+                <div id="detailAvatar" class="w-11 h-11 rounded-full bg-white/15 border border-white/25 text-white font-extrabold text-sm flex items-center justify-center flex-shrink-0">
+                    PS
+                </div>
+                <div>
+                    <h4 id="detailInternName" class="text-sm font-bold text-white leading-tight">-</h4>
+                    <p id="detailInternEmail" class="text-[11px] text-sky-100 mt-0.5">-</p>
+                </div>
+            </div>
+            <button type="button" onclick="closeDetailModal()" class="text-white/70 hover:text-white p-1 rounded-lg hover:bg-white/10 transition">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                 </svg>
             </button>
         </div>
 
-        <div class="p-6 space-y-3.5 text-xs">
-            <div class="flex justify-between py-1 border-b border-slate-100">
-                <span class="text-slate-400">Peserta:</span>
-                <span id="detailInternName" class="font-bold text-slate-800">-</span>
+        <div class="p-6 space-y-5 text-xs">
+
+            <!-- Ringkasan Jenis, Durasi & Status -->
+            <div class="flex flex-wrap items-center justify-between gap-2 pb-4 border-b border-slate-100">
+                <div class="flex items-center gap-2">
+                    <span id="detailTypeBadge" class="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold bg-sky-50 text-[#015987] border border-sky-200">-</span>
+                    <span id="detailDuration" class="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-100 text-slate-700">-</span>
+                </div>
+                <span id="detailStatusBadge" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold">-</span>
             </div>
-            <div class="flex justify-between py-1 border-b border-slate-100">
-                <span class="text-slate-400">Jenis:</span>
-                <span id="detailType" class="font-bold text-slate-800">-</span>
+
+            <!-- Periode & Timeline Pengajuan -> Keputusan -->
+            <div class="p-4 rounded-xl bg-slate-50 border border-slate-200/70 space-y-3">
+                <div class="flex items-center justify-between">
+                    <span class="text-[11px] font-semibold text-slate-500">Periode Ketidakhadiran</span>
+                    <span id="detailPeriod" class="font-bold text-slate-800">-</span>
+                </div>
+                <div class="border-t border-slate-200/70 pt-3 space-y-2.5">
+                    <div class="flex items-start gap-2.5">
+                        <span class="w-2 h-2 rounded-full bg-sky-500 mt-1 flex-shrink-0"></span>
+                        <div class="flex-1 flex items-center justify-between">
+                            <span class="text-slate-500 font-medium">Diajukan</span>
+                            <span id="detailSubmittedAt" class="font-semibold text-slate-700">-</span>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-2.5">
+                        <span id="detailTimelineDot" class="w-2 h-2 rounded-full bg-emerald-500 mt-1 flex-shrink-0"></span>
+                        <div class="flex-1 flex items-center justify-between gap-2">
+                            <span class="text-slate-500 font-medium">Diputuskan oleh <strong id="detailReviewer" class="text-slate-700">-</strong></span>
+                            <span id="detailReviewDate" class="font-semibold text-slate-700 text-right">-</span>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="flex justify-between py-1 border-b border-slate-100">
-                <span class="text-slate-400">Periode:</span>
-                <span id="detailPeriod" class="font-semibold text-slate-700">-</span>
+
+            <!-- Alasan Peserta -->
+            <div class="space-y-1.5">
+                <span class="block text-[11px] font-bold uppercase tracking-wider text-slate-400">Alasan Pengajuan Peserta</span>
+                <p id="detailReason" class="p-3.5 rounded-xl bg-slate-50 border border-slate-200/70 text-slate-700 leading-relaxed">-</p>
             </div>
-            <div class="flex justify-between py-1 border-b border-slate-100">
-                <span class="text-slate-400">Durasi:</span>
-                <span id="detailDuration" class="font-bold text-slate-800">-</span>
+
+            <!-- Catatan Keputusan HR -->
+            <div class="space-y-1.5">
+                <span class="block text-[11px] font-bold uppercase tracking-wider text-slate-400">Catatan Keputusan HR</span>
+                <p id="detailReviewNotes" class="p-3.5 rounded-xl border text-slate-700 leading-relaxed">-</p>
             </div>
-            <div class="flex justify-between py-1 border-b border-slate-100">
-                <span class="text-slate-400">Status Keputusan:</span>
-                <span id="detailStatus" class="font-bold">-</span>
+
+            <!-- Link Bukti Pendukung -->
+            <div id="detailEvidenceContainer" class="hidden pt-1">
+                <a id="detailEvidenceLink" href="#" target="_blank" class="w-full py-2.5 px-4 rounded-xl bg-sky-50 hover:bg-sky-100 text-[#015987] border border-sky-200 font-semibold text-xs flex items-center justify-between transition">
+                    <span class="flex items-center gap-2 truncate">
+                        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/>
+                        </svg>
+                        <span id="detailEvidenceName" class="truncate">Lihat Berkas Bukti</span>
+                    </span>
+                    <span class="text-[11px] font-bold flex-shrink-0 ml-2">Buka &rsaquo;</span>
+                </a>
             </div>
-            <div class="flex justify-between py-1 border-b border-slate-100">
-                <span class="text-slate-400">Diverifikasi Oleh:</span>
-                <span id="detailReviewer" class="font-semibold text-slate-700">-</span>
-            </div>
-            <div class="flex justify-between py-1 border-b border-slate-100">
-                <span class="text-slate-400">Waktu Verifikasi:</span>
-                <span id="detailReviewDate" class="text-slate-600">-</span>
-            </div>
-            <div class="pt-2">
-                <span class="block text-slate-400 mb-1">Catatan Verifikasi HR:</span>
-                <p id="detailReviewNotes" class="p-3 bg-slate-50 border border-slate-200/80 rounded-xl text-slate-700 italic">-</p>
-            </div>
+
         </div>
 
-        <div class="p-4 bg-slate-50 border-t border-slate-100 text-right">
-            <button type="button" onclick="closeDetailModal()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold rounded-xl text-xs transition">
+        <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end">
+            <button type="button" onclick="closeDetailModal()" class="px-5 py-2 bg-[#015987] hover:bg-[#01486e] text-white font-semibold rounded-xl text-xs transition shadow-xs">
                 Tutup
             </button>
         </div>
@@ -676,27 +754,58 @@
     }
 
     // Modal Detail Historis
-    function openDetailModal(name, type, period, duration, reason, status, reviewer, date, notes) {
-        document.getElementById('detailInternName').innerText = name;
-        document.getElementById('detailType').innerText = type;
-        document.getElementById('detailPeriod').innerText = period;
-        document.getElementById('detailDuration').innerText = duration;
-        
-        const statusEl = document.getElementById('detailStatus');
-        if (status === 'approved') {
-            statusEl.innerText = 'Disetujui HR';
-            statusEl.className = 'font-bold text-emerald-600';
-        } else if (status === 'rejected') {
-            statusEl.innerText = 'Ditolak';
-            statusEl.className = 'font-bold text-rose-600';
+    function openDetailModal(data) {
+        const initials = (data.name || 'PS').trim().substring(0, 2).toUpperCase();
+        document.getElementById('detailAvatar').innerText = initials;
+        document.getElementById('detailInternName').innerText = data.name;
+        document.getElementById('detailInternEmail').innerText = data.email || '-';
+        document.getElementById('detailPeriod').innerText = data.period;
+        document.getElementById('detailDuration').innerText = data.duration;
+        document.getElementById('detailSubmittedAt').innerText = data.submittedAt;
+        document.getElementById('detailReviewer').innerText = data.reviewer;
+        document.getElementById('detailReviewDate').innerText = data.reviewDate;
+        document.getElementById('detailReason').innerText = data.reason || '-';
+
+        const typeBadge = document.getElementById('detailTypeBadge');
+        typeBadge.innerText = data.type;
+        typeBadge.className = data.isSick
+            ? 'inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200'
+            : 'inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold bg-sky-50 text-[#015987] border border-sky-200';
+
+        const statusBadge = document.getElementById('detailStatusBadge');
+        const timelineDot = document.getElementById('detailTimelineDot');
+        const notesEl = document.getElementById('detailReviewNotes');
+
+        if (data.status === 'approved') {
+            statusBadge.innerText = 'Disetujui HR';
+            statusBadge.className = 'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200';
+            timelineDot.className = 'w-2 h-2 rounded-full bg-emerald-500 mt-1 flex-shrink-0';
+            notesEl.className = 'p-3.5 rounded-xl bg-emerald-50/50 border border-emerald-200/80 text-emerald-900 leading-relaxed';
+            notesEl.innerText = data.notes || 'Permohonan disetujui oleh HR.';
+        } else if (data.status === 'rejected') {
+            statusBadge.innerText = 'Ditolak HR';
+            statusBadge.className = 'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200';
+            timelineDot.className = 'w-2 h-2 rounded-full bg-rose-500 mt-1 flex-shrink-0';
+            notesEl.className = 'p-3.5 rounded-xl bg-rose-50/50 border border-rose-200/80 text-rose-900 leading-relaxed';
+            notesEl.innerText = data.notes || 'Permohonan ditolak oleh HR.';
         } else {
-            statusEl.innerText = 'Menunggu';
-            statusEl.className = 'font-bold text-amber-600';
+            statusBadge.innerText = 'Menunggu Review';
+            statusBadge.className = 'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200';
+            timelineDot.className = 'w-2 h-2 rounded-full bg-amber-500 mt-1 flex-shrink-0';
+            notesEl.className = 'p-3.5 rounded-xl bg-slate-50 border border-slate-200/70 text-slate-700 leading-relaxed';
+            notesEl.innerText = data.notes || '-';
         }
 
-        document.getElementById('detailReviewer').innerText = reviewer;
-        document.getElementById('detailReviewDate').innerText = date;
-        document.getElementById('detailReviewNotes').innerText = notes || '-';
+        const evidenceContainer = document.getElementById('detailEvidenceContainer');
+        const evidenceLink = document.getElementById('detailEvidenceLink');
+        const evidenceName = document.getElementById('detailEvidenceName');
+        if (data.evidenceUrl) {
+            evidenceLink.href = data.evidenceUrl;
+            evidenceName.innerText = data.evidenceName || 'Lihat Berkas Bukti';
+            evidenceContainer.classList.remove('hidden');
+        } else {
+            evidenceContainer.classList.add('hidden');
+        }
 
         document.getElementById('detailModal').classList.remove('hidden');
     }

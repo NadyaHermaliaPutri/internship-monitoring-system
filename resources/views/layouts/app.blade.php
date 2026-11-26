@@ -631,28 +631,115 @@
                         <span>{{ \Carbon\Carbon::now('Asia/Jakarta')->translatedFormat('l, d F Y') }}</span>
                     </div>
 
+                    <!-- Search Input (Hanya untuk Admin & PIC — terhubung ke filter pencarian tugas) -->
                     @if(in_array(auth()->user()?->role, ['admin', 'pic'], true))
-                        <div class="relative hidden sm:block">
-                            <input 
-                                type="text" 
-                                placeholder="@yield('search-placeholder', 'Cari peserta...')" 
+                        <form
+                            method="GET"
+                            action="{{ auth()->user()->isPic() ? route('pic.tasks.index') : route('admin.tasks.index') }}"
+                            class="relative hidden sm:block"
+                        >
+                            <input
+                                type="text"
+                                name="search"
+                                value="{{ request('search') }}"
+                                placeholder="@yield('search-placeholder', 'Cari tugas...')"
                                 class="w-48 lg:w-64 pl-9 pr-3.5 py-2.5 text-xs bg-white border border-slate-200/80 rounded-xl text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 shadow-xs transition"
                             >
-                            <svg class="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                            </svg>
-                        </div>
+                            <button type="submit" aria-label="Cari" class="absolute left-3 top-3 text-slate-400 hover:text-[#015987] cursor-pointer">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                                </svg>
+                            </button>
+                        </form>
                     @endif
 
                     @yield('header-actions')
 
-                    <!-- Tombol Notifikasi -->
-                    <button type="button" class="p-2.5 rounded-xl bg-white border border-slate-200/80 text-slate-600 hover:text-slate-900 shadow-xs transition relative">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
-                        </svg>
-                        <span class="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-rose-500 ring-2 ring-white"></span>
-                    </button>
+                    <!-- Tombol & Dropdown Notifikasi Real-Time -->
+                    @php
+                        $notifCount = $headerNotifications['count'] ?? 0;
+                        $notifItems = $headerNotifications['items'] ?? [];
+                    @endphp
+                    <div id="header-notification-wrapper" class="relative">
+                        <button
+                            type="button"
+                            id="header-notification-btn"
+                            aria-haspopup="true"
+                            aria-expanded="false"
+                            aria-label="Buka notifikasi"
+                            class="p-2.5 rounded-xl bg-white border border-slate-200/80 text-slate-600 hover:text-[#015987] hover:border-sky-300 shadow-xs transition relative cursor-pointer"
+                        >
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                            </svg>
+                            @if ($notifCount > 0)
+                                <span
+                                    id="header-notification-badge"
+                                    class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center ring-2 ring-white leading-none"
+                                >
+                                    {{ $notifCount > 9 ? '9+' : $notifCount }}
+                                </span>
+                            @endif
+                        </button>
+
+                        <div
+                            id="header-notification-dropdown"
+                            class="hidden absolute right-0 mt-2 w-80 sm:w-96 max-w-[calc(100vw-2rem)] bg-white rounded-2xl border border-slate-200 shadow-xl z-50 overflow-hidden"
+                        >
+                            <div class="px-4 py-3 bg-[#015987]/5 border-b border-slate-100 flex items-center justify-between gap-2">
+                                <span class="text-xs font-extrabold text-[#015987]">Notifikasi</span>
+                                @if ($notifCount > 0)
+                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-600 border border-rose-200">
+                                        {{ $notifCount }} perlu perhatian
+                                    </span>
+                                @else
+                                    <span class="text-[11px] text-slate-400">Semua beres</span>
+                                @endif
+                            </div>
+
+                            @if (empty($notifItems))
+                                <div class="px-5 py-8 text-center">
+                                    <p class="text-xs font-semibold text-slate-500">Tidak ada notifikasi baru</p>
+                                    <p class="text-[11px] text-slate-400 mt-1">Semua tugas dan catatan Anda sudah terpantau.</p>
+                                </div>
+                            @else
+                                <div class="max-h-80 overflow-y-auto divide-y divide-slate-100">
+                                    @foreach ($notifItems as $notif)
+                                        @php
+                                            $iconBg = match ($notif['type']) {
+                                                'danger' => 'bg-rose-50 text-rose-500',
+                                                'warning' => 'bg-amber-50 text-amber-600',
+                                                default => 'bg-sky-50 text-[#015987]',
+                                            };
+                                        @endphp
+                                        <a
+                                            href="{{ $notif['url'] }}"
+                                            class="flex items-start gap-3 px-4 py-3 hover:bg-slate-50 transition"
+                                        >
+                                            <span class="w-8 h-8 rounded-xl {{ $iconBg }} flex items-center justify-center shrink-0 mt-0.5">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                    @if ($notif['type'] === 'danger')
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                                                    @elseif ($notif['type'] === 'warning')
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                                    @else
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                                    @endif
+                                                </svg>
+                                            </span>
+                                            <div class="min-w-0 flex-1">
+                                                <p class="text-xs font-bold text-slate-800">{{ $notif['title'] }}</p>
+                                                <p class="text-[11px] text-slate-500 mt-0.5 leading-snug">{{ $notif['message'] }}</p>
+                                                @if (! empty($notif['meta']))
+                                                    <p class="text-[10px] font-semibold text-slate-400 mt-1">{{ $notif['meta'] }}</p>
+                                                @endif
+                                            </div>
+                                        </a>
+                                    @endforeach
+                                </div>
+                            @endif
+                        </div>
+                    </div>
                 @endif
             </div>
         </header>
@@ -746,6 +833,40 @@
                     }
                 }
             }, true);
+
+            // 6. Dropdown Notifikasi Real-Time Header
+            const wrapper = document.getElementById('header-notification-wrapper');
+            const btn = document.getElementById('header-notification-btn');
+            const dropdown = document.getElementById('header-notification-dropdown');
+            if (wrapper && btn && dropdown) {
+                const closeDropdown = () => {
+                    dropdown.classList.add('hidden');
+                    btn.setAttribute('aria-expanded', 'false');
+                };
+
+                btn.addEventListener('click', (event) => {
+                    event.stopPropagation();
+                    const isHidden = dropdown.classList.contains('hidden');
+                    if (isHidden) {
+                        dropdown.classList.remove('hidden');
+                        btn.setAttribute('aria-expanded', 'true');
+                    } else {
+                        closeDropdown();
+                    }
+                });
+
+                document.addEventListener('click', (event) => {
+                    if (!wrapper.contains(event.target)) {
+                        closeDropdown();
+                    }
+                });
+
+                document.addEventListener('keydown', (event) => {
+                    if (event.key === 'Escape' && !dropdown.classList.contains('hidden')) {
+                        closeDropdown();
+                    }
+                });
+            }
         })();
     </script>
 

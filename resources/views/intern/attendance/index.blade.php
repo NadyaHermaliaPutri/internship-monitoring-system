@@ -2,7 +2,7 @@
 
 @section('title', 'Presensi Harian Peserta Magang')
 @section('page-title', 'Presensi Harian Peserta Magang')
-@section('page-subtitle', 'PT WAN Teknologi Internasional — Verifikasi Biometrik Selfie & Sinkronisasi Waktu Server WIB')
+@section('page-subtitle', 'PT WAN Teknologi Internasional — Presensi Harian & Riwayat Kehadiran')
 @section('search-placeholder', 'Cari tanggal atau riwayat...')
 
 @section('content')
@@ -185,14 +185,14 @@
     </div>
 
     <!-- ============================================================== -->
-    <!-- 2. GRID KONTEN UTAMA: KAMERA SELFIE (KIRI) & RIWAYAT (KANAN)   -->
+    <!-- 2. KONTEN UTAMA: KAMERA SELFIE (ATAS) & RIWAYAT (BAWAH)        -->
     <!-- ============================================================== -->
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+    <div class="space-y-8">
         
         <!-- ========================================================== -->
-        <!-- KOLOM KIRI (LEBAR 7/12): KAMERA BIOMETRIK SELFIE           -->
+        <!-- AREA KAMERA SELFIE (FULL WIDTH)                            -->
         <!-- ========================================================== -->
-        <div class="lg:col-span-7 space-y-6">
+        <div class="space-y-6">
             
             <div class="bg-white rounded-2xl border border-slate-200/70 shadow-xs p-6 space-y-5">
                 
@@ -200,7 +200,7 @@
                 <div class="flex items-center justify-between pb-4 border-b border-slate-100">
                     <div>
                         <h3 class="text-sm sm:text-base font-bold text-[#015987]">Kamera Pengambilan Selfie Presensi</h3>
-                        <p class="text-[11px] text-slate-400 mt-0.5">Posisikan wajah Anda di dalam panduan biometrik kamera</p>
+                        <p class="text-[11px] text-slate-400 mt-0.5">Posisikan wajah Anda agar terlihat jelas di layar.</p>
                     </div>
                     
                     <div class="flex items-center gap-2">
@@ -223,7 +223,7 @@
                             </div>
                             <div>
                                 <h4 class="text-sm sm:text-base font-bold text-white">Presensi Masuk Berhasil Tercatat</h4>
-                                <p class="text-xs text-sky-100 mt-0.5">Foto selfie tervalidasi dan disimpan di server privat</p>
+                                <p class="text-xs text-sky-100 mt-0.5">Foto selfie berhasil disimpan dengan aman.</p>
                             </div>
                         </div>
 
@@ -329,17 +329,12 @@
                         <!-- Preview Foto yang Sudah Ditangkap Sebelum Submit -->
                         <img id="snapshotPreview" alt="Snapshot" class="hidden w-full h-full object-cover z-20">
 
-                        <!-- Panduan Biometrik Wajah (Oval Guide Sesuai Desain Figma) -->
-                        <div id="biometricGuide" class="absolute w-52 h-64 border-2 border-dashed border-sky-400/70 rounded-full pointer-events-none z-10 flex items-center justify-center">
-                            <span class="text-[10px] text-sky-200/80 font-bold bg-slate-900/60 px-3 py-1 rounded-full backdrop-blur-xs">
-                                Posisikan Wajah Di Sini
-                            </span>
-                        </div>
+                        <!-- Panduan Biometrik Wajah (dihapus sesuai revisi UX) -->
 
                         <!-- HUD Badge Atas Kamera -->
                         <div class="absolute top-4 left-4 z-10 flex items-center gap-2 bg-slate-900/80 text-sky-200 text-[10px] font-semibold px-3 py-1.5 rounded-xl border border-sky-400/20 backdrop-blur-xs">
                             <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-                            <span id="cameraHudText">Live Biometric Stream • HD</span>
+                            <span id="cameraHudText">Live Camera</span>
                         </div>
 
                         <!-- Fallback jika Akses Kamera Ditolak / Tidak Tersedia -->
@@ -423,17 +418,17 @@
         </div>
 
         <!-- ========================================================== -->
-        <!-- KOLOM KANAN (LEBAR 5/12): RIWAYAT PRESENSI PESERTA         -->
+        <!-- RIWAYAT PRESENSI & IZIN PESERTA (FULL WIDTH)               -->
         <!-- ========================================================== -->
-        <div class="lg:col-span-5 space-y-6">
+        <div class="space-y-6">
             
             <div class="bg-white rounded-2xl border border-slate-200/70 shadow-xs p-6 space-y-5">
                 
                 <!-- Header Riwayat & Filter Bulan -->
-                <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
                     <div>
-                        <h4 class="text-sm font-bold text-[#015987]">Riwayat Presensi Anda</h4>
-                        <p class="text-[11px] text-slate-400 mt-0.5">Catatan presensi masuk yang telah diverifikasi</p>
+                        <h4 class="text-sm sm:text-base font-bold text-[#015987]">Riwayat Presensi Anda</h4>
+                        <p class="text-[11px] text-slate-400 mt-0.5">Catatan presensi masuk dan pengajuan izin/sakit Anda</p>
                     </div>
 
                     <!-- Dropdown Filter Bulan -->
@@ -441,7 +436,7 @@
                         <select 
                             name="month" 
                             onchange="this.form.submit()" 
-                            class="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-slate-700 font-medium focus:outline-none">
+                            class="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700 font-medium focus:outline-none">
                             @for($m = 1; $m <= 12; $m++)
                                 <option value="{{ $m }}" {{ $selectedMonth === $m ? 'selected' : '' }}>
                                     {{ Carbon\Carbon::createFromDate(null, $m, 1)->translatedFormat('M') }}
@@ -451,7 +446,7 @@
                         <select 
                             name="year" 
                             onchange="this.form.submit()" 
-                            class="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-slate-700 font-medium focus:outline-none">
+                            class="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700 font-medium focus:outline-none">
                             @for($y = $now->year - 1; $y <= $now->year + 1; $y++)
                                 <option value="{{ $y }}" {{ $selectedYear === $y ? 'selected' : '' }}>
                                     {{ $y }}
@@ -461,89 +456,160 @@
                     </form>
                 </div>
 
-                <!-- Daftar Riwayat Presensi -->
-                @if($attendances->isEmpty())
+                <!-- Daftar Riwayat Gabungan (Presensi + Izin/Sakit) -->
+                @if($unifiedHistory->isEmpty())
                     <div class="text-center py-10 px-4 bg-slate-50/50 rounded-xl border border-dashed border-slate-200">
                         <div class="w-10 h-10 rounded-full bg-slate-100 text-slate-400 mx-auto flex items-center justify-center mb-2">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                             </svg>
                         </div>
-                        <p class="text-xs font-semibold text-slate-600">Belum Ada Riwayat Presensi</p>
+                        <p class="text-xs font-semibold text-slate-600">Belum Ada Riwayat Presensi &amp; Izin</p>
                         <p class="text-[11px] text-slate-400 mt-1">
-                            Data kehadiran bulan ini belum tercatat atau Anda belum melakukan presensi masuk.
+                            Data kehadiran atau pengajuan izin/sakit bulan ini belum tercatat.
                         </p>
                     </div>
                 @else
-                    <div class="space-y-3 max-h-[460px] overflow-y-auto pr-1">
-                        @foreach($attendances as $row)
-                            <div class="p-3.5 rounded-xl border border-slate-100 bg-slate-50/50 hover:bg-white hover:border-slate-200 transition space-y-2">
-                                <div class="flex items-center justify-between">
-                                    <div class="flex items-center gap-2.5">
-                                        <!-- Thumbnail Foto Selfie Privat -->
-                                        <div class="w-10 h-10 rounded-lg bg-slate-200 overflow-hidden border border-slate-200 flex-shrink-0 cursor-pointer"
-                                             onclick="openImagePreviewModal('{{ route('media.private.show', $row->photo_media_id) }}', '{{ $row->intern->name }} - {{ $row->attendance_date->translatedFormat('d F Y') }}')">
-                                            <img src="{{ route('media.private.show', $row->photo_media_id) }}" alt="Selfie" class="w-full h-full object-cover">
+                    <div class="space-y-3">
+                        @foreach($unifiedHistory as $entry)
+                            @if($entry['type'] === 'attendance')
+                                @php $row = $entry['data']; @endphp
+                                <div class="p-4 rounded-xl border border-slate-100 bg-slate-50/50 hover:bg-white hover:border-slate-200 transition space-y-2">
+                                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                        <div class="flex items-center gap-3">
+                                            <!-- Thumbnail Foto Selfie Privat -->
+                                            <div class="w-11 h-11 rounded-lg bg-slate-200 overflow-hidden border border-slate-200 flex-shrink-0 cursor-pointer"
+                                                 onclick="openImagePreviewModal('{{ route('media.private.show', $row->photo_media_id) }}', '{{ $row->intern->name }} - {{ $row->attendance_date->translatedFormat('d F Y') }}')">
+                                                <img src="{{ route('media.private.show', $row->photo_media_id) }}" alt="Selfie" class="w-full h-full object-cover">
+                                            </div>
+                                            <div>
+                                                <div class="flex items-center gap-2">
+                                                    <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-sky-50 text-[#015987] border border-sky-200/70">Presensi</span>
+                                                    <p class="text-xs font-bold text-slate-800">
+                                                        {{ $row->attendance_date->translatedFormat('l, d M Y') }}
+                                                    </p>
+                                                </div>
+                                                <p class="text-[11px] text-slate-500 font-medium flex items-center gap-1 mt-1">
+                                                    <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                                    </svg>
+                                                    <span>Check-in: {{ $row->checked_in_at->format('H:i') }} WIB</span>
+                                                    <span class="mx-1 text-slate-300">•</span>
+                                                    <button type="button" onclick="openImagePreviewModal('{{ route('media.private.show', $row->photo_media_id) }}', '{{ $row->intern->name }} - {{ $row->attendance_date->translatedFormat('d F Y') }}')" class="text-[#015987] hover:underline font-semibold">
+                                                        Lihat Foto Bukti
+                                                    </button>
+                                                </p>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <p class="text-xs font-bold text-slate-800">
-                                                {{ $row->attendance_date->translatedFormat('l, d M Y') }}
-                                            </p>
-                                            <p class="text-[11px] text-slate-500 font-medium flex items-center gap-1 mt-0.5">
-                                                <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                                </svg>
-                                                <span>{{ $row->checked_in_at->format('H:i') }} WIB</span>
-                                            </p>
-                                        </div>
+
+                                        <!-- Badge Status Tepat Waktu / Terlambat / Ditolak -->
+                                        @if($row->isRejected())
+                                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold border bg-rose-50 text-rose-700 border-rose-200 self-start sm:self-center">
+                                                <span class="w-1 h-1 rounded-full bg-rose-600"></span>
+                                                Ditolak HR
+                                            </span>
+                                        @else
+                                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold border self-start sm:self-center {{ $row->isOnTime() ? 'bg-teal-50 text-teal-600 border-teal-200' : 'bg-rose-50 text-rose-600 border-rose-200' }}">
+                                                <span class="w-1 h-1 rounded-full {{ $row->isOnTime() ? 'bg-teal-500' : 'bg-rose-500' }}"></span>
+                                                {{ $row->isOnTime() ? 'Tepat Waktu' : 'Terlambat' }}
+                                            </span>
+                                        @endif
                                     </div>
 
-                                    <!-- Badge Status Tepat Waktu / Terlambat / Ditolak -->
+                                    <!-- Catatan Peserta / Catatan Review HR / Alasan Penolakan -->
                                     @if($row->isRejected())
-                                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold border bg-rose-50 text-rose-700 border-rose-200">
-                                            <span class="w-1 h-1 rounded-full bg-rose-600"></span>
-                                            Ditolak HR
-                                        </span>
-                                    @else
-                                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold border {{ $row->isOnTime() ? 'bg-teal-50 text-teal-600 border-teal-200' : 'bg-rose-50 text-rose-600 border-rose-200' }}">
-                                            <span class="w-1 h-1 rounded-full {{ $row->isOnTime() ? 'bg-teal-500' : 'bg-rose-500' }}"></span>
-                                            {{ $row->isOnTime() ? 'Tepat Waktu' : 'Terlambat' }}
-                                        </span>
+                                        <div class="text-[11px] pt-1.5 border-t border-slate-100 flex flex-col gap-0.5">
+                                            <p class="text-rose-600 font-medium">
+                                                <span class="font-semibold text-rose-700">Alasan Penolakan HR:</span> {{ $row->notes }}
+                                            </p>
+                                            @if($row->isReviewed() && $row->reviewer)
+                                                <p class="text-[10px] text-slate-400">
+                                                    Ditinjau oleh HR ({{ $row->reviewer->name }})
+                                                </p>
+                                            @endif
+                                        </div>
+                                    @elseif($row->notes || $row->isReviewed())
+                                        <div class="text-[11px] text-slate-500 pt-1.5 border-t border-slate-100 flex flex-col gap-0.5">
+                                            @if($row->notes)
+                                                <p><span class="font-semibold text-slate-600">Catatan:</span> {{ $row->notes }}</p>
+                                            @endif
+                                            @if($row->isReviewed() && $row->reviewer)
+                                                <p class="text-[10px] text-sky-700 font-medium">
+                                                    Ditinjau oleh HR ({{ $row->reviewer->name }})
+                                                </p>
+                                            @endif
+                                        </div>
                                     @endif
                                 </div>
+                            @else
+                                @php $leave = $entry['data']; @endphp
+                                <div class="p-4 rounded-xl border border-slate-100 bg-slate-50/50 hover:bg-white hover:border-slate-200 transition space-y-2">
+                                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-11 h-11 rounded-lg {{ $leave->isSick() ? 'bg-rose-50 text-rose-600 border-rose-200' : 'bg-amber-50 text-amber-600 border-amber-200' }} border flex items-center justify-center flex-shrink-0">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                                </svg>
+                                            </div>
+                                            <div>
+                                                <div class="flex items-center gap-2">
+                                                    <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase {{ $leave->isSick() ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'bg-amber-50 text-amber-700 border border-amber-200' }}">
+                                                        {{ $leave->isSick() ? 'Sakit' : 'Izin' }} ({{ $leave->duration_days }} Hari)
+                                                    </span>
+                                                    <p class="text-xs font-bold text-slate-800">
+                                                        {{ $leave->start_date->translatedFormat('d M Y') }}@if($leave->start_date->ne($leave->end_date)) — {{ $leave->end_date->translatedFormat('d M Y') }}@endif
+                                                    </p>
+                                                </div>
+                                                <p class="text-[11px] text-slate-500 font-medium flex flex-wrap items-center gap-1.5 mt-1">
+                                                    <span>Diajukan: {{ $leave->created_at->timezone('Asia/Jakarta')->translatedFormat('d M Y, H:i') }} WIB</span>
+                                                    @if($leave->evidence)
+                                                        <span class="text-slate-300">•</span>
+                                                        <a href="{{ route('media.private.show', $leave->evidence_media_id) }}" target="_blank" class="text-[#015987] hover:underline font-semibold">
+                                                            Lihat Bukti
+                                                        </a>
+                                                    @endif
+                                                </p>
+                                            </div>
+                                        </div>
 
-                                <!-- Catatan Peserta / Catatan Review HR / Alasan Penolakan -->
-                                @if($row->isRejected())
-                                    <div class="text-[11px] pt-1.5 border-t border-slate-100 flex flex-col gap-0.5">
-                                        <p class="text-rose-600 font-medium">
-                                            <span class="font-semibold text-rose-700">Alasan Penolakan HR:</span> {{ $row->notes }}
-                                        </p>
-                                        @if($row->isReviewed())
-                                            <p class="text-[10px] text-slate-400">
-                                                Ditinjau oleh HR ({{ $row->reviewer->name }})
+                                        <!-- Badge Status Izin -->
+                                        @if($leave->isPending())
+                                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold border bg-amber-50 text-amber-700 border-amber-200 self-start sm:self-center">
+                                                <span class="w-1 h-1 rounded-full bg-amber-500 animate-pulse"></span>
+                                                Menunggu Verifikasi
+                                            </span>
+                                        @elseif($leave->isApproved())
+                                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold border bg-emerald-50 text-emerald-700 border-emerald-200 self-start sm:self-center">
+                                                <span class="w-1 h-1 rounded-full bg-emerald-500"></span>
+                                                Disetujui HR
+                                            </span>
+                                        @else
+                                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold border bg-rose-50 text-rose-700 border-rose-200 self-start sm:self-center">
+                                                <span class="w-1 h-1 rounded-full bg-rose-500"></span>
+                                                Ditolak HR
+                                            </span>
+                                        @endif
+                                    </div>
+
+                                    <div class="text-[11px] text-slate-600 pt-1.5 border-t border-slate-100 space-y-0.5">
+                                        <p><span class="font-semibold text-slate-700">Alasan:</span> {{ $leave->reason }}</p>
+                                        @if($leave->review_notes)
+                                            <p class="{{ $leave->isRejected() ? 'text-rose-600' : 'text-emerald-700' }}">
+                                                <span class="font-semibold">Catatan HR:</span> {{ $leave->review_notes }}
                                             </p>
                                         @endif
                                     </div>
-                                @elseif($row->notes || $row->isReviewed())
-                                    <div class="text-[11px] text-slate-500 pt-1.5 border-t border-slate-100 flex flex-col gap-0.5">
-                                        @if($row->notes)
-                                            <p><span class="font-semibold text-slate-600">Catatan:</span> {{ $row->notes }}</p>
-                                        @endif
-                                        @if($row->isReviewed())
-                                            <p class="text-[10px] text-sky-700 font-medium">
-                                                Ditinjau oleh HR ({{ $row->reviewer->name }})
-                                            </p>
-                                        @endif
-                                    </div>
-                                @endif
-                            </div>
+                                </div>
+                            @endif
                         @endforeach
                     </div>
 
                     <!-- Pagination -->
-                    <div class="pt-2 border-t border-slate-100">
-                        {{ $attendances->links() }}
-                    </div>
+                    @if($unifiedHistory->hasPages())
+                        <div class="pt-3 border-t border-slate-100">
+                            {{ $unifiedHistory->links() }}
+                        </div>
+                    @endif
                 @endif
 
             </div>
@@ -707,7 +773,7 @@
         if (confirmControl) confirmControl.classList.add('hidden');
 
         if (hudText) {
-            hudText.innerText = 'Live Biometric Stream • HD';
+            hudText.innerText = 'Live Camera';
         }
     }
 

@@ -59,7 +59,7 @@
     <!-- ============================================================== -->
     <!-- 1. KARTU STATISTIK RINGKASAN STATUS PERMOHONAN                -->
     <!-- ============================================================== -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
         
         <!-- Card 1: Menunggu Verifikasi HR -->
         <div class="bg-white p-6 rounded-2xl border border-slate-200/70 shadow-xs flex flex-col justify-between min-h-[148px]">
@@ -127,26 +127,6 @@
             </div>
         </div>
 
-        <!-- Card 4: Ketentuan Berkas -->
-        <div class="bg-white p-6 rounded-2xl border border-slate-200/70 shadow-xs flex flex-col justify-between min-h-[148px]">
-            <div class="flex items-start justify-between">
-                <span class="text-xs font-bold text-[#015987]">Format Bukti</span>
-                <div class="w-8 h-8 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                    </svg>
-                </div>
-            </div>
-            <div class="mt-5">
-                <div class="flex items-baseline gap-1.5">
-                    <span class="text-lg font-bold text-[#015987]">PDF / Gambar</span>
-                </div>
-                <p class="text-[11px] font-semibold text-slate-500 mt-1.5 flex items-center gap-1">
-                    <span>Maksimal 5 MB • Tersimpan privat</span>
-                </p>
-            </div>
-        </div>
-
     </div>
 
     <!-- ============================================================== -->
@@ -157,14 +137,11 @@
         <!-- KOLOM KIRI (LEBAR 6/12): FORMULIR PERMOHONAN IZIN / SAKIT -->
         <div class="lg:col-span-6 bg-white rounded-2xl border border-slate-200/70 shadow-xs p-6 space-y-6">
             
-            <div class="pb-3 border-b border-slate-100 flex items-center justify-between">
+            <div class="pb-3 border-b border-slate-100">
                 <div>
                     <h3 class="text-sm sm:text-base font-bold text-[#015987]">Formulir Permohonan Izin / Sakit</h3>
                     <p class="text-[11px] text-slate-400 mt-0.5">Lengkapi formulir dengan jujur dan sertakan berkas bukti yang sah</p>
                 </div>
-                <span class="text-[11px] font-semibold text-sky-700 bg-sky-50 px-2.5 py-0.5 rounded-full border border-sky-200/70">
-                    WIB Time
-                </span>
             </div>
 
             <form method="POST" action="{{ route('intern.leave.store') }}" enctype="multipart/form-data" class="space-y-5">
@@ -410,7 +387,10 @@
                                     <p class="text-xs font-bold text-slate-800">
                                         {{ $item->start_date->translatedFormat('d M Y') }} — {{ $item->end_date->translatedFormat('d M Y') }}
                                     </p>
-                                    <p class="text-xs text-slate-600 mt-1 leading-relaxed">
+                                    <p class="text-[10px] text-slate-400 mt-0.5">
+                                        Diajukan: {{ $item->created_at->timezone('Asia/Jakarta')->translatedFormat('d M Y, H:i') }} WIB
+                                    </p>
+                                    <p class="text-xs text-slate-600 mt-1.5 leading-relaxed">
                                         {{ $item->reason }}
                                     </p>
                                 </div>
@@ -448,7 +428,7 @@
                                 @endif
 
                                 <div class="text-[10px] text-slate-400 text-right">
-                                    Diajukan pada: {{ $item->created_at->translatedFormat('d F Y, H:i') }} WIB
+                                    Diajukan: {{ $item->created_at->timezone('Asia/Jakarta')->translatedFormat('d M Y, H:i') }} WIB
                                 </div>
 
                             </div>

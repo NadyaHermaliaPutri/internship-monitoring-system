@@ -20,16 +20,6 @@
 
 <div class="space-y-6">
 
-    {{-- Flash Message --}}
-    @if (session('status'))
-        <div class="flex items-center justify-between gap-3 px-4 py-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold shadow-xs">
-            <div class="flex items-center gap-2.5">
-                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-                <span>{{ session('status') }}</span>
-            </div>
-        </div>
-    @endif
-
     {{-- Ringkasan Metrik Tugas --}}
     <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
         <div class="bg-white rounded-2xl border border-slate-200/70 p-4 shadow-xs">
@@ -88,7 +78,7 @@
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
                     </svg>
-                    <span>+ Buat Tugas Baru</span>
+                    <span>Buat Tugas Baru</span>
                 </a>
             @endif
         </div>

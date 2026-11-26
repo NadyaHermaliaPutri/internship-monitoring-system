@@ -846,4 +846,104 @@ class AttendanceTest extends TestCase
         $this->assertDatabaseHas('media_files', ['id' => $oldMedia->id]);
         Storage::disk('local_private')->assertExists($oldPath);
     }
+
+    public function test_intern_unified_history_combines_attendance_and_leave_with_pagination(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-11-20 07:50:00', 'Asia/Jakarta'));
+
+        $intern = User::factory()->create(['role' => 'intern', 'is_active' => true]);
+
+        $media = MediaFile::create([
+            'disk' => 'local_private',
+            'file_path' => 'presensi/sample.jpg',
+            'file_name' => 'sample.jpg',
+            'original_name' => 'sample.jpg',
+            'mime_type' => 'image/jpeg',
+            'file_size_bytes' => 1024,
+            'category' => 'attendance_photo',
+            'owner_user_id' => $intern->id,
+        ]);
+
+        // 4 attendances in November 2026
+        for ($d = 1; $d <= 4; $d++) {
+            $date = sprintf('2026-11-%02d', $d);
+            Attendance::create([
+                'intern_user_id' => $intern->id,
+                'attendance_date' => $date,
+                'checked_in_at' => "{$date} 07:55:00",
+                'status' => 'on_time',
+                'photo_media_id' => $media->id,
+            ]);
+        }
+
+        // 3 leave requests in November 2026 (total = 7 items -> 5 per page -> 2 pages)
+        for ($d = 10; $d <= 12; $d++) {
+            $date = sprintf('2026-11-%02d', $d);
+            LeaveRequest::create([
+                'intern_user_id' => $intern->id,
+                'leave_type' => 'leave',
+                'start_date' => $date,
+                'end_date' => $date,
+                'reason' => "Izin keperluan {$d}",
+                'status' => 'pending',
+            ]);
+        }
+
+        $page1 = $this->actingAs($intern)->get('/intern/presensi?month=11&year=2026');
+        $page1->assertOk();
+        $page1->assertSee('Live Camera');
+        $page1->assertDontSee('Live Biometric Stream');
+        $page1->assertDontSee('Posisikan Wajah Di Sini');
+        $page1->assertViewHas('unifiedHistory', function ($paginator) {
+            return $paginator->total() === 7 && $paginator->perPage() === 5 && $paginator->count() === 5;
+        });
+
+        $page2 = $this->actingAs($intern)->get('/intern/presensi?month=11&year=2026&page=2');
+        $page2->assertOk();
+        $page2->assertViewHas('unifiedHistory', function ($paginator) {
+            return $paginator->currentPage() === 2 && $paginator->count() === 2;
+        });
+    }
+
+    public function test_admin_attendance_index_uses_new_title_and_paginates_10_per_page(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-11-20 09:00:00', 'Asia/Jakarta'));
+
+        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+
+        for ($i = 1; $i <= 11; $i++) {
+            $intern = User::factory()->create(['role' => 'intern', 'is_active' => true]);
+            $media = MediaFile::create([
+                'disk' => 'local_private',
+                'file_path' => "presensi/p{$i}.jpg",
+                'file_name' => "p{$i}.jpg",
+                'original_name' => "p{$i}.jpg",
+                'mime_type' => 'image/jpeg',
+                'file_size_bytes' => 1024,
+                'category' => 'attendance_photo',
+                'owner_user_id' => $intern->id,
+            ]);
+
+            Attendance::create([
+                'intern_user_id' => $intern->id,
+                'attendance_date' => '2026-11-20',
+                'checked_in_at' => '2026-11-20 07:55:00',
+                'status' => 'on_time',
+                'photo_media_id' => $media->id,
+            ]);
+        }
+
+        $page1 = $this->actingAs($admin)->get('/admin/presensi?date=2026-11-20');
+        $page1->assertOk();
+        $page1->assertSee('Daftar Presensi Masuk');
+        $page1->assertViewHas('attendances', function ($paginator) {
+            return $paginator->total() === 11 && $paginator->perPage() === 10 && $paginator->count() === 10;
+        });
+
+        $page2 = $this->actingAs($admin)->get('/admin/presensi?date=2026-11-20&page=2');
+        $page2->assertOk();
+        $page2->assertViewHas('attendances', function ($paginator) {
+            return $paginator->currentPage() === 2 && $paginator->count() === 1;
+        });
+    }
 }

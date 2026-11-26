@@ -127,15 +127,32 @@
             </div>
             <div class="mt-5">
                 <div class="flex items-baseline gap-2">
-                    <span class="text-2xl sm:text-3xl font-extrabold text-[#015987]">3</span>
+                    <span class="text-2xl sm:text-3xl font-extrabold text-[#015987]">{{ $internDashboard['active_tasks_count'] }}</span>
                     <span class="text-xs text-slate-500 font-medium">Tugas Aktif</span>
                 </div>
-                <p class="text-[11px] font-semibold text-rose-500 mt-1.5 flex items-center gap-1">
-                    <svg class="w-3.5 h-3.5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                    1 Mendekati Deadline (Hari ini)
-                </p>
+                @if ($internDashboard['overdue_tasks_count'] > 0)
+                    <p class="text-[11px] font-semibold text-rose-600 mt-1.5 flex items-center gap-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span>
+                        {{ $internDashboard['overdue_tasks_count'] }} Melewati Deadline (Overdue)
+                    </p>
+                @elseif ($internDashboard['approaching_tasks_count'] > 0)
+                    <p class="text-[11px] font-semibold text-amber-600 mt-1.5 flex items-center gap-1">
+                        <svg class="w-3.5 h-3.5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        {{ $internDashboard['approaching_tasks_count'] }} Mendekati Deadline (&le; 24 jam)
+                    </p>
+                @elseif ($internDashboard['active_tasks_count'] > 0)
+                    <p class="text-[11px] font-semibold text-sky-600 mt-1.5 flex items-center gap-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-sky-500"></span>
+                        Dalam Tenggat Waktu
+                    </p>
+                @else
+                    <p class="text-[11px] font-semibold text-emerald-600 mt-1.5 flex items-center gap-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                        Semua Tugas Selesai
+                    </p>
+                @endif
             </div>
         </div>
 
@@ -151,13 +168,25 @@
             </div>
             <div class="mt-5">
                 <div class="flex items-baseline gap-2">
-                    <span class="text-2xl sm:text-3xl font-extrabold text-[#015987]">Draft</span>
-                    <span class="text-xs text-slate-500 font-medium">Tersimpan</span>
+                    <span class="text-2xl sm:text-3xl font-extrabold text-[#015987]">{{ $internDashboard['today_logbooks_count'] }}</span>
+                    <span class="text-xs text-slate-500 font-medium">Catatan Hari Ini</span>
                 </div>
-                <p class="text-[11px] font-semibold text-emerald-600 mt-1.5 flex items-center gap-1">
-                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                    Siap Dikirim Hari Ini
-                </p>
+                @if ($internDashboard['revision_logbooks_count'] > 0)
+                    <p class="text-[11px] font-semibold text-rose-600 mt-1.5 flex items-center gap-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                        {{ $internDashboard['revision_logbooks_count'] }} Logbook Perlu Revisi
+                    </p>
+                @elseif ($internDashboard['today_logbooks_count'] > 0)
+                    <p class="text-[11px] font-semibold text-emerald-600 mt-1.5 flex items-center gap-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                        Sudah Tercatat Hari Ini
+                    </p>
+                @else
+                    <a href="{{ route('intern.logbooks.index') }}" class="text-[11px] font-semibold text-amber-600 hover:underline mt-1.5 inline-flex items-center gap-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                        Belum Diisi Hari Ini &rarr;
+                    </a>
+                @endif
             </div>
         </div>
 
@@ -318,125 +347,105 @@
             <!-- KARTU 2: TUGAS SAYA & TENGGAT TERDEKAT -->
             <div class="bg-white rounded-2xl border border-slate-200/70 shadow-xs overflow-hidden">
                 <!-- Header Kartu -->
-                <div class="p-6 border-b border-slate-100 flex items-center justify-between">
+                <div class="p-6 border-b border-slate-100 flex items-center justify-between gap-3">
                     <div>
                         <h3 class="text-sm font-bold text-[#015987]">Tugas Saya &amp; Tenggat Terdekat</h3>
                         <p class="text-[11px] text-slate-400 mt-0.5">Daftar tugas magang aktif dan instruksi penyelesaian PIC</p>
                     </div>
-                    <a href="javascript:void(0)" class="text-xs font-semibold text-[#015987] hover:underline flex items-center gap-1">
+                    <a href="{{ route('intern.tasks.index') }}" class="text-xs font-semibold text-[#015987] hover:underline flex items-center gap-1 shrink-0">
                         Buka Semua Tugas &rsaquo;
                     </a>
                 </div>
 
-                <!-- Tabel Data Tugas -->
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse">
-                        <thead>
-                            <tr class="border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                                <th class="py-4 px-6">Judul Tugas</th>
-                                <th class="py-4 px-5">PIC Pembimbing</th>
-                                <th class="py-4 px-5">Tenggat Waktu</th>
-                                <th class="py-4 px-5">Status</th>
-                                <th class="py-4 px-6 text-right">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-100 text-xs">
-                            
-                            <!-- Row 1: Slicing UI Dashboard Monitoring -->
-                            <tr class="hover:bg-slate-50/70 transition">
-                                <td class="py-4 px-6">
-                                    <div>
-                                        <p class="font-bold text-[#015987] text-xs leading-none">Slicing UI Dashboard Monitoring</p>
-                                        <p class="text-[10px] text-slate-400 mt-1">WANTRACE Web App • Versi 1.0</p>
-                                    </div>
-                                </td>
-                                <td class="py-4 px-5 font-medium text-slate-700">
-                                    Fadly Husaeni
-                                </td>
-                                <td class="py-4 px-5 font-semibold text-rose-500">
-                                    Hari ini, 17:00
-                                </td>
-                                <td class="py-4 px-5">
-                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-rose-50 text-rose-600 border border-rose-200">
-                                        <svg class="w-3 h-3 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-                                        </svg>
-                                        Mendekati Deadline
-                                    </span>
-                                </td>
-                                <td class="py-4 px-6 text-right">
-                                    <button class="px-3 py-1.5 text-xs font-semibold text-slate-700 border border-slate-200 rounded-lg hover:bg-slate-50 transition">
-                                        Kirim Link
-                                    </button>
-                                </td>
-                            </tr>
+                @if ($internDashboard['upcoming_tasks']->isEmpty())
+                    <div class="p-8 text-center space-y-2">
+                        <p class="text-xs font-bold text-slate-600">Tidak ada tugas aktif saat ini</p>
+                        <p class="text-[11px] text-slate-400">Tugas baru dari PIC Pembimbing akan otomatis muncul di sini.</p>
+                    </div>
+                @else
+                    <!-- Tabel Data Tugas Asli -->
+                    @php
+                        $nowJakarta = \Illuminate\Support\Carbon::now(\App\Models\Task::TIMEZONE);
+                        $soonCutoff = $nowJakarta->copy()->addHours(24);
+                    @endphp
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                    <th class="py-4 px-6">Judul Tugas</th>
+                                    <th class="py-4 px-5">PIC Pembimbing</th>
+                                    <th class="py-4 px-5">Tenggat Waktu</th>
+                                    <th class="py-4 px-5">Status</th>
+                                    <th class="py-4 px-6 text-right">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 text-xs">
+                                @foreach ($internDashboard['upcoming_tasks'] as $task)
+                                    @php
+                                        $isOverdue = $task->isOverdue($nowJakarta);
+                                        $isApproaching = ! $isOverdue && $task->deadline_at && $task->deadline_at->lte($soonCutoff);
 
-                            <!-- Row 2: Integrasi Endpoint API Presensi -->
-                            <tr class="hover:bg-slate-50/70 transition">
-                                <td class="py-4 px-6">
-                                    <div>
-                                        <p class="font-bold text-[#015987] text-xs leading-none">Integrasi Endpoint API Presensi</p>
-                                        <p class="text-[10px] text-slate-400 mt-1">Backend REST API • ExpressJS</p>
-                                    </div>
-                                </td>
-                                <td class="py-4 px-5 font-medium text-slate-700">
-                                    Ghani
-                                </td>
-                                <td class="py-4 px-5 text-slate-600 font-medium">
-                                    Besok, 12:00
-                                </td>
-                                <td class="py-4 px-5">
-                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">
-                                        <svg class="w-3 h-3 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                        </svg>
-                                        In Progress
-                                    </span>
-                                </td>
-                                <td class="py-4 px-6 text-right">
-                                    <button class="px-3 py-1.5 text-xs font-semibold text-slate-700 border border-slate-200 rounded-lg hover:bg-slate-50 transition">
-                                        Detail
-                                    </button>
-                                </td>
-                            </tr>
+                                        if ($isOverdue) {
+                                            $badgeText = 'Overdue';
+                                            $badgeClass = 'bg-rose-50 text-rose-600 border-rose-200';
+                                        } elseif ($task->status->value === 'revision_requested') {
+                                            $badgeText = 'Perlu Revisi';
+                                            $badgeClass = 'bg-rose-50 text-rose-600 border-rose-200';
+                                        } elseif ($isApproaching) {
+                                            $badgeText = 'Mendekati Deadline';
+                                            $badgeClass = 'bg-amber-50 text-amber-700 border-amber-200';
+                                        } else {
+                                            $badgeText = $task->status->label();
+                                            $badgeClass = match ($task->status->value) {
+                                                'submitted', 'resubmitted' => 'bg-amber-50 text-amber-700 border-amber-200',
+                                                'in_progress' => 'bg-sky-50 text-sky-700 border-sky-200',
+                                                default => 'bg-slate-100 text-slate-700 border-slate-200',
+                                            };
+                                        }
 
-                            <!-- Row 3: Revisi Form Logbook & Local Draft -->
-                            <tr class="hover:bg-slate-50/70 transition">
-                                <td class="py-4 px-6">
-                                    <div>
-                                        <p class="font-bold text-[#015987] text-xs leading-none">Revisi Form Logbook &amp; Local Draft</p>
-                                        <p class="text-[10px] text-slate-400 mt-1">Catatan PIC: Tambahkan state offline</p>
-                                    </div>
-                                </td>
-                                <td class="py-4 px-5 font-medium text-slate-700">
-                                    Yustyar
-                                </td>
-                                <td class="py-4 px-5 text-slate-600 font-medium">
-                                    5 Nov 2026
-                                </td>
-                                <td class="py-4 px-5">
-                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-600 border border-emerald-200">
-                                        <svg class="w-3 h-3 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-                                        </svg>
-                                        Revisi Masuk (V2)
-                                    </span>
-                                </td>
-                                <td class="py-4 px-6 text-right">
-                                    <button class="px-3 py-1.5 text-xs font-semibold text-slate-700 border border-slate-200 rounded-lg hover:bg-slate-50 transition">
-                                        Unggah Ulang
-                                    </button>
-                                </td>
-                            </tr>
+                                        $actionLabel = match ($task->status->value) {
+                                            'revision_requested' => 'Kumpulkan Ulang',
+                                            'assigned', 'in_progress' => 'Kerjakan',
+                                            default => 'Detail',
+                                        };
+                                    @endphp
+                                    <tr class="hover:bg-slate-50/70 transition">
+                                        <td class="py-4 px-6">
+                                            <div>
+                                                <p class="font-bold text-[#015987] text-xs leading-snug">{{ $task->title }}</p>
+                                                <p class="text-[10px] text-slate-400 mt-0.5 line-clamp-1">{{ \Illuminate\Support\Str::limit($task->description, 65) }}</p>
+                                            </div>
+                                        </td>
+                                        <td class="py-4 px-5 font-medium text-slate-700 whitespace-nowrap">
+                                            {{ $task->pic?->name ?? 'PIC' }}
+                                        </td>
+                                        <td class="py-4 px-5 whitespace-nowrap font-semibold {{ $isOverdue ? 'text-rose-600' : ($isApproaching ? 'text-amber-600' : 'text-slate-600') }}">
+                                            {{ $task->deadline_at ? $task->deadline_at->timezone(\App\Models\Task::TIMEZONE)->translatedFormat('d M Y, H:i') : '-' }}
+                                        </td>
+                                        <td class="py-4 px-5 whitespace-nowrap">
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold border {{ $badgeClass }}">
+                                                {{ $badgeText }}
+                                            </span>
+                                        </td>
+                                        <td class="py-4 px-6 text-right whitespace-nowrap">
+                                            <a
+                                                href="{{ route('intern.tasks.show', $task) }}"
+                                                class="inline-block px-3 py-1.5 text-xs font-semibold text-[#015987] border border-slate-200 rounded-lg hover:border-[#015987] hover:bg-sky-50 transition"
+                                            >
+                                                {{ $actionLabel }}
+                                            </a>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
 
-                        </tbody>
-                    </table>
-                </div>
-
-                <!-- Footer Tabel -->
-                <div class="px-6 py-4 border-t border-slate-100 text-xs text-slate-400">
-                    Menampilkan 3 tugas aktif terdekat
-                </div>
+                    <!-- Footer Tabel -->
+                    <div class="px-6 py-4 border-t border-slate-100 text-xs text-slate-400">
+                        Menampilkan {{ $internDashboard['upcoming_tasks']->count() }} dari {{ $internDashboard['active_tasks_count'] }} tugas aktif terdekat
+                    </div>
+                @endif
             </div>
 
         </div>
@@ -539,45 +548,64 @@
 
             <!-- KARTU 2: NOTIFIKASI TERBARU -->
             <div class="bg-white rounded-2xl border border-slate-200/70 shadow-xs p-6 space-y-5">
-                <h3 class="text-sm font-bold text-[#015987] pb-3 border-b border-slate-100">
-                    Notifikasi Terbaru
-                </h3>
-
-                <div class="space-y-3.5">
-                    
-                    <!-- Notif 1 -->
-                    <div class="flex items-start gap-3.5 p-3.5 rounded-xl bg-slate-50/50 border border-slate-100 hover:border-slate-200 transition">
-                        <div class="w-8 h-8 rounded-lg bg-sky-50 text-sky-500 flex items-center justify-center flex-shrink-0 mt-0.5">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
-                            </svg>
-                        </div>
-                        <div>
-                            <h4 class="text-xs font-bold text-[#015987]">Catatan Baru dari Pembimbing</h4>
-                            <p class="text-[11px] text-slate-500 mt-0.5">PIC Fadly memberikan feedback pada tugas Slicing Dashboard.</p>
-                        </div>
-                    </div>
-
-                    <!-- Notif 2 -->
-                    <div class="flex items-start gap-3.5 p-3.5 rounded-xl bg-slate-50/50 border border-slate-100 hover:border-slate-200 transition">
-                        <div class="w-8 h-8 rounded-lg bg-rose-50 text-rose-400 flex items-center justify-center flex-shrink-0 mt-0.5">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                            </svg>
-                        </div>
-                        <div>
-                            <h4 class="text-xs font-bold text-[#015987]">Pengingat Batas Pengumpulan</h4>
-                            <p class="text-[11px] text-slate-500 mt-0.5">Batas waktu pengumpulan tugas UI tersisa 7 jam 35 menit.</p>
-                        </div>
-                    </div>
-
+                <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                    <h3 class="text-sm font-bold text-[#015987]">Notifikasi Terbaru</h3>
+                    @if (($internDashboard['notifications']['count'] ?? 0) > 0)
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-600 border border-rose-200">
+                            {{ $internDashboard['notifications']['count'] }} Aktif
+                        </span>
+                    @endif
                 </div>
+
+                @if (empty($internDashboard['notifications']['items']))
+                    <div class="py-6 text-center space-y-1">
+                        <p class="text-xs font-semibold text-slate-500">Tidak ada notifikasi baru</p>
+                        <p class="text-[11px] text-slate-400">Semua tugas dan logbook Anda dalam kondisi baik.</p>
+                    </div>
+                @else
+                    <div class="space-y-3">
+                        @foreach ($internDashboard['notifications']['items'] as $notif)
+                            @php
+                                $iconBox = match ($notif['type']) {
+                                    'danger' => 'bg-rose-50 text-rose-500',
+                                    'warning' => 'bg-amber-50 text-amber-600',
+                                    default => 'bg-sky-50 text-sky-600',
+                                };
+                            @endphp
+                            <a
+                                href="{{ $notif['url'] }}"
+                                class="flex items-start gap-3.5 p-3.5 rounded-xl bg-slate-50/50 border border-slate-100 hover:border-sky-200 hover:bg-sky-50/30 transition"
+                            >
+                                <div class="w-8 h-8 rounded-lg {{ $iconBox }} flex items-center justify-center flex-shrink-0 mt-0.5">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        @if ($notif['type'] === 'danger')
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                                        @elseif ($notif['type'] === 'warning')
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        @else
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                        @endif
+                                    </svg>
+                                </div>
+                                <div class="min-w-0">
+                                    <h4 class="text-xs font-bold text-[#015987]">{{ $notif['title'] }}</h4>
+                                    <p class="text-[11px] text-slate-500 mt-0.5 leading-snug">{{ $notif['message'] }}</p>
+                                    @if (! empty($notif['meta']))
+                                        <p class="text-[10px] font-semibold text-slate-400 mt-1">{{ $notif['meta'] }}</p>
+                                    @endif
+                                </div>
+                            </a>
+                        @endforeach
+                    </div>
+                @endif
 
                 <!-- Footer Notifikasi -->
                 <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
-                    <span class="text-[11px] text-slate-400">Notifikasi terhubung</span>
-                    <a href="javascript:void(0)" class="font-semibold text-[#015987] hover:underline text-xs flex items-center gap-1">
-                        Semua Notifikasi &rarr;
+                    <a href="{{ route('intern.logbooks.index') }}" class="font-semibold text-slate-500 hover:text-[#015987] transition">
+                        Logbook Harian
+                    </a>
+                    <a href="{{ route('intern.tasks.index') }}" class="font-semibold text-[#015987] hover:underline text-xs flex items-center gap-1">
+                        Semua Tugas &rarr;
                     </a>
                 </div>
             </div>

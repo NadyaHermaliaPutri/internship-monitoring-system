@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Services\AttendanceRecapService;
 use App\Services\DashboardService;
+use App\Services\InternDashboardService;
+use App\Services\PicDashboardService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 
@@ -11,7 +13,9 @@ class DashboardController extends Controller
 {
     public function __construct(
         protected DashboardService $dashboardService,
-        protected AttendanceRecapService $recapService
+        protected AttendanceRecapService $recapService,
+        protected InternDashboardService $internDashboardService,
+        protected PicDashboardService $picDashboardService
     ) {}
 
     /**
@@ -54,6 +58,9 @@ class DashboardController extends Controller
         $ewsSummary = $data['ewsSummary'];
         $upcomingDeadlines = $data['upcomingDeadlines'];
 
+        // Ambil juga data ringkasan spesifik dari PicDashboardService (Modul Anggota 3)
+        $picDashboard = $this->picDashboardService->getSummary($request->user());
+
         return view('dashboard.pic', compact(
             'data',
             'mentoringSummary',
@@ -62,6 +69,7 @@ class DashboardController extends Controller
             'internsWithTasks',
             'ewsSummary',
             'upcomingDeadlines',
+            'picDashboard',
             'search'
         ));
     }
@@ -72,7 +80,8 @@ class DashboardController extends Controller
     public function intern(Request $request): View
     {
         $dailySummary = $this->recapService->getInternDailyDashboard($request->user());
+        $internDashboard = $this->internDashboardService->getSummary($request->user());
 
-        return view('dashboard.intern', compact('dailySummary'));
+        return view('dashboard.intern', compact('dailySummary', 'internDashboard'));
     }
 }

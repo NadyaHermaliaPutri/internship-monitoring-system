@@ -173,6 +173,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/logbooks/{logbook}', [LogbookController::class, 'show'])->name('logbooks.show');
         Route::get('/logbooks/{logbook}/edit', [LogbookController::class, 'edit'])->name('logbooks.edit');
         Route::put('/logbooks/{logbook}', [LogbookController::class, 'update'])->name('logbooks.update');
+        Route::patch('/logbooks/{logbook}/complete', [LogbookController::class, 'complete'])->name('logbooks.complete');
 
         // Modul 3: Daftar, Mulai, & Pengumpulan Tugas (Peserta Magang)
         Route::get('/tasks', [TaskController::class, 'index'])->name('tasks.index');

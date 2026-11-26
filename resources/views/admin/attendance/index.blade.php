@@ -208,11 +208,8 @@
         <div class="p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
                 <h3 class="text-sm sm:text-base font-bold text-[#015987]">
-                    Presensi Masuk Tanggal {{ Carbon\Carbon::parse($selectedDate)->translatedFormat('l, d F Y') }}
+                    Daftar Presensi Masuk
                 </h3>
-                <p class="text-[11px] text-slate-400 mt-0.5">
-                    Menampilkan {{ $attendances->count() }} catatan presensi tervalidasi
-                </p>
             </div>
 
             <div class="flex items-center gap-2">
@@ -360,6 +357,13 @@
                 </tbody>
             </table>
         </div>
+
+        <!-- Pagination -->
+        @if($attendances->hasPages())
+            <div class="p-4 border-t border-slate-100">
+                {{ $attendances->links() }}
+            </div>
+        @endif
 
     </div>
 

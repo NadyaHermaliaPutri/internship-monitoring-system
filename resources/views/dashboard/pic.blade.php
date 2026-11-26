@@ -19,7 +19,7 @@
     <!-- 1. KARTU STATISTIK RINGKASAN PIC (TOP 4 STAT CARDS 100% DINAMIS) -->
     <!-- ============================================================== -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        
+
         <!-- Card 1: Tugas Aktif Anda -->
         <div class="bg-white p-6 rounded-2xl border border-slate-200/70 shadow-xs flex flex-col justify-between min-h-[148px]">
             <div class="flex items-start justify-between">
@@ -32,18 +32,20 @@
             </div>
             <div class="mt-4">
                 <div class="flex items-baseline gap-1.5">
-                    <span class="text-2xl sm:text-3xl font-extrabold text-[#015987]">{{ $taskStats['active_tasks'] }}</span>
+                    <span class="text-2xl sm:text-3xl font-extrabold text-[#015987]">{{ $picDashboard['active_tasks_count'] }}</span>
                     <span class="text-xs text-slate-500 font-medium">Tugas</span>
                 </div>
-                <div class="flex items-center justify-between mt-1.5 text-[11px]">
-                    <span class="font-semibold text-sky-600 flex items-center gap-1">
+                @if ($picDashboard['overdue_tasks_count'] > 0)
+                    <p class="text-[11px] font-semibold text-rose-600 mt-1.5 flex items-center gap-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                        {{ $picDashboard['overdue_tasks_count'] }} melewati deadline (Overdue)
+                    </p>
+                @else
+                    <p class="text-[11px] font-semibold text-sky-600 mt-1.5 flex items-center gap-1">
                         <span class="w-1.5 h-1.5 rounded-full bg-sky-500"></span>
-                        Dikerjakan {{ $taskStats['assigned_interns_count'] }} peserta
-                    </span>
-                    <a href="{{ route('pic.tasks.index') }}" class="text-[#015987] font-semibold hover:underline">
-                        Buka &rsaquo;
-                    </a>
-                </div>
+                        Dikerjakan {{ $picDashboard['active_interns_count'] }} peserta magang
+                    </p>
+                @endif
             </div>
         </div>
 
@@ -59,12 +61,12 @@
             </div>
             <div class="mt-4">
                 <div class="flex items-baseline gap-1.5">
-                    <span class="text-2xl sm:text-3xl font-extrabold {{ $taskStats['approaching_deadline'] > 0 ? 'text-amber-600' : 'text-[#015987]' }}">{{ $taskStats['approaching_deadline'] }}</span>
+                    <span class="text-2xl sm:text-3xl font-extrabold text-[#015987]">{{ $picDashboard['approaching_tasks_count'] }}</span>
                     <span class="text-xs text-slate-500 font-medium">Tugas</span>
                 </div>
-                <p class="text-[11px] font-semibold {{ $taskStats['approaching_deadline'] > 0 ? 'text-amber-600' : 'text-slate-400' }} mt-1.5 flex items-center gap-1">
-                    <span class="w-1.5 h-1.5 rounded-full {{ $taskStats['approaching_deadline'] > 0 ? 'bg-amber-500' : 'bg-slate-300' }}"></span>
-                    Batas waktu &lt; 24 Jam
+                <p class="text-[11px] font-semibold text-amber-600 mt-1.5 flex items-center gap-1">
+                    <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                    Batas waktu &le; 24 Jam
                 </p>
             </div>
         </div>
@@ -81,18 +83,13 @@
             </div>
             <div class="mt-4">
                 <div class="flex items-baseline gap-1.5">
-                    <span class="text-2xl sm:text-3xl font-extrabold {{ $taskStats['awaiting_review'] > 0 ? 'text-emerald-600' : 'text-[#015987]' }}">{{ $taskStats['awaiting_review'] }}</span>
-                    <span class="text-xs text-slate-500 font-medium">Kiriman</span>
+                    <span class="text-2xl sm:text-3xl font-extrabold text-[#015987]">{{ $picDashboard['awaiting_review_tasks_count'] }}</span>
+                    <span class="text-xs text-slate-500 font-medium">Kiriman Tugas</span>
                 </div>
-                <div class="flex items-center justify-between mt-1.5 text-[11px]">
-                    <span class="font-semibold {{ $taskStats['awaiting_review'] > 0 ? 'text-emerald-600' : 'text-slate-400' }} flex items-center gap-1">
-                        <span class="w-1.5 h-1.5 rounded-full {{ $taskStats['awaiting_review'] > 0 ? 'bg-emerald-500' : 'bg-slate-300' }}"></span>
-                        Khusus tugas Anda
-                    </span>
-                    <a href="{{ route('pic.tasks.index', ['status' => 'submitted']) }}" class="text-[#015987] font-semibold hover:underline">
-                        Periksa &rsaquo;
-                    </a>
-                </div>
+                <a href="{{ route('pic.logbooks.index', ['status' => 'pending']) }}" class="text-[11px] font-semibold text-emerald-600 hover:underline mt-1.5 inline-flex items-center gap-1">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                    {{ $picDashboard['pending_logbooks_count'] }} logbook menunggu review
+                </a>
             </div>
         </div>
 
@@ -108,12 +105,12 @@
             </div>
             <div class="mt-4">
                 <div class="flex items-baseline gap-1.5">
-                    <span class="text-2xl sm:text-3xl font-extrabold {{ $taskStats['in_revision'] > 0 ? 'text-rose-600' : 'text-[#015987]' }}">{{ $taskStats['in_revision'] }}</span>
+                    <span class="text-2xl sm:text-3xl font-extrabold text-[#015987]">{{ $picDashboard['revision_tasks_count'] }}</span>
                     <span class="text-xs text-slate-500 font-medium">Tugas</span>
                 </div>
-                <p class="text-[11px] font-semibold {{ $taskStats['in_revision'] > 0 ? 'text-rose-500' : 'text-slate-400' }} mt-1.5 flex items-center gap-1">
-                    <span class="w-1.5 h-1.5 rounded-full {{ $taskStats['in_revision'] > 0 ? 'bg-rose-500' : 'bg-slate-300' }}"></span>
-                    Menunggu intern kirim ulang
+                <p class="text-[11px] font-semibold text-rose-500 mt-1.5 flex items-center gap-1">
+                    <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                    Menunggu peserta kirim ulang
                 </p>
             </div>
         </div>
@@ -250,61 +247,110 @@
             <!-- KARTU 1: SUBMISI MENUNGGU REVIEW ANDA (DINAMIS DARI DATABASE) -->
             <div class="bg-white rounded-2xl border border-slate-200/70 shadow-xs overflow-hidden">
                 <!-- Header Kartu -->
-                <div class="p-6 border-b border-slate-100 flex items-center justify-between">
+                <div class="p-6 border-b border-slate-100 flex flex-wrap items-center justify-between gap-2">
                     <div>
                         <h3 class="text-sm font-bold text-[#015987]">Submisi Menunggu Review Anda</h3>
-                        <p class="text-[11px] text-slate-400 mt-0.5">Tugas yang telah dikumpulkan dan siap diuji/ditinjau</p>
+                        <p class="text-[11px] text-slate-400 mt-0.5">Hasil pengerjaan tugas buatan Anda yang siap diperiksa</p>
                     </div>
-                    <span class="text-[11px] font-semibold {{ $awaitingReviewTasks->count() > 0 ? 'text-emerald-700 bg-emerald-50 border border-emerald-200' : 'text-slate-500 bg-slate-100' }} px-3 py-1 rounded-full">
-                        {{ $awaitingReviewTasks->count() }} Menunggu Keputusan
+                    <span class="text-[11px] font-semibold text-emerald-600 bg-emerald-50 border border-emerald-200/80 px-3 py-1 rounded-full">
+                        {{ $picDashboard['awaiting_review_tasks_count'] }} Menunggu Keputusan
                     </span>
                 </div>
 
-                <!-- Daftar Submisi -->
+                <!-- Daftar Submisi Asli -->
                 <div class="p-6 space-y-4">
-                    @forelse($awaitingReviewTasks as $task)
-                        <div class="p-5 rounded-xl border border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                            <div class="space-y-2">
-                                <div class="flex flex-wrap items-center gap-2">
-                                    <div class="w-7 h-7 rounded-full bg-[#015987] text-white font-bold text-[10px] flex items-center justify-center flex-shrink-0">
-                                        {{ strtoupper(substr($task->intern->name ?? 'P', 0, 2)) }}
+                    @if ($picDashboard['submissions_awaiting_review']->isEmpty())
+                        <div class="py-6 text-center space-y-1">
+                            <p class="text-xs font-bold text-slate-600">Tidak ada submisi tugas yang menunggu review</p>
+                            <p class="text-[11px] text-slate-400">Kiriman hasil tugas peserta buatan Anda akan muncul di sini.</p>
+                        </div>
+                    @else
+                        @foreach ($picDashboard['submissions_awaiting_review'] as $task)
+                            @php
+                                $sub = $task->latestSubmission;
+                                $internName = $task->intern?->name ?? 'Peserta';
+                                $initials = strtoupper(substr($internName, 0, 2));
+                                $institution = $picDashboard['submission_institutions']->get($task->intern_user_id);
+                            @endphp
+                            <div class="p-5 rounded-xl border border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                <div class="space-y-2 min-w-0">
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <div class="w-7 h-7 rounded-full bg-[#015987] text-white font-bold text-[10px] flex items-center justify-center flex-shrink-0">
+                                            {{ $initials }}
+                                        </div>
+                                        <span class="text-xs font-bold text-[#015987]">{{ $internName }}</span>
+                                        @if ($sub)
+                                            <span class="px-2 py-0.5 rounded text-[10px] font-semibold {{ $sub->submission_number > 1 ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-sky-50 text-sky-600 border-sky-200' }} border">
+                                                Versi {{ $sub->submission_number }}{{ $sub->submission_number > 1 ? ' (Revisi)' : '' }}
+                                            </span>
+                                        @endif
+                                        @if ($institution)
+                                            <span class="text-[11px] text-slate-400">{{ $institution }}</span>
+                                        @endif
                                     </div>
-                                    <span class="text-xs font-bold text-[#015987]">{{ $task->intern->name ?? 'Peserta' }}</span>
-                                    <span class="px-2 py-0.5 rounded text-[10px] font-semibold {{ $task->status?->value === 'resubmitted' ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-sky-50 text-sky-600 border border-sky-200' }}">
-                                        {{ $task->status?->label() }}
-                                    </span>
-                                    @if($task->intern->internProfile?->institution_name)
-                                        <span class="text-[11px] text-slate-400">
-                                            {{ $task->intern->internProfile->institution_name }}
+
+                                    <h4 class="text-xs font-bold text-[#015987]">{{ $task->title }}</h4>
+
+                                    <div class="flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
+                                        @if ($sub?->submission_url)
+                                            <span class="inline-flex items-center gap-1 text-slate-600 truncate max-w-xs">
+                                                {{ \Illuminate\Support\Str::limit($sub->submission_url, 45) }}
+                                            </span>
+                                            <span class="text-slate-300">&bull;</span>
+                                        @elseif ($sub?->evidenceMedia)
+                                            <span class="inline-flex items-center gap-1 text-slate-600">
+                                                {{ $sub->evidenceMedia->original_name }} ({{ $sub->evidenceMedia->formatted_size }})
+                                            </span>
+                                            <span class="text-slate-300">&bull;</span>
+                                        @endif
+                                        <span class="text-slate-400">
+                                            Submit: {{ ($sub?->submitted_at ?? $task->updated_at)->timezone(\App\Models\Task::TIMEZONE)->translatedFormat('d M Y, H:i') }} WIB
                                         </span>
-                                    @endif
+                                    </div>
                                 </div>
 
-                                <h4 class="text-xs font-bold text-[#015987]">
-                                    {{ $task->title }}
-                                </h4>
-
-                                <div class="flex items-center gap-2 text-[11px] text-slate-500">
-                                    <span>Tenggat: {{ $task->deadline_at?->translatedFormat('d M Y, H:i') ?? 'Tanpa deadline' }} WIB</span>
-                                    <span class="text-slate-300">&bull;</span>
-                                    <span class="text-slate-400">Update: {{ $task->updated_at?->diffForHumans() }}</span>
+                                <div class="flex-shrink-0">
+                                    <a
+                                        href="{{ route('pic.tasks.show', $task) }}"
+                                        class="inline-block px-4 py-2 bg-[#015987] hover:bg-[#01486e] text-white text-xs font-semibold rounded-xl transition shadow-xs"
+                                    >
+                                        Periksa &amp; Review
+                                    </a>
                                 </div>
                             </div>
+                        @endforeach
+                    @endif
 
-                            <div class="flex-shrink-0">
-                                <a href="{{ route('pic.tasks.show', $task) }}" class="px-4 py-2 bg-[#015987] hover:bg-[#01486e] text-white text-xs font-semibold rounded-xl transition shadow-xs inline-block">
-                                    Periksa &amp; Review
+                    @if ($picDashboard['pending_logbooks']->isNotEmpty())
+                        <div class="pt-4 border-t border-slate-100 space-y-2.5">
+                            <div class="flex items-center justify-between">
+                                <p class="text-xs font-bold text-slate-700">
+                                    Logbook Menunggu Review ({{ $picDashboard['pending_logbooks_count'] }})
+                                </p>
+                                <a href="{{ route('pic.logbooks.index', ['status' => 'pending']) }}" class="text-[11px] font-semibold text-[#015987] hover:underline">
+                                    Lihat Semua &rsaquo;
                                 </a>
                             </div>
+                            <div class="divide-y divide-slate-100 rounded-xl border border-slate-100 overflow-hidden">
+                                @foreach ($picDashboard['pending_logbooks'] as $lb)
+                                    <div class="px-4 py-3 bg-white flex items-center justify-between gap-3">
+                                        <div class="min-w-0">
+                                            <p class="text-xs font-bold text-slate-800 truncate">{{ $lb->title }}</p>
+                                            <p class="text-[11px] text-slate-400">
+                                                {{ $lb->intern?->name ?? 'Peserta' }} &bull; {{ $lb->log_date->translatedFormat('d M Y') }}
+                                            </p>
+                                        </div>
+                                        <a
+                                            href="{{ route('pic.logbooks.show', $lb) }}"
+                                            class="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-[11px] font-bold shrink-0 transition"
+                                        >
+                                            Review
+                                        </a>
+                                    </div>
+                                @endforeach
+                            </div>
                         </div>
-                    @empty
-                        <div class="text-center py-8 text-xs text-slate-400 space-y-2">
-                            <svg class="w-8 h-8 mx-auto text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                            </svg>
-                            <p>Tidak ada tugas bimbingan Anda yang sedang menunggu review saat ini.</p>
-                        </div>
-                    @endforelse
+                    @endif
                 </div>
             </div>
 
@@ -316,87 +362,100 @@
                         <div class="flex items-center gap-2">
                             <h3 class="text-sm font-bold text-[#015987]">Peserta dengan Tugas dari Anda</h3>
                             <span class="text-[10px] font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded">
-                                Pool Bersama
+                                Multi-PIC
                             </span>
                         </div>
-                        <p class="text-[11px] text-slate-400 mt-0.5">Menampilkan peserta aktif yang sedang memegang tugas buatan Anda dan beban kerja lainnya</p>
+                        <p class="text-[11px] text-slate-400 mt-0.5">Peserta aktif dalam bimbingan Anda atau yang sedang memegang tugas buatan Anda</p>
                     </div>
 
-                    <div class="flex items-center gap-2">
-                        <a href="{{ route('pic.tasks.index') }}" class="px-3 py-1.5 text-xs font-semibold text-slate-600 border border-slate-200 rounded-xl bg-slate-50 hover:bg-slate-100 transition">
-                            Semua Tugas ({{ $taskStats['active_tasks'] }})
+                    <div class="flex flex-wrap items-center gap-2">
+                        <a
+                            href="{{ route('pic.tasks.index') }}"
+                            class="px-3 py-1.5 text-xs font-semibold text-slate-600 border border-slate-200 rounded-xl bg-slate-50 hover:bg-slate-100 transition"
+                        >
+                            Semua Peserta Terkait Anda ({{ $picDashboard['related_interns_count'] }})
                         </a>
-                        <a href="{{ route('pic.tasks.create') }}" class="px-3.5 py-1.5 text-xs font-semibold text-white bg-[#015987] hover:bg-[#01486e] rounded-xl transition flex items-center gap-1 shadow-xs">
+                        <a
+                            href="{{ route('pic.tasks.create') }}"
+                            class="px-3.5 py-1.5 text-xs font-semibold text-white bg-[#015987] hover:bg-[#01486e] rounded-xl transition flex items-center gap-1 shadow-xs"
+                        >
                             <span>+</span>
                             <span>Buat Tugas</span>
                         </a>
                     </div>
                 </div>
 
-                <!-- Tabel Data Peserta & Tugas -->
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse">
-                        <thead>
-                            <tr class="border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                                <th class="py-4 px-6">Peserta Magang</th>
-                                <th class="py-4 px-5">Tugas Anda (Status)</th>
-                                <th class="py-4 px-5">PIC Lain yang Terlibat</th>
-                                <th class="py-4 px-5">Beban Kerja</th>
-                                <th class="py-4 px-6 text-right">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-100 text-xs">
-                            @forelse($internsWithTasks as $row)
-                                <tr class="hover:bg-slate-50/70 transition">
-                                    <td class="py-4 px-6">
-                                        <div>
-                                            <p class="font-bold text-[#015987] text-xs leading-none">{{ $row['intern']->name }}</p>
-                                            <p class="text-[10px] text-slate-400 mt-1">{{ $row['intern']->internProfile?->institution_name ?? $row['intern']->email }}</p>
-                                        </div>
-                                    </td>
-                                    <td class="py-4 px-5">
-                                        <div class="space-y-1">
-                                            <p class="font-medium text-[#015987] text-xs">{{ $row['latest_task']->title }}</p>
-                                            <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold {{ $row['latest_task']->status?->value === 'accepted' ? 'bg-teal-50 text-teal-700 border border-teal-200' : 'bg-sky-50 text-sky-700 border border-sky-200' }}">
-                                                {{ strtoupper($row['latest_task']->status?->value ?? 'ASSIGNED') }}
-                                            </span>
-                                        </div>
-                                    </td>
-                                    <td class="py-4 px-5">
-                                        @if($row['other_pics']->isNotEmpty())
-                                            <div class="flex items-center gap-1.5 flex-wrap">
-                                                @foreach($row['other_pics'] as $otherPic)
-                                                    <span class="inline-flex items-center gap-1 text-[11px] text-slate-600 bg-purple-50 border border-purple-200 px-2 py-0.5 rounded-md">
-                                                        <span class="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
-                                                        {{ $otherPic->name }}
-                                                    </span>
-                                                @endforeach
+                @if ($picDashboard['related_interns']->isEmpty())
+                    <div class="p-8 text-center space-y-2">
+                        <p class="text-xs font-bold text-slate-600">Belum ada peserta terkait saat ini</p>
+                        <p class="text-[11px] text-slate-400">Mulai dengan membuat tugas baru untuk peserta magang aktif.</p>
+                    </div>
+                @else
+                    <!-- Tabel Data Peserta & Tugas Asli -->
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                    <th class="py-4 px-6">Peserta Magang</th>
+                                    <th class="py-4 px-5">Tugas Terbaru Anda (Status)</th>
+                                    <th class="py-4 px-5">Tugas Aktif</th>
+                                    <th class="py-4 px-6 text-right">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 text-xs">
+                                @foreach ($picDashboard['related_interns'] as $row)
+                                    @php
+                                        $intern = $row['intern'];
+                                        $latestTask = $row['latest_task'];
+                                    @endphp
+                                    <tr class="hover:bg-slate-50/70 transition">
+                                        <td class="py-4 px-6">
+                                            <div>
+                                                <p class="font-bold text-[#015987] text-xs leading-none">{{ $intern->name }}</p>
+                                                <p class="text-[10px] text-slate-400 mt-1">{{ $row['institution'] }}</p>
                                             </div>
-                                        @else
-                                            <span class="text-xs italic text-slate-400">Tidak ada (Hanya Anda)</span>
-                                        @endif
-                                    </td>
-                                    <td class="py-4 px-5">
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold {{ $row['total_active_tasks'] > 2 ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-slate-100 text-slate-600 border border-slate-200' }}">
-                                            {{ $row['total_active_tasks'] }} Tugas Aktif
-                                        </span>
-                                    </td>
-                                    <td class="py-4 px-6 text-right">
-                                        <a href="{{ route('pic.tasks.show', $row['latest_task']) }}" class="px-2.5 py-1 text-[11px] font-medium text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 transition inline-block">
-                                            Detail
-                                        </a>
-                                    </td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="5" class="py-8 text-center text-xs text-slate-400">
-                                        Belum ada peserta aktif yang sedang memegang tugas buatan Anda.
-                                    </td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
+                                        </td>
+                                        <td class="py-4 px-5">
+                                            @if ($latestTask)
+                                                @php
+                                                    $taskBadge = match ($latestTask->status->value) {
+                                                        'submitted', 'resubmitted' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
+                                                        'revision_requested' => 'bg-rose-50 text-rose-700 border-rose-200',
+                                                        'in_progress' => 'bg-sky-50 text-sky-700 border-sky-200',
+                                                        default => 'bg-slate-100 text-slate-700 border-slate-200',
+                                                    };
+                                                @endphp
+                                                <div class="space-y-1">
+                                                    <a href="{{ route('pic.tasks.show', $latestTask) }}" class="font-medium text-[#015987] hover:underline text-xs block">
+                                                        {{ $latestTask->title }}
+                                                    </a>
+                                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold border {{ $taskBadge }}">
+                                                        {{ $latestTask->status->label() }}
+                                                    </span>
+                                                </div>
+                                            @else
+                                                <span class="text-xs italic text-slate-400">Belum ada tugas aktif</span>
+                                            @endif
+                                        </td>
+                                        <td class="py-4 px-5 whitespace-nowrap">
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold {{ $row['active_tasks_count'] > 0 ? 'bg-sky-50 text-[#015987] border-sky-200' : 'bg-slate-100 text-slate-600 border-slate-200' }} border">
+                                                {{ $row['active_tasks_count'] }} Tugas Aktif
+                                            </span>
+                                        </td>
+                                        <td class="py-4 px-6 text-right whitespace-nowrap">
+                                            <a
+                                                href="{{ route('pic.tasks.index', ['intern_id' => $intern->id]) }}"
+                                                class="inline-block px-2.5 py-1 text-[11px] font-semibold text-[#015987] border border-slate-200 rounded-lg hover:border-[#015987] hover:bg-sky-50 transition"
+                                            >
+                                                Detail
+                                            </a>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @endif
             </div>
 
         </div>
@@ -405,8 +464,8 @@
         <!-- KOLOM KANAN (LEBAR 5/12): EWS & TENGGAT TUGAS PIC          -->
         <!-- ========================================================== -->
         <div class="lg:col-span-5 space-y-8">
-            
-            <!-- KARTU 1: SINYAL PERINGATAN (EWS 3 INDIKATOR RESMI KHUSUS PIC) -->
+
+            <!-- KARTU 1: SINYAL PERINGATAN (EWS) -->
             <div class="bg-white rounded-2xl border border-slate-200/70 shadow-xs p-6 space-y-5">
                 <div class="flex items-center justify-between pb-4 border-b border-slate-100">
                     <div class="flex items-center gap-2.5">
@@ -417,99 +476,103 @@
                         </div>
                         <div>
                             <h3 class="text-sm font-bold text-[#015987]">Sinyal Peringatan (EWS)</h3>
-                            <p class="text-[11px] text-slate-400">Peringatan keterlambatan bimbingan Anda</p>
+                            <p class="text-[11px] text-slate-400">Tugas overdue &amp; revisi berulang buatan Anda</p>
                         </div>
                     </div>
-                    <span class="text-[11px] font-bold px-2.5 py-0.5 rounded-full {{ $ewsSummary['total_warning_count'] > 0 ? 'bg-rose-50 text-rose-600 border border-rose-200' : 'bg-teal-50 text-teal-700 border border-teal-200' }}">
-                        {{ $ewsSummary['total_warning_count'] }} Sinyal
+                    <span class="text-[11px] font-bold {{ count($picDashboard['ews_signals']) > 0 ? 'text-rose-500 bg-rose-50 border-rose-200' : 'text-emerald-600 bg-emerald-50 border-emerald-200' }} border px-2.5 py-0.5 rounded-full">
+                        {{ count($picDashboard['ews_signals']) }} Sinyal
                     </span>
                 </div>
 
-                <div class="space-y-3">
-                    @forelse($ewsSummary['warnings_list'] as $warning)
-                        <div class="p-4 rounded-xl border {{ $warning['level'] === 'danger' ? 'border-rose-200 bg-rose-50/40' : 'border-amber-200 bg-amber-50/40' }} space-y-2">
-                            <div class="flex items-center justify-between">
-                                <span class="text-[10px] font-bold px-2 py-0.5 rounded border {{ $warning['level'] === 'danger' ? 'bg-rose-100 text-rose-700 border-rose-200' : 'bg-amber-100 text-amber-800 border-amber-200' }}">
-                                    {{ $warning['badge'] }}
+                @if (empty($picDashboard['ews_signals']))
+                    <div class="py-6 text-center space-y-1">
+                        <p class="text-xs font-bold text-slate-600">Tidak ada sinyal peringatan saat ini</p>
+                        <p class="text-[11px] text-slate-400">Seluruh tugas buatan Anda berjalan sesuai tenggat waktu.</p>
+                    </div>
+                @else
+                    @foreach ($picDashboard['ews_signals'] as $signal)
+                        @php $isOverdueSignal = $signal['type'] === 'overdue'; @endphp
+                        <div class="p-5 rounded-xl border {{ $isOverdueSignal ? 'border-rose-100 bg-rose-50/30' : 'border-amber-100 bg-amber-50/30' }} space-y-3">
+                            <div class="flex items-center justify-between gap-2">
+                                <span class="text-[10px] font-bold {{ $isOverdueSignal ? 'text-rose-600 bg-rose-50 border-rose-200' : 'text-amber-700 bg-amber-50 border-amber-200' }} px-2 py-0.5 rounded border">
+                                    {{ $signal['badge'] }}
                                 </span>
-                                <span class="text-xs font-semibold text-slate-700">
-                                    {{ $warning['intern']->name ?? 'Peserta' }}
+                                <span class="text-xs font-bold {{ $isOverdueSignal ? 'text-rose-500' : 'text-amber-600' }}">
+                                    {{ $signal['tag'] }}
                                 </span>
                             </div>
 
                             <div>
-                                <h4 class="text-xs font-bold text-[#015987]">
-                                    {{ $warning['title'] }}
-                                </h4>
-                                <p class="text-[11px] text-slate-500 mt-1 leading-relaxed">
-                                    {{ $warning['detail'] }}
+                                <h4 class="text-xs font-bold text-[#015987]">{{ $signal['title'] }}</h4>
+                                <p class="text-xs text-slate-500 mt-1">
+                                    Peserta: <span class="font-medium text-slate-700">{{ $signal['intern_name'] }}</span>
                                 </p>
+                                <p class="text-[11px] text-slate-400 mt-0.5">{{ $signal['detail'] }}</p>
                             </div>
 
-                            @if(isset($warning['task']))
-                                <div class="pt-2 border-t border-rose-100 flex items-center justify-between text-xs">
-                                    <span class="text-[11px] text-slate-400">Tindakan:</span>
-                                    <a href="{{ route('pic.tasks.show', $warning['task']) }}" class="font-bold text-[#015987] hover:underline text-xs">
-                                        Periksa Tugas &rsaquo;
-                                    </a>
-                                </div>
-                            @endif
+                            <div class="pt-2.5 border-t {{ $isOverdueSignal ? 'border-rose-100/60' : 'border-amber-100/60' }} flex items-center justify-between text-xs">
+                                <span class="text-[11px] text-slate-400">Tindakan:</span>
+                                <a href="{{ $signal['action_url'] }}" class="font-bold {{ $isOverdueSignal ? 'text-[#015987]' : 'text-amber-700' }} hover:underline text-xs">
+                                    {{ $signal['action_label'] }} &rarr;
+                                </a>
+                            </div>
                         </div>
-                    @empty
-                        <div class="py-8 text-center text-xs text-slate-400 space-y-2">
-                            <svg class="w-8 h-8 mx-auto text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                            </svg>
-                            <p class="font-semibold text-emerald-600">Semua anak bimbingan dalam status aman</p>
-                            <p class="text-[11px] text-slate-400">Tidak ada presensi terlewat, logbook bolong, atau tugas overdue.</p>
-                        </div>
-                    @endforelse
-                </div>
+                    @endforeach
+                @endif
             </div>
 
             <!-- KARTU 2: TENGGAT TUGAS BUATAN ANDA (DINAMIS DARI DATABASE) -->
             <div class="bg-white rounded-2xl border border-slate-200/70 shadow-xs p-6 space-y-4">
                 <div class="flex items-center justify-between pb-3 border-b border-slate-100">
-                    <h3 class="text-sm font-bold text-[#015987]">
-                        Tenggat Tugas Mendatang
-                    </h3>
-                    <a href="{{ route('pic.tasks.index') }}" class="text-xs text-[#015987] font-semibold hover:underline">
-                        Semua &rsaquo;
+                    <h3 class="text-sm font-bold text-[#015987]">Tenggat Tugas Buatan Anda</h3>
+                    <a href="{{ route('pic.tasks.index') }}" class="text-[11px] font-semibold text-[#015987] hover:underline">
+                        Semua Tugas &rsaquo;
                     </a>
                 </div>
 
-                <div class="space-y-3.5">
-                    @forelse($upcomingDeadlines as $task)
-                        @php
-                            $now = \Carbon\Carbon::now(config('wantrace.timezone', 'Asia/Jakarta'));
-                            $isOverdue = $task->deadline_at->lt($now);
-                            $diffHours = (int) $now->diffInHours($task->deadline_at, false);
-                        @endphp
-                        <div class="flex items-center justify-between p-3.5 rounded-xl bg-slate-50/50 border border-slate-100 hover:border-slate-200 transition">
-                            <div class="min-w-0 pr-2">
-                                <a href="{{ route('pic.tasks.show', $task) }}" class="text-xs font-bold text-[#015987] hover:underline block truncate">
-                                    {{ $task->title }}
-                                </a>
-                                <p class="text-[11px] text-slate-400 mt-0.5 truncate">
-                                    {{ $task->intern->name ?? 'Peserta' }} &bull; {{ $task->deadline_at->translatedFormat('d M, H:i') }} WIB
-                                </p>
-                            </div>
-                            <span class="text-xs font-bold px-2.5 py-1 rounded-lg flex-shrink-0 {{ $isOverdue ? 'bg-rose-50 text-rose-600 border border-rose-200' : ($diffHours <= 24 ? 'bg-amber-50 text-amber-600 border border-amber-200' : 'bg-slate-100 text-slate-600 border border-slate-200') }}">
-                                @if($isOverdue)
-                                    Lewat
-                                @elseif($diffHours <= 24)
-                                    &lt; 24 Jam
-                                @else
-                                    {{ (int) ceil($diffHours / 24) }} Hari
-                                @endif
-                            </span>
-                        </div>
-                    @empty
-                        <div class="text-center py-6 text-xs text-slate-400">
-                            Tidak ada tugas aktif dengan tenggat waktu mendatang.
-                        </div>
-                    @endforelse
-                </div>
+                @if ($picDashboard['upcoming_deadlines']->isEmpty())
+                    <div class="py-6 text-center space-y-1">
+                        <p class="text-xs font-bold text-slate-600">Tidak ada tenggat tugas aktif</p>
+                        <p class="text-[11px] text-slate-400">Tugas aktif buatan Anda dengan batas waktu akan tampil di sini.</p>
+                    </div>
+                @else
+                    @php
+                        $nowPic = \Illuminate\Support\Carbon::now(\App\Models\Task::TIMEZONE);
+                    @endphp
+                    <div class="space-y-3">
+                        @foreach ($picDashboard['upcoming_deadlines'] as $task)
+                            @php
+                                $isOverdue = $task->isOverdue($nowPic);
+                                $hoursLeft = $isOverdue ? 0 : (int) $nowPic->diffInHours($task->deadline_at);
+                                if ($isOverdue) {
+                                    $pillText = 'Overdue';
+                                    $pillClass = 'text-rose-600 bg-rose-50 border-rose-200';
+                                } elseif ($hoursLeft <= 24) {
+                                    $pillText = max(1, $hoursLeft).' Jam';
+                                    $pillClass = 'text-amber-600 bg-amber-50 border-amber-200';
+                                } else {
+                                    $daysLeft = max(1, (int) ceil($hoursLeft / 24));
+                                    $pillText = $daysLeft.' Hari';
+                                    $pillClass = 'text-slate-600 bg-slate-100 border-slate-200';
+                                }
+                            @endphp
+                            <a
+                                href="{{ route('pic.tasks.show', $task) }}"
+                                class="flex items-center justify-between gap-3 p-3.5 rounded-xl bg-slate-50/50 border border-slate-100 hover:border-sky-200 hover:bg-sky-50/30 transition"
+                            >
+                                <div class="min-w-0">
+                                    <h4 class="text-xs font-bold text-[#015987] truncate">{{ $task->title }}</h4>
+                                    <p class="text-[11px] text-slate-400 mt-0.5">
+                                        {{ $task->intern?->name ?? 'Peserta' }} &bull; {{ $task->deadline_at->timezone(\App\Models\Task::TIMEZONE)->translatedFormat('d M Y, H:i') }} WIB
+                                    </p>
+                                </div>
+                                <span class="text-xs font-bold border px-2.5 py-1 rounded-lg shrink-0 {{ $pillClass }}">
+                                    {{ $pillText }}
+                                </span>
+                            </a>
+                        @endforeach
+                    </div>
+                @endif
             </div>
 
         </div>
