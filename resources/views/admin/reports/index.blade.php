@@ -18,28 +18,29 @@
 
         <!-- Tombol Aksi Ekspor -->
         <div class="flex items-center gap-2.5">
-            <a href="{{ route('admin.reports.export-pdf', ['report_type' => $reportType, 'intern_id' => $internId, 'start_date' => $startDate, 'end_date' => $endDate]) }}"
-               target="_blank"
-               class="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-xl bg-rose-600 hover:bg-rose-700 text-white shadow-xs transition active:scale-95">
+            <button type="button"
+                    onclick="submitReportExport('{{ route('admin.reports.export-pdf') }}', true)"
+                    class="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-xl bg-rose-600 hover:bg-rose-700 text-white shadow-xs transition active:scale-95 cursor-pointer">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                 </svg>
                 <span>Export PDF</span>
-            </a>
+            </button>
 
-            <a href="{{ route('admin.reports.export-excel', ['report_type' => $reportType, 'intern_id' => $internId, 'start_date' => $startDate, 'end_date' => $endDate]) }}"
-               class="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition active:scale-95">
+            <button type="button"
+                    onclick="submitReportExport('{{ route('admin.reports.export-excel') }}', false)"
+                    class="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition active:scale-95 cursor-pointer">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m-9 5h14a2 2 0 002-2V7a2 2 0 00-2-2H9.5a2 2 0 00-1.414.586l-4.5 4.5A2 2 0 003 11.5V19a2 2 0 002 2z"/>
                 </svg>
                 <span>Export Excel (.xlsx)</span>
-            </a>
+            </button>
         </div>
     </div>
 
     <!-- 2. Form Filter Laporan -->
     <div class="bg-white rounded-2xl shadow-xs border border-slate-200/80 p-5">
-        <form method="GET" action="{{ route('admin.reports.index') }}" class="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-4 items-end">
+        <form id="reportFilterForm" method="GET" action="{{ route('admin.reports.index') }}" class="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-4 items-end">
             <!-- Jenis Laporan -->
             <div class="space-y-1.5">
                 <label for="report_type" class="block text-xs font-bold text-slate-700">Jenis Laporan <span class="text-rose-500">*</span></label>
@@ -343,11 +344,9 @@
                         <tr class="bg-slate-50/75 border-b border-slate-200/80 text-[11px] font-bold text-slate-600">
                             <th class="py-3 px-4 text-center w-12">No</th>
                             <th class="py-3 px-4">Tanggal</th>
-                            <th class="py-3 px-4">Peserta Magang</th>
-                            <th class="py-3 px-4">Judul &amp; Aktivitas</th>
-                            <th class="py-3 px-4">Hasil / Pencapaian</th>
-                            <th class="py-3 px-4">Status Approval</th>
-                            <th class="py-3 px-4">Peninjau</th>
+                            <th class="py-3 px-4">Nama Peserta</th>
+                            <th class="py-3 px-4">Aktivitas / Kegiatan</th>
+                            <th class="py-3 px-4">Penanggung Jawab</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
@@ -357,36 +356,18 @@
                                 <td class="py-3 px-4 font-semibold text-slate-800">{{ $row->log_date?->translatedFormat('d M Y') }}</td>
                                 <td class="py-3 px-4">
                                     <div class="font-bold text-slate-900">{{ $row->intern?->name ?? 'Peserta #' . $row->intern_user_id }}</div>
-                                    @if(($row->revisions_count ?? 0) > 0)
-                                        <div class="text-[10px] font-semibold text-amber-600 mt-0.5">{{ $row->revisions_count }}x revisi</div>
-                                    @endif
                                 </td>
                                 <td class="py-3 px-4 max-w-sm">
                                     <div class="font-bold text-slate-800">{{ $row->title }}</div>
                                     <div class="text-slate-500 text-[11px] mt-0.5 line-clamp-2">{{ $row->activity_description }}</div>
                                 </td>
-                                <td class="py-3 px-4 text-slate-600 max-w-xs">{{ $row->result ?: '-' }}</td>
-                                <td class="py-3 px-4">
-                                    @if($row->status?->value === 'approved')
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">Approved</span>
-                                    @elseif($row->status?->value === 'revision_requested')
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">Perlu Revisi</span>
-                                    @else
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-sky-100 text-sky-800">Pending</span>
-                                    @endif
-                                </td>
-                                <td class="py-3 px-4 text-slate-500">
-                                    @if($row->reviewer)
-                                        <div class="font-medium text-slate-700">{{ $row->reviewer->name }}</div>
-                                        <div class="text-[10px] text-slate-400">{{ $row->reviewed_at?->translatedFormat('d/m/Y H:i') }}</div>
-                                    @else
-                                        <span class="text-slate-300">-</span>
-                                    @endif
+                                <td class="py-3 px-4 text-slate-700 font-medium">
+                                    {{ $row->pic_in_charge ?? ($row->reviewer?->name ?? '-') }}
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" class="py-12 text-center text-slate-400">Tidak ada logbook manual pada filter terpilih.</td>
+                                <td colspan="5" class="py-12 text-center text-slate-400">Tidak ada logbook manual pada filter terpilih.</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -538,4 +519,29 @@
         </div>
     </div>
 </div>
+
+<script>
+function submitReportExport(targetUrl, openInNewTab) {
+    const form = document.getElementById('reportFilterForm');
+    if (!form) return;
+
+    // Ambil nilai filter yang sedang aktif diinputkan user pada form
+    const formData = new FormData(form);
+    const params = new URLSearchParams();
+
+    for (const [key, value] of formData.entries()) {
+        if (value !== null && value !== '') {
+            params.append(key, value);
+        }
+    }
+
+    const fullUrl = targetUrl + '?' + params.toString();
+
+    if (openInNewTab) {
+        window.open(fullUrl, '_blank');
+    } else {
+        window.location.href = fullUrl;
+    }
+}
+</script>
 @endsection

@@ -163,7 +163,10 @@ class ReportService
     public function getLogbookReport(string $startDate, string $endDate, ?int $internId = null): array
     {
         $query = Logbook::manual()
-            ->with(['intern', 'reviewer'])
+            ->with([
+                'intern.internPicAssignments.pic',
+                'reviewer',
+            ])
             ->withCount('revisions')
             ->whereBetween('log_date', [$startDate, $endDate])
             ->orderBy('log_date', 'desc')
@@ -176,6 +179,46 @@ class ReportService
         }
 
         $records = $query->get();
+
+        // Resolve penanggung jawab per logbook:
+        // 1) Reviewer logbook jika sudah ditinjau
+        // 2) PIC pembimbing yang aktif pada tanggal log_date (start_date <= log_date <= end_date atau end_date IS NULL)
+        // 3) Fallback PIC pembimbing aktif saat ini (end_date IS NULL)
+        // 4) '-' jika tidak ada
+        $records->each(function (Logbook $logbook) {
+            if ($logbook->reviewer) {
+                $logbook->pic_in_charge = $logbook->reviewer->name;
+                return;
+            }
+
+            $logDate = $logbook->log_date ? Carbon::parse($logbook->log_date)->format('Y-m-d') : null;
+            $assignments = $logbook->intern?->internPicAssignments ?? collect();
+
+            if ($logDate) {
+                $matchedAssignment = $assignments->first(function ($assignment) use ($logDate) {
+                    $startDate = $assignment->start_date ? Carbon::parse($assignment->start_date)->format('Y-m-d') : null;
+                    $endDate = $assignment->end_date ? Carbon::parse($assignment->end_date)->format('Y-m-d') : null;
+
+                    $started = is_null($startDate) || $startDate <= $logDate;
+                    $ended = is_null($endDate) || $endDate >= $logDate;
+
+                    return $started && $ended;
+                });
+
+                if ($matchedAssignment && $matchedAssignment->pic) {
+                    $logbook->pic_in_charge = $matchedAssignment->pic->name;
+                    return;
+                }
+            }
+
+            $currentActiveAssignment = $assignments->first(fn ($a) => is_null($a->end_date));
+            if ($currentActiveAssignment && $currentActiveAssignment->pic) {
+                $logbook->pic_in_charge = $currentActiveAssignment->pic->name;
+                return;
+            }
+
+            $logbook->pic_in_charge = '-';
+        });
 
         return [
             'logbooks' => $records,

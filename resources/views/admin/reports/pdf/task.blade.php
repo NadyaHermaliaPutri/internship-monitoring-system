@@ -1,25 +1,25 @@
 @extends('admin.reports.pdf.layout')
 
 @section('content')
-    <table class="summary-boxes" cellpadding="0" cellspacing="4">
+    <table class="summary-boxes" cellpadding="0" cellspacing="6">
         <tr>
             <td class="summary-card" style="width: 20%;">
                 <div class="summary-card-title">Total Tugas</div>
-                <div class="summary-card-val">{{ $summary['total_tasks'] ?? 0 }}</div>
+                <div class="summary-card-val" style="color: #015987;">{{ $summary['total_tasks'] ?? 0 }}</div>
             </td>
-            <td class="summary-card" style="width: 20%;">
+            <td class="summary-card" style="width: 20%; border-top-color: #16a34a;">
                 <div class="summary-card-title">Selesai (Accepted)</div>
                 <div class="summary-card-val" style="color: #166534;">{{ $summary['accepted_count'] ?? 0 }}</div>
             </td>
-            <td class="summary-card" style="width: 20%;">
+            <td class="summary-card" style="width: 20%; border-top-color: #0284c7;">
                 <div class="summary-card-title">Sedang Dikerjakan</div>
                 <div class="summary-card-val" style="color: #0284c7;">{{ $summary['in_progress_count'] ?? 0 }}</div>
             </td>
-            <td class="summary-card" style="width: 20%;">
+            <td class="summary-card" style="width: 20%; border-top-color: #d97706;">
                 <div class="summary-card-title">Menunggu Review</div>
                 <div class="summary-card-val" style="color: #d97706;">{{ $summary['submitted_count'] ?? 0 }}</div>
             </td>
-            <td class="summary-card" style="width: 20%;">
+            <td class="summary-card" style="width: 20%; border-top-color: #dc2626;">
                 <div class="summary-card-title">Tugas Overdue</div>
                 <div class="summary-card-val" style="color: #dc2626;">{{ $summary['overdue_count'] ?? 0 }}</div>
             </td>
@@ -35,7 +35,7 @@
                 <th style="width: 12%;">PIC Pemberi</th>
                 <th style="width: 14%;">Penugasan &amp; Tenggat</th>
                 <th style="width: 14%;">Pengumpulan &amp; Review</th>
-                <th style="width: 11%;">Status Terkini</th>
+                <th style="width: 11%;" class="text-center">Status Terkini</th>
                 <th style="width: 11%;">Tanggal Selesai</th>
             </tr>
         </thead>
@@ -57,29 +57,29 @@
                     <td>{{ $item->intern?->name ?? 'Peserta #' . $item->intern_user_id }}</td>
                     <td>{{ $item->pic?->name ?? 'PIC #' . $item->pic_user_id }}</td>
                     <td>
-                        <div style="font-size: 9px;">Diberikan: {{ $item->assigned_at?->translatedFormat('d M Y') ?? '-' }}</div>
-                        <div style="font-size: 9px; font-weight: bold; color: {{ $isOverdue ? '#dc2626' : '#475569' }};">
+                        <div style="font-size: 8.5px;">Diberikan: {{ $item->assigned_at?->translatedFormat('d M Y') ?? '-' }}</div>
+                        <div style="font-size: 8.5px; font-weight: bold; color: {{ $isOverdue ? '#dc2626' : '#475569' }}; margin-top: 2px;">
                             Deadline: {{ $item->deadline_at?->translatedFormat('d M Y, H:i') ?? '-' }}
                         </div>
                     </td>
                     <td>
                         @if($item->submissions_count > 0 && $latestSub)
-                            <div style="font-size: 9px; font-weight: bold;">
+                            <div style="font-size: 8.5px; font-weight: bold;">
                                 Versi {{ $latestSub->submission_number }} ({{ $item->submissions_count }}x kirim)
                             </div>
-                            <div style="font-size: 8px; color: #64748b;">
+                            <div style="font-size: 7.5px; color: #64748b;">
                                 {{ $latestSub->submitted_at?->translatedFormat('d/m/Y H:i') }}
                             </div>
                             @if($latestRev)
-                                <div style="font-size: 8px; font-weight: bold; color: {{ $latestRev->decision?->value === 'approved' ? '#16a34a' : '#d97706' }};">
+                                <div style="font-size: 8px; font-weight: bold; color: {{ $latestRev->decision?->value === 'approved' ? '#16a34a' : '#d97706' }}; margin-top: 1px;">
                                     {{ $latestRev->decision?->label() ?? $latestRev->decision?->value }}
                                 </div>
                             @endif
                         @else
-                            <span style="color: #94a3b8; font-size: 9px;">Belum dikumpulkan</span>
+                            <span style="color: #94a3b8; font-size: 8.5px;">Belum dikumpulkan</span>
                         @endif
                     </td>
-                    <td>
+                    <td class="text-center">
                         @if($item->status?->value === 'accepted')
                             <span class="badge badge-success">Accepted</span>
                         @elseif($item->status?->value === 'in_progress')
@@ -107,7 +107,7 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="7" class="text-center" style="padding: 15px; color: #64748b;">
+                    <td colspan="8" class="text-center" style="padding: 18px; color: #64748b;">
                         Tidak ada catatan tugas pada periode dan filter terpilih.
                     </td>
                 </tr>

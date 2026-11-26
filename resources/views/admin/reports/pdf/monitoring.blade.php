@@ -1,8 +1,8 @@
 @extends('admin.reports.pdf.layout')
 
 @section('content')
-    <div style="background-color: #f1f5f9; padding: 6px 10px; margin-bottom: 12px; border-left: 3px solid #015987; font-size: 9px; color: #475569;">
-        <strong>Catatan Evaluasi HR:</strong> Rekapitulasi di bawah ini merangkum data faktual aktivitas peserta magang selama periode laporan ({{ $metadata['working_days_count'] ?? 0 }} hari kerja). Rekap ini murni data pendukung evaluasi dan tidak memuat formula nilai akhir otomatis.
+    <div style="background-color: #f8fafc; padding: 7px 12px; margin-bottom: 12px; border: 1px solid #e2e8f0; border-left: 3px solid #015987; font-size: 8.5px; color: #475569;">
+        <strong>Catatan Evaluasi HR:</strong> Rekapitulasi di bawah ini merangkum data faktual komposit kegiatan peserta magang selama periode laporan ({{ $metadata['working_days_count'] ?? 0 }} hari kerja). Rekap ini murni data pendukung evaluasi dan tidak memuat formula nilai akhir otomatis.
     </div>
 
     <table class="data-table">
@@ -12,7 +12,7 @@
                 <th style="width: 17%;" rowspan="2">Nama Peserta Magang</th>
                 <th style="width: 7%;" class="text-center" rowspan="2">Status Akun</th>
                 <th style="width: 28%; text-align: center;" colspan="4">Presensi ({{ $metadata['working_days_count'] ?? 0 }} HK)</th>
-                <th style="width: 9%;" class="text-center" rowspan="2">Izin/Sakit (Hari)</th>
+                <th style="width: 9%;" class="text-center" rowspan="2">Izin/Sakit</th>
                 <th style="width: 16%; text-align: center;" colspan="2">Logbook Manual</th>
                 <th style="width: 20%; text-align: center;" colspan="3">Tugas Magang</th>
             </tr>
@@ -44,7 +44,7 @@
                     <td class="text-center" style="color: #0284c7;">{{ $row['on_time_count'] }}</td>
                     <td class="text-center" style="color: #d97706;">{{ $row['late_count'] }}</td>
                     <td class="text-center" style="color: #dc2626;">{{ $row['rejected_count'] }}</td>
-                    <td class="text-center">{{ $row['approved_leave_days'] }}</td>
+                    <td class="text-center">{{ $row['approved_leave_days'] }} hari</td>
                     <td class="text-center">{{ $row['logbooks_total'] }}</td>
                     <td class="text-center" style="color: #166534; font-weight: bold;">{{ $row['logbooks_approved'] }}</td>
                     <td class="text-center">{{ $row['tasks_total'] }}</td>
@@ -55,7 +55,7 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="12" class="text-center" style="padding: 15px; color: #64748b;">
+                    <td colspan="13" class="text-center" style="padding: 18px; color: #64748b;">
                         Tidak ada data peserta magang yang ditemukan.
                     </td>
                 </tr>

@@ -97,17 +97,22 @@ class ReportTest extends TestCase
     }
 
     /**
-     * 3. Admin dapat mengunduh ekspor PDF (application/pdf) dan tercatat di audit_logs.
+     * 3. Admin dapat mengunduh ekspor PDF (application/pdf) untuk SEMUA 5 jenis laporan dan tercatat di audit_logs.
      */
-    public function test_admin_can_export_pdf_and_logs_audit(): void
+    public function test_admin_can_export_pdf_for_all_five_report_types_and_logs_audit(): void
     {
         $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
         $intern = User::factory()->create(['role' => 'intern', 'is_active' => true]);
+        $types = ['attendance', 'leave', 'logbook', 'task', 'monitoring'];
 
-        $response = $this->actingAs($admin)->get('/admin/laporan/export-pdf?report_type=attendance&start_date=2026-11-01&end_date=2026-11-30');
+        foreach ($types as $type) {
+            $response = $this->actingAs($admin)->get("/admin/laporan/export-pdf?report_type={$type}&start_date=2026-11-01&end_date=2026-11-30");
+            $response->assertOk();
+            $this->assertStringContainsString('application/pdf', $response->headers->get('content-type'));
 
-        $response->assertOk();
-        $this->assertStringContainsString('application/pdf', $response->headers->get('content-type'));
+            $disposition = $response->headers->get('content-disposition') ?? '';
+            $this->assertStringContainsString("laporan_{$type}_", $disposition);
+        }
 
         $this->assertDatabaseHas('audit_logs', [
             'action' => 'report_exported',
@@ -117,17 +122,22 @@ class ReportTest extends TestCase
     }
 
     /**
-     * 4. Admin dapat mengunduh ekspor Excel (.xlsx) dan tercatat di audit_logs.
+     * 4. Admin dapat mengunduh ekspor Excel (.xlsx) untuk SEMUA 5 jenis laporan dan tercatat di audit_logs.
      */
-    public function test_admin_can_export_excel_and_logs_audit(): void
+    public function test_admin_can_export_excel_for_all_five_report_types_and_logs_audit(): void
     {
         $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
         $intern = User::factory()->create(['role' => 'intern', 'is_active' => true]);
+        $types = ['attendance', 'leave', 'logbook', 'task', 'monitoring'];
 
-        $response = $this->actingAs($admin)->get('/admin/laporan/export-excel?report_type=monitoring&start_date=2026-11-01&end_date=2026-11-30');
+        foreach ($types as $type) {
+            $response = $this->actingAs($admin)->get("/admin/laporan/export-excel?report_type={$type}&start_date=2026-11-01&end_date=2026-11-30");
+            $response->assertOk();
+            $this->assertStringContainsString('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', $response->headers->get('content-type'));
 
-        $response->assertOk();
-        $this->assertStringContainsString('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', $response->headers->get('content-type'));
+            $disposition = $response->headers->get('content-disposition') ?? '';
+            $this->assertStringContainsString("laporan_{$type}_", $disposition);
+        }
 
         $this->assertDatabaseHas('audit_logs', [
             'action' => 'report_exported',
@@ -228,8 +238,72 @@ class ReportTest extends TestCase
         $response->assertSee('Eksperimen Manual UI');
         $response->assertDontSee('Penugasan Otomatis Sistem');
 
+        // Pastikan kolom baru 'Penanggung Jawab' ada di preview dan bukan kolom lama yang berlebihan
+        $response->assertSee('Penanggung Jawab');
+        $response->assertDontSee('Status Approval');
+
         $reportData = $response->viewData('reportData');
         $this->assertEquals(1, $reportData['summary']['total_entries']);
+    }
+
+    /**
+     * 8. Penanggung Jawab pada Laporan Logbook:
+     * - Menampilkan reviewer->name jika sudah direview
+     * - Menampilkan PIC aktif via pic_assignments jika belum direview
+     */
+    public function test_logbook_report_displays_correct_pic_in_charge(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $picMentor = User::factory()->create(['role' => 'pic', 'name' => 'Pak Budi PIC', 'is_active' => true]);
+        $picReviewer = User::factory()->create(['role' => 'pic', 'name' => 'Bu Ani Reviewer', 'is_active' => true]);
+        $intern = User::factory()->create(['role' => 'intern', 'name' => 'Peserta Bimbingan', 'is_active' => true]);
+
+        // Buat penugasan pembimbing
+        \App\Models\PicAssignment::create([
+            'intern_user_id' => $intern->id,
+            'pic_user_id' => $picMentor->id,
+            'start_date' => '2026-11-01',
+            'end_date' => null,
+            'assigned_by' => $admin->id,
+        ]);
+
+        // 1) Logbook sudah direview
+        Logbook::create([
+            'intern_user_id' => $intern->id,
+            'log_date' => '2026-11-05',
+            'title' => 'Aktivitas Hari 1',
+            'activity_description' => 'Membaca dokumentasi.',
+            'source' => LogbookSource::Manual,
+            'status' => LogbookStatus::Approved,
+            'reviewed_by' => $picReviewer->id,
+            'reviewed_at' => now(),
+        ]);
+
+        // 2) Logbook belum direview
+        Logbook::create([
+            'intern_user_id' => $intern->id,
+            'log_date' => '2026-11-06',
+            'title' => 'Aktivitas Hari 2',
+            'activity_description' => 'Membuat kerangka modul.',
+            'source' => LogbookSource::Manual,
+            'status' => LogbookStatus::Pending,
+        ]);
+
+        $response = $this->actingAs($admin)->get('/admin/laporan?report_type=logbook&start_date=2026-11-01&end_date=2026-11-30');
+        $response->assertOk();
+
+        $reportData = $response->viewData('reportData');
+        $logbooks = $reportData['logbooks'];
+
+        $reviewedLog = $logbooks->firstWhere('title', 'Aktivitas Hari 1');
+        $pendingLog = $logbooks->firstWhere('title', 'Aktivitas Hari 2');
+
+        $this->assertEquals('Bu Ani Reviewer', $reviewedLog->pic_in_charge);
+        $this->assertEquals('Pak Budi PIC', $pendingLog->pic_in_charge);
+
+        // Pastikan nama penanggung jawab tampil di view
+        $response->assertSee('Bu Ani Reviewer');
+        $response->assertSee('Pak Budi PIC');
     }
 
     /**

@@ -48,11 +48,9 @@
         <tr style="background-color: #015987; color: #ffffff;">
             <th style="font-weight: bold; border: 1px solid #000000; text-align: center;">No</th>
             <th style="font-weight: bold; border: 1px solid #000000;">Tanggal</th>
-            <th style="font-weight: bold; border: 1px solid #000000;">Nama Peserta Magang</th>
-            <th style="font-weight: bold; border: 1px solid #000000;">Judul Aktivitas</th>
-            <th style="font-weight: bold; border: 1px solid #000000;">Uraian Kegiatan</th>
-            <th style="font-weight: bold; border: 1px solid #000000;">Hasil / Pencapaian</th>
-            <th style="font-weight: bold; border: 1px solid #000000;">Status &amp; Peninjau</th>
+            <th style="font-weight: bold; border: 1px solid #000000;">Nama Peserta</th>
+            <th style="font-weight: bold; border: 1px solid #000000;">Aktivitas / Kegiatan</th>
+            <th style="font-weight: bold; border: 1px solid #000000;">Penanggung Jawab</th>
         </tr>
     </thead>
     <tbody>
@@ -60,15 +58,13 @@
             <tr>
                 <td style="text-align: center; border: 1px solid #cccccc;">{{ $index + 1 }}</td>
                 <td style="border: 1px solid #cccccc;">{{ $item->log_date?->format('Y-m-d') ?? '-' }}</td>
-                <td style="border: 1px solid #cccccc;">{{ $item->intern?->name ?? 'Peserta #' . $item->intern_user_id }} {{ ($item->revisions_count ?? 0) > 0 ? "({$item->revisions_count}x revisi)" : '' }}</td>
-                <td style="border: 1px solid #cccccc;">{{ $item->title }}</td>
-                <td style="border: 1px solid #cccccc;">{{ $item->activity_description }}</td>
-                <td style="border: 1px solid #cccccc;">{{ $item->result ?: '-' }}</td>
-                <td style="border: 1px solid #cccccc;">{{ strtoupper($item->status?->value ?? '-') }} {{ $item->reviewer ? '(Oleh: ' . $item->reviewer->name . ')' : '' }}</td>
+                <td style="border: 1px solid #cccccc;">{{ $item->intern?->name ?? 'Peserta #' . $item->intern_user_id }}</td>
+                <td style="border: 1px solid #cccccc;">{{ $item->title }} - {{ $item->activity_description }}</td>
+                <td style="border: 1px solid #cccccc;">{{ $item->pic_in_charge ?? ($item->reviewer?->name ?? '-') }}</td>
             </tr>
         @empty
             <tr>
-                <td colspan="7" style="text-align: center; border: 1px solid #cccccc;">Tidak ada data logbook manual pada periode ini.</td>
+                <td colspan="5" style="text-align: center; border: 1px solid #cccccc;">Tidak ada data logbook manual pada periode ini.</td>
             </tr>
         @endforelse
     </tbody>
