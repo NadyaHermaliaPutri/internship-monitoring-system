@@ -50,5 +50,19 @@ return [
             'mimes' => ['mp4', 'webm', 'mov', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'jpg', 'jpeg', 'png', 'webp', 'zip', 'rar'],
             'directory' => 'tugas',
         ],
+
+        // Screenshot / gambar bukti hasil kegiatan logbook harian (maks 5 MB)
+        'logbook_evidence' => [
+            'max_size_kb' => 5120, // 5 MB
+            'mimes' => ['jpg', 'jpeg', 'png', 'webp'],
+            'directory' => 'logbook',
+        ],
+
+        // File lampiran / brief / referensi tugas dari PIC (opsional, maks 10 MB)
+        'task_attachment' => [
+            'max_size_kb' => 10240, // 10 MB
+            'mimes' => ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'jpg', 'jpeg', 'png', 'webp', 'zip', 'rar'],
+            'directory' => 'tugas-lampiran',
+        ],
     ],
 ];

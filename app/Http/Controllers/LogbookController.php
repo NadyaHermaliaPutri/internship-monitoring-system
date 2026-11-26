@@ -8,11 +8,12 @@ use App\Http\Requests\Logbook\ReviewLogbookRequest;
 use App\Http\Requests\Logbook\StoreLogbookRequest;
 use App\Http\Requests\Logbook\UpdateLogbookRequest;
 use App\Models\Logbook;
-use App\Models\Task;
 use App\Models\User;
 use App\Services\LogbookService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\View\View;
 
@@ -34,22 +35,14 @@ class LogbookController extends Controller
         $user = $request->user();
         Gate::authorize('viewAny', Logbook::class);
 
-        $query = Logbook::query()
-            ->with([
-                'intern:id,name,email',
-                'reviewer:id,name',
-                'task.pic:id,name',
-                'relatedTask.pic:id,name',
-            ])
-            ->withCount('revisions')
-            ->visibleTo($user);
+        $filteredBase = Logbook::query()->visibleTo($user);
 
         // Filter opsional: pencarian kata kunci pada title atau activity_description
         if ($request->filled('search')) {
             $keyword = trim($request->string('search')->toString());
             if ($keyword !== '') {
                 $escaped = addcslashes($keyword, '%_\\');
-                $query->where(function ($q) use ($escaped) {
+                $filteredBase->where(function ($q) use ($escaped) {
                     $q->where('title', 'like', "%{$escaped}%")
                         ->orWhere('activity_description', 'like', "%{$escaped}%");
                 });
@@ -58,29 +51,90 @@ class LogbookController extends Controller
 
         // Filter opsional: status
         if ($request->filled('status') && in_array($request->string('status')->toString(), ['pending', 'approved', 'revision_requested'], true)) {
-            $query->where('status', $request->string('status')->toString());
+            $filteredBase->where('status', $request->string('status')->toString());
         }
 
         // Filter opsional: sumber
         if ($request->filled('source') && in_array($request->string('source')->toString(), ['manual', 'task_assignment'], true)) {
-            $query->where('source', $request->string('source')->toString());
+            $filteredBase->where('source', $request->string('source')->toString());
         }
 
         // Filter opsional: tanggal
         if ($request->filled('date')) {
-            $query->whereDate('log_date', $request->string('date')->toString());
+            $filteredBase->whereDate('log_date', $request->string('date')->toString());
         }
 
         // Filter opsional: peserta (untuk PIC & Admin)
         if (! $user->isIntern() && $request->filled('intern_id')) {
-            $query->where('intern_user_id', (int) $request->input('intern_id'));
+            $filteredBase->where('intern_user_id', (int) $request->input('intern_id'));
         }
 
-        $logbooks = $query
-            ->orderByDesc('log_date')
-            ->orderByDesc('id')
-            ->paginate(10)
-            ->withQueryString();
+        $relations = [
+            'intern:id,name,email',
+            'reviewer:id,name',
+            'task.pic:id,name',
+            'relatedTask.pic:id,name',
+            'evidenceMedia:id,owner_user_id,category,original_name,mime_type,file_size_bytes',
+        ];
+
+        $logbooks = null;
+        $paginatedDates = null;
+        $dailyGroups = collect();
+
+        if ($user->isIntern()) {
+            // Pagination utama antar-hari via subquery DISTINCT log_date
+            // (aman di MySQL ONLY_FULL_GROUP_BY & SQLite agar COUNT(*) menghitung hari unik, bukan total baris)
+            $distinctDatesSubquery = (clone $filteredBase)
+                ->toBase()
+                ->select('log_date')
+                ->distinct();
+
+            $datesBaseQuery = DB::query()
+                ->fromSub($distinctDatesSubquery, 'logbook_dates')
+                ->orderByDesc('log_date');
+
+            $datesPerPage = 5;
+            $totalDistinctDates = (clone $datesBaseQuery)->count();
+            $lastDatesPage = max(1, (int) ceil($totalDistinctDates / $datesPerPage));
+            $requestedDatesPage = max(1, (int) $request->integer('page', 1));
+            $effectiveDatesPage = min($requestedDatesPage, $lastDatesPage);
+
+            $paginatedDates = $datesBaseQuery
+                ->paginate($datesPerPage, ['*'], 'page', $effectiveDatesPage)
+                ->withQueryString();
+
+            // Ambil seluruh catatan logbook utuh untuk tiap tanggal pada halaman aktif (tanpa pagination di dalam kartu)
+            $dailyGroups = collect($paginatedDates->items())->map(function (object $dateRow) use ($filteredBase, $relations) {
+                $dateString = Carbon::parse((string) $dateRow->log_date, Logbook::TIMEZONE)->toDateString();
+
+                $dailyLogs = (clone $filteredBase)
+                    ->whereDate('log_date', $dateString)
+                    ->with($relations)
+                    ->withCount('revisions')
+                    ->orderByDesc('created_at')
+                    ->orderByDesc('id')
+                    ->get();
+
+                $manualCount = $dailyLogs->where('source', LogbookSource::Manual)->count();
+                $taskCount = $dailyLogs->where('source', LogbookSource::TaskAssignment)->count();
+
+                return [
+                    'date' => $dateString,
+                    'carbon' => Carbon::parse($dateString, Logbook::TIMEZONE),
+                    'logs' => $dailyLogs,
+                    'manual_count' => $manualCount,
+                    'task_count' => $taskCount,
+                ];
+            });
+        } else {
+            $logbooks = (clone $filteredBase)
+                ->with($relations)
+                ->withCount('revisions')
+                ->orderByDesc('log_date')
+                ->orderByDesc('id')
+                ->paginate(10)
+                ->withQueryString();
+        }
 
         // Ringkasan metrik sesuai cakupan visibilitas user
         $baseSummary = Logbook::query()->visibleTo($user);
@@ -119,6 +173,8 @@ class LogbookController extends Controller
 
         return view('logbooks.index', [
             'logbooks' => $logbooks,
+            'dailyGroups' => $dailyGroups,
+            'paginatedDates' => $paginatedDates,
             'summary' => $summary,
             'internOptions' => $internOptions,
             'todayDate' => $this->logbookService->todayDateString(),
@@ -128,27 +184,16 @@ class LogbookController extends Controller
     }
 
     /**
-     * Form tersendiri untuk membuat logbook baru (khusus Peserta).
+     * Form tersendiri untuk membuat logbook baru (khusus Peserta, fallback dari modal).
      */
     public function create(Request $request): View
     {
         Gate::authorize('create', Logbook::class);
 
-        /** @var User $intern */
-        $intern = $request->user();
-
-        $taskOptions = Task::query()
-            ->with('pic:id,name')
-            ->where('intern_user_id', $intern->id)
-            ->orderByDesc('assigned_at')
-            ->orderByDesc('id')
-            ->get(['id', 'pic_user_id', 'title', 'status']);
-
         return view('logbooks.create', [
             'todayDate' => $this->logbookService->todayDateString(),
             'earliestDate' => $this->logbookService->earliestAllowedDateString(),
             'maxBackdateDays' => Logbook::MAX_BACKDATE_DAYS,
-            'taskOptions' => $taskOptions,
         ]);
     }
 
@@ -160,10 +205,15 @@ class LogbookController extends Controller
         /** @var User $user */
         $user = $request->user();
 
-        $this->logbookService->createManualEntry($user, $request->validated());
+        $this->logbookService->createManualEntry(
+            $user,
+            $request->validated(),
+            $request->file('evidence_file')
+        );
 
         return redirect()
             ->route('intern.logbooks.index')
+            ->with('success_title', 'Berhasil Ditambahkan')
             ->with('status', 'Logbook harian berhasil disimpan dengan status Menunggu Review.');
     }
 
@@ -179,7 +229,9 @@ class LogbookController extends Controller
             'reviewer:id,name',
             'task.pic:id,name',
             'relatedTask.pic:id,name',
+            'evidenceMedia',
             'revisions.editor:id,name',
+            'revisions.evidenceMedia',
         ]);
 
         return view('logbooks.show', [
@@ -194,24 +246,13 @@ class LogbookController extends Controller
     {
         Gate::authorize('update', $logbook);
 
-        /** @var User $intern */
-        $intern = $request->user();
-
-        $logbook->load('revisions');
-
-        $taskOptions = Task::query()
-            ->with('pic:id,name')
-            ->where('intern_user_id', $intern->id)
-            ->orderByDesc('assigned_at')
-            ->orderByDesc('id')
-            ->get(['id', 'pic_user_id', 'title', 'status']);
+        $logbook->load(['revisions', 'evidenceMedia']);
 
         return view('logbooks.edit', [
             'logbook' => $logbook,
             'todayDate' => $this->logbookService->todayDateString(),
             'earliestDate' => $this->logbookService->earliestAllowedDateString(),
             'maxBackdateDays' => Logbook::MAX_BACKDATE_DAYS,
-            'taskOptions' => $taskOptions,
         ]);
     }
 
@@ -223,11 +264,35 @@ class LogbookController extends Controller
         /** @var User $user */
         $user = $request->user();
 
-        $this->logbookService->updateManualEntry($logbook, $user, $request->validated());
+        $this->logbookService->updateManualEntry(
+            $logbook,
+            $user,
+            $request->validated(),
+            $request->file('evidence_file')
+        );
 
         return redirect()
             ->route('intern.logbooks.show', $logbook)
+            ->with('success_title', 'Berhasil Diperbarui')
             ->with('status', 'Perubahan logbook berhasil disimpan dan riwayat revisi telah tercatat.');
+    }
+
+    /**
+     * Menandai progres kegiatan mandiri peserta menjadi Selesai (tanpa mengubah status review PIC).
+     */
+    public function complete(Request $request, Logbook $logbook): RedirectResponse
+    {
+        Gate::authorize('complete', $logbook);
+
+        /** @var User $user */
+        $user = $request->user();
+
+        $this->logbookService->completeManualEntry($logbook, $user);
+
+        return redirect()
+            ->back(fallback: route('intern.logbooks.index'))
+            ->with('success_title', 'Kegiatan Selesai')
+            ->with('status', 'Progres kegiatan mandiri berhasil ditandai Selesai. Status verifikasi PIC tetap mengikuti proses review.');
     }
 
     /**
@@ -246,6 +311,7 @@ class LogbookController extends Controller
 
         return redirect()
             ->route('pic.logbooks.show', $logbook)
+            ->with('success_title', 'Review Berhasil Disimpan')
             ->with('status', $message);
     }
 }

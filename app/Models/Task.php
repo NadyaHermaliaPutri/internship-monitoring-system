@@ -68,6 +68,14 @@ class Task extends Model
     }
 
     /**
+     * File lampiran / brief opsional yang diunggah oleh PIC saat membuat atau memperbarui tugas.
+     */
+    public function attachmentMedia(): BelongsTo
+    {
+        return $this->belongsTo(MediaFile::class, 'attachment_media_id');
+    }
+
+    /**
      * Catatan logbook otomatis yang terbentuk saat tugas ini diberikan.
      */
     public function assignmentLogbook(): HasOne

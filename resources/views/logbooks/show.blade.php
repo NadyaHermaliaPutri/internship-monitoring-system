@@ -12,13 +12,6 @@
 
 <div class="max-w-4xl mx-auto space-y-6">
 
-    @if (session('status'))
-        <div class="flex items-center gap-2.5 px-4 py-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold shadow-xs">
-            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-            <span>{{ session('status') }}</span>
-        </div>
-    @endif
-
     {{-- Banner Status Final Approved --}}
     @if ($logbook->isManual() && $logbook->status?->value === 'approved')
         <div class="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 flex flex-wrap items-center justify-between gap-3">
@@ -27,7 +20,7 @@
                 <p class="text-emerald-700">
                     Diverifikasi oleh <strong>{{ $logbook->reviewer?->name ?? 'PIC Pembimbing' }}</strong>
                     @if ($logbook->reviewed_at)
-                        pada <strong>{{ $logbook->reviewed_at->timezone('Asia/Jakarta')->translatedFormat('d M Y H:i') }} WIB</strong>
+                        pada <strong>{{ $logbook->reviewed_at->timezone('Asia/Jakarta')->translatedFormat('d M Y H:i') }}</strong>
                     @endif
                 </p>
             </div>
@@ -46,7 +39,7 @@
                 </p>
                 @if ($logbook->reviewed_at)
                     <span class="text-[11px] text-rose-600">
-                        {{ $logbook->reviewed_at->timezone('Asia/Jakarta')->translatedFormat('d M Y H:i') }} WIB
+                        {{ $logbook->reviewed_at->timezone('Asia/Jakarta')->translatedFormat('d M Y H:i') }}
                     </span>
                 @endif
             </div>
@@ -75,7 +68,7 @@
 
                     @if ($logbook->isTaskAssignment())
                         <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-sky-50 text-sky-700 border border-sky-200">
-                            Penugasan PIC
+                            Otomatis Penugasan PIC
                         </span>
                     @elseif ($logbook->relatedTask)
                         <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
@@ -98,6 +91,24 @@
                         <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold border {{ $statusClasses }}">
                             {{ $logbook->status->label() }}
                         </span>
+                        @if ($logbook->status->value !== 'approved' && $logbook->activity_status)
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-semibold border {{ $logbook->activity_status->badgeClasses() }}">
+                                Progres: {{ $logbook->activity_status->label() }}
+                            </span>
+                        @endif
+                    @elseif ($logbook->isTaskAssignment() && $logbook->task?->status)
+                        @php
+                            $taskStatusClasses = match ($logbook->task->status->value) {
+                                'accepted' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
+                                'revision_requested' => 'bg-rose-50 text-rose-700 border-rose-200',
+                                'submitted', 'resubmitted' => 'bg-amber-50 text-amber-700 border-amber-200',
+                                'in_progress' => 'bg-sky-50 text-sky-700 border-sky-200',
+                                default => 'bg-slate-100 text-slate-700 border-slate-200',
+                            };
+                        @endphp
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold border {{ $taskStatusClasses }}">
+                            Status Tugas: {{ $logbook->task->status->label() }}
+                        </span>
                     @else
                         <span class="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-sky-50 text-sky-700 border border-sky-200">
                             Tercatat Otomatis
@@ -119,6 +130,19 @@
                     &larr; Riwayat
                 </a>
 
+                @can('complete', $logbook)
+                    <form method="POST" action="{{ route('intern.logbooks.complete', $logbook) }}" class="inline">
+                        @csrf
+                        @method('PATCH')
+                        <button
+                            type="submit"
+                            class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-xs font-bold text-white transition cursor-pointer"
+                        >
+                            Tandai Selesai
+                        </button>
+                    </form>
+                @endcan
+
                 @can('update', $logbook)
                     <a
                         href="{{ route('intern.logbooks.edit', $logbook) }}"
@@ -131,14 +155,57 @@
         </div>
 
         <div class="space-y-4">
-            <div>
-                <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Uraian Aktivitas</h3>
-                <div class="p-4 rounded-xl bg-slate-50/70 border border-slate-100 text-xs text-slate-800 whitespace-pre-line leading-relaxed">{{ $logbook->activity_description }}</div>
-            </div>
+            @if (filled($logbook->activity_description) && trim($logbook->activity_description) !== trim($logbook->title))
+                <div>
+                    <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Uraian Aktivitas</h3>
+                    <div class="p-4 rounded-xl bg-slate-50/70 border border-slate-100 text-xs text-slate-800 whitespace-pre-line leading-relaxed">{{ $logbook->activity_description }}</div>
+                </div>
+            @endif
 
-            <div>
-                <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Hasil / Output Kegiatan</h3>
-                <div class="p-4 rounded-xl bg-slate-50/70 border border-slate-100 text-xs text-slate-700 whitespace-pre-line leading-relaxed">{{ $logbook->result ?: 'Tidak ada catatan hasil tambahan.' }}</div>
+            <div class="space-y-3">
+                <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider">Hasil / Output Kegiatan</h3>
+
+                @if (filled($logbook->result))
+                    <div class="p-4 rounded-xl bg-slate-50/70 border border-slate-100 text-xs text-slate-700 whitespace-pre-line leading-relaxed">{{ $logbook->result }}</div>
+                @elseif (! $logbook->evidenceMedia)
+                    <div class="p-4 rounded-xl bg-slate-50/70 border border-slate-100 text-xs text-slate-500">Tidak ada catatan hasil tambahan.</div>
+                @endif
+
+                @if ($logbook->evidenceMedia)
+                    <div class="p-4 rounded-xl bg-slate-50/70 border border-slate-200/80 space-y-3">
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                            <div class="text-xs">
+                                <p class="font-bold text-slate-800">Screenshot / Bukti Kegiatan</p>
+                                <p class="text-[11px] text-slate-500">
+                                    {{ $logbook->evidenceMedia->original_name }} ({{ $logbook->evidenceMedia->formatted_size }})
+                                </p>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <a
+                                    href="{{ route('media.private.show', $logbook->evidenceMedia) }}"
+                                    target="_blank"
+                                    class="px-3 py-1.5 rounded-xl bg-white border border-slate-200 hover:border-[#015987] text-xs font-semibold text-[#015987] transition"
+                                >
+                                    Lihat Penuh
+                                </a>
+                                <a
+                                    href="{{ route('media.private.show', ['mediaFile' => $logbook->evidenceMedia, 'download' => 1]) }}"
+                                    class="px-3 py-1.5 rounded-xl bg-[#015987] hover:bg-[#014467] text-xs font-semibold text-white transition"
+                                >
+                                    Unduh
+                                </a>
+                            </div>
+                        </div>
+
+                        <a href="{{ route('media.private.show', $logbook->evidenceMedia) }}" target="_blank" class="block">
+                            <img
+                                src="{{ route('media.private.show', $logbook->evidenceMedia) }}"
+                                alt="Screenshot bukti logbook {{ $logbook->title }}"
+                                class="max-h-72 rounded-xl border border-slate-200 object-contain bg-white"
+                            >
+                        </a>
+                    </div>
+                @endif
             </div>
 
             @if ($logbook->relatedTask)
@@ -182,7 +249,7 @@
                     <p class="font-bold text-[#015987]">
                         Catatan Tinjauan PIC {{ $logbook->reviewer ? '(' . $logbook->reviewer->name . ')' : '' }}
                         @if ($logbook->reviewed_at)
-                            <span class="font-normal text-slate-500">• {{ $logbook->reviewed_at->timezone('Asia/Jakarta')->translatedFormat('d M Y H:i') }} WIB</span>
+                            <span class="font-normal text-slate-500">• {{ $logbook->reviewed_at->timezone('Asia/Jakarta')->translatedFormat('d M Y H:i') }}</span>
                         @endif
                     </p>
                     <p class="text-slate-700 whitespace-pre-line">{{ $logbook->review_note ?: 'Disetujui tanpa catatan tambahan.' }}</p>
@@ -296,7 +363,7 @@
                                 Revisi #{{ $revision->revision_no }} — Versi Sebelum Perubahan
                             </span>
                             <span class="text-[11px] text-slate-500">
-                                Diubah pada {{ $revision->created_at?->timezone('Asia/Jakarta')->translatedFormat('d M Y H:i') }} WIB
+                                Diubah pada {{ $revision->created_at?->timezone('Asia/Jakarta')->translatedFormat('d M Y H:i') }}
                                 oleh {{ $revision->editor?->name ?? 'Peserta' }}
                             </span>
                         </div>
@@ -304,10 +371,24 @@
                         <p class="text-slate-800 font-semibold">
                             [{{ $revision->log_date->translatedFormat('d M Y') }}] {{ $revision->title }}
                         </p>
-                        <p class="text-slate-600 whitespace-pre-line">{{ $revision->activity_description }}</p>
+                        @if (filled($revision->activity_description) && trim($revision->activity_description) !== trim($revision->title))
+                            <p class="text-slate-600 whitespace-pre-line">{{ $revision->activity_description }}</p>
+                        @endif
 
                         @if ($revision->result)
                             <p class="text-[11px] text-slate-500"><strong>Hasil sebelumnya:</strong> {{ $revision->result }}</p>
+                        @endif
+
+                        @if ($revision->evidenceMedia)
+                            <p class="text-[11px]">
+                                <a
+                                    href="{{ route('media.private.show', $revision->evidenceMedia) }}"
+                                    target="_blank"
+                                    class="font-semibold text-[#015987] hover:underline"
+                                >
+                                    Lihat Screenshot Bukti Sebelumnya ({{ $revision->evidenceMedia->original_name }}) &rarr;
+                                </a>
+                            </p>
                         @endif
 
                         @if ($revision->review_note_before)

@@ -35,6 +35,7 @@ class TaskReviewController extends Controller
 
         return redirect()
             ->route('pic.tasks.show', $task)
+            ->with('success_title', 'Review Berhasil Disimpan')
             ->with('status', $message);
     }
 }
