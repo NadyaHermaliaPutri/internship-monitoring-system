@@ -164,7 +164,7 @@
                     </a>
                 </div>
 
-                <!-- Menu Logbook Harian (Semua Role) -->
+                <!-- Menu Logbook Peserta (Semua Role) -->
                 <div class="relative w-full pl-5 {{ $isLogbookActive ? 'z-10' : '' }}">
                     <a href="{{ route($rolePrefix . '.logbooks.index') }}" class="relative flex items-center gap-3 py-3 pl-4 pr-6 {{ $isLogbookActive ? 'bg-[#eef4f8] text-[#015987] font-bold' : 'text-sky-100 hover:bg-white/10 font-medium' }} text-xs rounded-l-full w-full shadow-none transition">
                         @if($isLogbookActive)
@@ -180,7 +180,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                         </svg>
 
-                        <span>Logbook Harian</span>
+                        <span>Logbook Peserta</span>
 
                         @if($isLogbookActive)
                             <!-- Lekukan Cekung Bawah (Bottom Concave Fillet) -->
@@ -192,7 +192,7 @@
                         @endif
                     </a>
                 </div>
-                <!-- Menu Tugas Magang (Semua Role) -->
+                <!-- Menu Tugas Peserta (Semua Role) -->
                 <div class="relative w-full pl-5 {{ $isTaskActive ? 'z-10' : '' }}">
                     <a href="{{ route($rolePrefix . '.tasks.index') }}" class="relative flex items-center gap-3 py-3 pl-4 pr-6 {{ $isTaskActive ? 'bg-[#eef4f8] text-[#015987] font-bold' : 'text-sky-100 hover:bg-white/10 font-medium' }} text-xs rounded-l-full w-full shadow-none transition">
                         @if($isTaskActive)
@@ -207,7 +207,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
                         </svg>
 
-                        <span>Tugas Magang</span>
+                        <span>Tugas Peserta</span>
 
                         @if($isTaskActive)
                             <span class="absolute -bottom-5 right-0 w-5 h-5 pointer-events-none">
