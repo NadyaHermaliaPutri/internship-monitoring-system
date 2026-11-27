@@ -369,4 +369,45 @@ class DashboardTest extends TestCase
         $response->assertSee('Tugas Spesifik PIC Utama');
         $response->assertDontSee('Tugas Rahasia PIC Sebelah');
     }
+
+    public function test_admin_dashboard_ews_widget_limits_to_five_signals_and_shows_selengkapnya_link(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $pic = User::factory()->create(['role' => 'pic', 'is_active' => true]);
+        $intern = User::factory()->create(['role' => 'intern', 'name' => 'Intern EWS Limit', 'is_active' => true]);
+
+        // Set waktu hari kerja sebelum cutoff presensi (09:00) agar sinyal hanya berasal dari 7 tugas overdue
+        Carbon::setTestNow(Carbon::parse('2026-11-18 08:30:00', 'Asia/Jakarta'));
+
+        for ($i = 1; $i <= 7; $i++) {
+            Task::create([
+                'pic_user_id' => $pic->id,
+                'intern_user_id' => $intern->id,
+                'title' => sprintf('Tugas Overdue EWS %02d', $i),
+                'description' => 'Deskripsi tugas overdue untuk uji limit EWS',
+                'assigned_at' => now()->subDays(5),
+                'deadline_at' => now()->subDays(1)->addMinutes($i),
+                'status' => TaskStatus::InProgress,
+            ]);
+        }
+
+        $response = $this->actingAs($admin)->get('/admin/dashboard');
+        $response->assertOk();
+
+        // Total kasus di badge header tetap menampilkan seluruh sinyal (7 Kasus)
+        $response->assertSee('7 Kasus');
+        $response->assertSee('Menampilkan 5 dari 7 sinyal');
+
+        // Tautan Selengkapnya ke halaman EWS Admin
+        $response->assertSee('Selengkapnya');
+        $response->assertSee(route('admin.ews.index'));
+
+        // Hanya maksimal 5 sinyal teratas yang dirender di widget EWS
+        for ($i = 1; $i <= 5; $i++) {
+            $response->assertSee(sprintf('Tugas Overdue EWS %02d', $i));
+        }
+
+        $response->assertDontSee('Tugas Overdue EWS 06');
+        $response->assertDontSee('Tugas Overdue EWS 07');
+    }
 }

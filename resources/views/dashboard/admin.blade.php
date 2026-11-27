@@ -460,8 +460,15 @@
                     </span>
                 </div>
 
+                @php
+                    $ewsLimit       = 5;
+                    $ewsTotal       = $ewsSummary['total_warning_count'];
+                    $ewsLimited     = $ewsSummary['warnings_list']->take($ewsLimit);
+                    $ewsHasMore     = $ewsTotal > $ewsLimit;
+                @endphp
+
                 <div class="space-y-3">
-                    @forelse($ewsSummary['warnings_list'] as $warning)
+                    @forelse($ewsLimited as $warning)
                         <div class="p-3.5 rounded-xl border {{ $warning['level'] === 'danger' ? 'border-rose-200 bg-rose-50/40' : 'border-amber-200 bg-amber-50/40' }} space-y-1.5">
                             <div class="flex items-center justify-between">
                                 <span class="px-2 py-0.5 rounded text-[10px] font-bold {{ $warning['level'] === 'danger' ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-800' }}">
@@ -484,6 +491,28 @@
                         </div>
                     @endforelse
                 </div>
+
+                {{-- Footer: Link Selengkapnya (selalu tampil bila ada sinyal) --}}
+                @if($ewsTotal > 0)
+                    <div class="pt-3 border-t border-slate-100 flex items-center justify-between">
+                        @if($ewsHasMore)
+                            <span class="text-[11px] text-slate-400">
+                                Menampilkan {{ $ewsLimit }} dari {{ $ewsTotal }} sinyal
+                            </span>
+                        @else
+                            <span class="text-[11px] text-slate-400">
+                                {{ $ewsTotal }} sinyal aktif
+                            </span>
+                        @endif
+                        <a href="{{ route('admin.ews.index') }}"
+                           class="inline-flex items-center gap-1 text-xs font-semibold text-[#015987] hover:text-[#014467] hover:underline">
+                            Selengkapnya
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                            </svg>
+                        </a>
+                    </div>
+                @endif
             </div>
 
         </div>
