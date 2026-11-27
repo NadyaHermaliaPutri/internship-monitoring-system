@@ -7,6 +7,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\InternProfileController;
 use App\Http\Controllers\LeaveRequestController;
 use App\Http\Controllers\LogbookController;
+use App\Http\Controllers\PicProfileController;
 use App\Http\Controllers\PrivateMediaController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\TaskReviewController;
@@ -15,6 +16,10 @@ use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
+    if (auth()->check()) {
+        return redirect()->to(auth()->user()->getDashboardRoute());
+    }
+
     return redirect()->route('login');
 });
 
@@ -42,6 +47,10 @@ Route::middleware('auth')->group(function () {
         Route::get('intern-profiles', [InternProfileController::class, 'index'])->name('intern-profiles.index');
         Route::get('intern-profiles/{user}/edit', [InternProfileController::class, 'edit'])->name('intern-profiles.edit');
         Route::put('intern-profiles/{user}', [InternProfileController::class, 'update'])->name('intern-profiles.update');
+
+        // Pengelolaan Profil Khusus PIC (Pembimbing)
+        Route::get('pic-profiles', [PicProfileController::class, 'index'])->name('pic-profiles.index');
+        Route::put('pic-profiles/{user}', [PicProfileController::class, 'update'])->name('pic-profiles.update');
 
         // Modul 2 & 3 (Admin)
         Route::prefix('kalender')->name('calendar.')->group(function () {

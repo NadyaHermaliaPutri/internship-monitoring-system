@@ -38,8 +38,12 @@ class InternProfileController extends Controller
             });
         }
 
-        // Filter Status Kelengkapan Profil
+        // Filter Status Kelengkapan Profil & Status Aktif
         $filter = $request->input('filter', 'all');
+        if ($filter === 'completed') {
+            $filter = 'complete';
+        }
+
         if ($filter === 'complete') {
             $query->whereHas('internProfile', function ($q) {
                 $q->whereNotNull('institution')->whereNotNull('internship_start_date');
@@ -51,6 +55,8 @@ class InternProfileController extends Controller
                       $sub->whereNull('institution')->orWhereNull('internship_start_date');
                   });
             });
+        } elseif ($filter === 'active') {
+            $query->where('is_active', true);
         }
 
         // Statistik Ringkasan Profil Peserta
