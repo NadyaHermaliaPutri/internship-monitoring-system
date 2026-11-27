@@ -2,15 +2,8 @@
 
 @section('title', 'Dashboard Bimbingan PIC')
 @section('page-title', 'Dashboard Bimbingan PIC')
-
-@section('page-badge')
-    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-sky-100 text-[#015987] border border-sky-200">
-        Model Penugasan Bersama (Multi-PIC)
-    </span>
-@endsection
-
-@section('page-subtitle', 'PT WAN Teknologi Internasional — Pengawasan Teknis & Progres Pekerjaan Proyek')
-@section('search-placeholder', 'Cari anak bimbingan...')
+@section('page-subtitle', 'PT WAN Teknologi Internasional')
+@section('search-placeholder', 'Cari tugas, subjek, atau intern...')
 
 @section('content')
 <div class="space-y-8">
@@ -241,26 +234,21 @@
             <div class="bg-white rounded-2xl border border-slate-200/70 shadow-xs overflow-hidden">
                 <!-- Header Kartu -->
                 <div class="p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div>
-                        <div class="flex items-center gap-2">
-                            <h3 class="text-sm font-bold text-[#015987]">Peserta dengan Tugas dari Anda</h3>
-                            <span class="text-[10px] font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded">
-                                Multi-PIC
-                            </span>
-                        </div>
+                    <div class="min-w-0 flex-1">
+                        <h3 class="text-sm font-bold text-[#015987]">Peserta dengan Tugas dari Anda</h3>
                         <p class="text-[11px] text-slate-400 mt-0.5">Peserta aktif dalam bimbingan Anda atau yang sedang memegang tugas buatan Anda</p>
                     </div>
 
-                    <div class="flex flex-wrap items-center gap-2">
+                    <div class="flex flex-wrap sm:flex-nowrap items-center justify-end gap-2 shrink-0 sm:ml-auto">
                         <a
                             href="{{ route('pic.tasks.index') }}"
-                            class="px-3 py-1.5 text-xs font-semibold text-slate-600 border border-slate-200 rounded-xl bg-slate-50 hover:bg-slate-100 transition"
+                            class="px-3 py-1.5 text-xs font-semibold text-slate-600 border border-slate-200 rounded-xl bg-slate-50 hover:bg-slate-100 transition whitespace-nowrap"
                         >
                             Semua Peserta Terkait Anda ({{ $picDashboard['related_interns_count'] }})
                         </a>
                         <a
                             href="{{ route('pic.tasks.create') }}"
-                            class="px-3.5 py-1.5 text-xs font-semibold text-white bg-[#015987] hover:bg-[#01486e] rounded-xl transition flex items-center gap-1 shadow-xs"
+                            class="px-3.5 py-1.5 text-xs font-semibold text-white bg-[#015987] hover:bg-[#01486e] rounded-xl transition inline-flex items-center gap-1 shadow-xs whitespace-nowrap"
                         >
                             <span>+</span>
                             <span>Buat Tugas</span>
