@@ -56,6 +56,8 @@ Route::get('/manifest.webmanifest', function () {
 Route::get('/sw.js', function () {
     return response()->file(public_path('sw.js'), [
         'Content-Type' => 'application/javascript',
+        'Cache-Control' => 'no-cache, no-store, must-revalidate',
+        'Service-Worker-Allowed' => '/',
     ]);
 })->name('pwa.sw');
 

@@ -52,7 +52,11 @@ class PwaAssetsTest extends TestCase
         $this->assertStringContainsString('/offline.html', $swContent);
 
         // Akses via HTTP response
-        $this->get('/sw.js')->assertOk();
+        $swResponse = $this->get('/sw.js');
+        $swResponse->assertOk();
+        $swResponse->assertHeader('Service-Worker-Allowed', '/');
+        $this->assertStringContainsString('no-store', (string) $swResponse->headers->get('Cache-Control'));
+
         $this->get('/offline.html')->assertOk();
         $this->get('/manifest.webmanifest')->assertOk();
     }

@@ -47,10 +47,15 @@ class TaskController extends Controller
             }
         }
 
-        // Filter opsional: status
+        // Filter opsional: status tunggal atau grup status kartu KPI (active, awaiting_review)
+        $statusFilter = $request->string('status')->toString();
         $allowedStatuses = array_map(fn (TaskStatus $s) => $s->value, TaskStatus::cases());
-        if ($request->filled('status') && in_array($request->string('status')->toString(), $allowedStatuses, true)) {
-            $query->where('status', $request->string('status')->toString());
+        if ($statusFilter === 'active') {
+            $query->whereIn('status', [TaskStatus::Assigned->value, TaskStatus::InProgress->value]);
+        } elseif ($statusFilter === 'awaiting_review') {
+            $query->whereIn('status', [TaskStatus::Submitted->value, TaskStatus::Resubmitted->value]);
+        } elseif ($statusFilter !== '' && in_array($statusFilter, $allowedStatuses, true)) {
+            $query->where('status', $statusFilter);
         }
 
         // Filter opsional: overdue
