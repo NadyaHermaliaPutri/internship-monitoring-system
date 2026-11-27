@@ -22,6 +22,7 @@ class ReportService
 
     /**
      * Mengambil data rekap laporan lengkap berdasarkan jenis laporan dan filter.
+     * 4 jenis laporan resmi: attendance, leave, logbook, monitoring.
      */
     public function getReportData(string $reportType, string $startDate, string $endDate, ?int $internId = null): array
     {
@@ -37,18 +38,16 @@ class ReportService
         $titles = [
             'attendance' => 'Rekapitulasi Presensi Peserta Magang',
             'leave' => 'Rekapitulasi Pengajuan Izin & Sakit',
-            'logbook' => 'Rekapitulasi Logbook Harian Peserta',
-            'task' => 'Rekapitulasi Penugasan & Progres Tugas',
+            'logbook' => 'Rekapitulasi Logbook & Tugas Magang',
             'monitoring' => 'Rekapitulasi Monitoring Evaluasi Peserta Magang',
         ];
 
         $reportTitle = $titles[$reportType] ?? 'Laporan Monitoring Evaluasi';
 
         $specificData = match ($reportType) {
-            'attendance' => $this->getAttendanceReport($startDate, $endDate, $internId, $workingDaysCount),
+            'attendance' => $this->getAttendanceReport($startDate, $endDate, $internId, $workingDaysCount, $workingDays),
             'leave' => $this->getLeaveReport($startDate, $endDate, $internId),
             'logbook' => $this->getLogbookReport($startDate, $endDate, $internId),
-            'task' => $this->getTaskReport($startDate, $endDate, $internId),
             'monitoring' => $this->getMonitoringReport($startDate, $endDate, $internId, $workingDaysCount, $workingDays),
             default => [],
         };
@@ -69,55 +68,169 @@ class ReportService
     }
 
     /**
-     * 1. Rekapitulasi Presensi Peserta Magang.
-     * Menggunakan Attendance::scopeValid() (verification_status != 'rejected')
-     * agar presensi yang ditolak HR tidak dihitung sebagai hadir sah.
+     * 1. Rekapitulasi Presensi Peserta Magang (Revisi 1):
+     * - Hanya presensi sah/valid (verification_status != 'rejected'). Ditolak HR dikeluarkan sepenuhnya.
+     * - Menampilkan baris per tanggal hari kerja sampai min(end_date, today) untuk peserta target.
+     * - Jika tidak ada presensi sah:
+     *   * Cek LeaveRequest approved (status: Izin / Sakit).
+     *   * Jika tidak ada izin/sakit sah: status 'Tidak Hadir' (tanpa membuat record di database).
+     * - Tanggal masa depan (> today) dalam periode TIDAK ditandai 'Tidak Hadir'.
      */
-    public function getAttendanceReport(string $startDate, string $endDate, ?int $internId = null, ?int $workingDaysCount = null): array
-    {
-        $workingDaysCount = $workingDaysCount ?? $this->calendarService->getWorkingDaysCount($startDate, $endDate);
+    public function getAttendanceReport(
+        string $startDate,
+        string $endDate,
+        ?int $internId = null,
+        ?int $workingDaysCount = null,
+        ?array $workingDays = null
+    ): array {
+        $timezone = config('wantrace.timezone', 'Asia/Jakarta');
+        $today = Carbon::now($timezone)->format('Y-m-d');
 
-        $query = Attendance::with(['intern', 'reviewer'])
-            ->betweenDates($startDate, $endDate)
-            ->orderBy('attendance_date', 'desc')
-            ->orderBy('intern_user_id', 'asc');
+        $workingDays = $workingDays ?? $this->calendarService->getWorkingDaysList($startDate, $endDate);
+        $workingDaysCount = $workingDaysCount ?? count($workingDays);
 
+        // Hanya evaluasi hari kerja yang sudah atau sedang berjalan (<= today) untuk kehadiran 'Tidak Hadir'
+        $evaluableWorkingDays = array_values(array_filter($workingDays, fn ($date) => $date <= $today));
+
+        // Ambil peserta magang
+        $internsQuery = User::where('role', 'intern')->orderBy('name', 'asc');
         if ($internId) {
-            $query->where('intern_user_id', $internId);
-        } else {
-            $query->whereHas('intern', fn ($q) => $q->where('role', 'intern'));
+            $internsQuery->where('id', $internId);
         }
+        $interns = $internsQuery->get();
 
-        $allRecords = $query->get();
+        // Eager-load presensi sah dalam rentang tanggal
+        $attendancesQuery = Attendance::with(['intern', 'reviewer'])
+            ->valid()
+            ->betweenDates($startDate, $endDate);
+        if ($internId) {
+            $attendancesQuery->where('intern_user_id', $internId);
+        } else {
+            $attendancesQuery->whereIn('intern_user_id', $interns->pluck('id'));
+        }
+        $attendances = $attendancesQuery->get();
 
-        // Presensi sah: bukan rejected
-        $validRecords = $allRecords->filter(fn (Attendance $a) => $a->isValidPresence());
-        $onTimeRecords = $validRecords->filter(fn (Attendance $a) => $a->isOnTime());
-        $lateRecords = $validRecords->filter(fn (Attendance $a) => $a->isLate());
-        $rejectedRecords = $allRecords->filter(fn (Attendance $a) => $a->isRejected());
+        // Group attendances by intern_user_id and attendance_date
+        $attendancesGrouped = $attendances->groupBy(function (Attendance $att) {
+            return $att->intern_user_id . '_' . $att->attendance_date?->format('Y-m-d');
+        });
 
-        // Hitung izin/sakit approved dalam rentang tanggal
+        // Eager-load izin/sakit approved dalam rentang tanggal
         $leaveQuery = LeaveRequest::approved()
+            ->with(['intern', 'reviewer'])
             ->where(function ($q) use ($startDate, $endDate) {
                 $q->whereDate('start_date', '<=', $endDate)
                     ->whereDate('end_date', '>=', $startDate);
             });
-
         if ($internId) {
             $leaveQuery->where('intern_user_id', $internId);
+        } else {
+            $leaveQuery->whereIn('intern_user_id', $interns->pluck('id'));
+        }
+        $leaves = $leaveQuery->get();
+
+        $rows = collect();
+        $totalValidPresence = 0;
+        $onTimeCount = 0;
+        $lateCount = 0;
+        $absentCount = 0;
+        $approvedLeavesCount = 0;
+
+        foreach ($evaluableWorkingDays as $dateStr) {
+            $carbonDate = Carbon::parse($dateStr, $timezone);
+
+            foreach ($interns as $intern) {
+                $groupKey = $intern->id . '_' . $dateStr;
+                $validAtt = $attendancesGrouped->get($groupKey)?->first();
+
+                if ($validAtt) {
+                    $totalValidPresence++;
+                    if ($validAtt->isOnTime()) {
+                        $onTimeCount++;
+                        $statusLabel = 'Hadir';
+                    } elseif ($validAtt->isLate()) {
+                        $lateCount++;
+                        $statusLabel = 'Terlambat';
+                    } else {
+                        $statusLabel = $validAtt->status;
+                    }
+
+                    $rows->push([
+                        'date' => $carbonDate,
+                        'intern' => $intern,
+                        'intern_user_id' => $intern->id,
+                        'time_in' => $validAtt->checked_in_at ? $validAtt->checked_in_at->format('H:i') . ' WIB' : '-',
+                        'status' => $statusLabel,
+                        'status_type' => $validAtt->isOnTime() ? 'success' : 'warning',
+                        'verification_status' => $validAtt->verification_status,
+                        'notes' => $validAtt->notes ?: '-',
+                        'reviewer_name' => $validAtt->reviewer?->name,
+                    ]);
+                    continue;
+                }
+
+                // Cek izin/sakit sah
+                $matchedLeave = $leaves->first(function (LeaveRequest $l) use ($intern, $dateStr) {
+                    if ($l->intern_user_id !== $intern->id) {
+                        return false;
+                    }
+                    $start = $l->start_date?->format('Y-m-d');
+                    $end = $l->end_date?->format('Y-m-d');
+                    return $start && $end && $dateStr >= $start && $dateStr <= $end;
+                });
+
+                if ($matchedLeave) {
+                    $approvedLeavesCount++;
+                    $isSick = $matchedLeave->isSick();
+                    $rows->push([
+                        'date' => $carbonDate,
+                        'intern' => $intern,
+                        'intern_user_id' => $intern->id,
+                        'time_in' => '-',
+                        'status' => $isSick ? 'Sakit' : 'Izin',
+                        'status_type' => 'info',
+                        'verification_status' => 'approved',
+                        'notes' => $matchedLeave->reason ?: ($isSick ? 'Sakit dengan persetujuan HR' : 'Izin dengan persetujuan HR'),
+                        'reviewer_name' => $matchedLeave->reviewer?->name,
+                    ]);
+                    continue;
+                }
+
+                // Tidak hadir (Alpa / tidak presensi sah pada hari kerja yang telah lewat)
+                $absentCount++;
+                $rows->push([
+                    'date' => $carbonDate,
+                    'intern' => $intern,
+                    'intern_user_id' => $intern->id,
+                    'time_in' => '-',
+                    'status' => 'Tidak Hadir',
+                    'status_type' => 'danger',
+                    'verification_status' => '-',
+                    'notes' => 'Tidak ada presensi sah atau izin/sakit pada hari kerja ini',
+                    'reviewer_name' => null,
+                ]);
+            }
         }
 
-        $approvedLeavesCount = $leaveQuery->count();
+        // Urutkan baris: tanggal terbaru di atas, lalu nama peserta
+        $sortedRows = $rows->sort(function ($a, $b) {
+            $dateCmp = strcmp($b['date']->format('Y-m-d'), $a['date']->format('Y-m-d'));
+            if ($dateCmp !== 0) {
+                return $dateCmp;
+            }
+            return strcmp($a['intern']->name, $b['intern']->name);
+        })->values();
 
         return [
-            'attendances' => $allRecords,
+            'attendances' => $sortedRows,
             'summary' => [
                 'working_days_count' => $workingDaysCount,
-                'total_records' => $allRecords->count(),
-                'total_valid_presence' => $validRecords->count(),
-                'on_time_count' => $onTimeRecords->count(),
-                'late_count' => $lateRecords->count(),
-                'rejected_count' => $rejectedRecords->count(),
+                'evaluable_days_count' => count($evaluableWorkingDays),
+                'total_records' => $sortedRows->count(),
+                'total_valid_presence' => $totalValidPresence,
+                'on_time_count' => $onTimeCount,
+                'late_count' => $lateCount,
+                'absent_count' => $absentCount,
                 'approved_leaves_count' => $approvedLeavesCount,
             ],
         ];
@@ -157,92 +270,86 @@ class ReportService
     }
 
     /**
-     * 3. Rekapitulasi Logbook Harian Peserta.
-     * Wajib Logbook::manual() (source = 'manual') agar catatan otomatis tidak tercampur.
+     * 3. Rekapitulasi Gabungan Logbook & Tugas Magang (Revisi 2):
+     * - Menggabungkan entri Logbook Manual (Logbook::manual()) dan Tugas PIC (Task).
+     * - Kolom: No, Tanggal, Nama Peserta, Jenis ('Manual' / 'Tugas PIC'),
+     *   Aktivitas / Kegiatan, Penanggung Jawab.
+     * - Penanggung Jawab:
+     *   * Untuk Tugas PIC: nama PIC pembuat tugas ($task->pic->name).
+     *   * Untuk Manual: reviewer logbook atau fallback PIC pembimbing peserta dari pic_assignments.
+     * - Diurutkan berdasarkan tanggal terbaru.
      */
     public function getLogbookReport(string $startDate, string $endDate, ?int $internId = null): array
     {
-        $query = Logbook::manual()
+        $timezone = config('wantrace.timezone', 'Asia/Jakarta');
+        $now = Carbon::now($timezone);
+
+        // A. Logbook Manual
+        $logbookQuery = Logbook::manual()
             ->with([
                 'intern.internPicAssignments.pic',
                 'reviewer',
             ])
-            ->withCount('revisions')
-            ->whereBetween('log_date', [$startDate, $endDate])
-            ->orderBy('log_date', 'desc')
-            ->orderBy('intern_user_id', 'asc');
+            ->whereBetween('log_date', [$startDate, $endDate]);
 
         if ($internId) {
-            $query->where('intern_user_id', $internId);
+            $logbookQuery->where('intern_user_id', $internId);
         } else {
-            $query->whereHas('intern', fn ($q) => $q->where('role', 'intern'));
+            $logbookQuery->whereHas('intern', fn ($q) => $q->where('role', 'intern'));
         }
 
-        $records = $query->get();
+        $logbookRecords = $logbookQuery->get();
 
-        // Resolve penanggung jawab per logbook:
-        // 1) Reviewer logbook jika sudah ditinjau
-        // 2) PIC pembimbing yang aktif pada tanggal log_date (start_date <= log_date <= end_date atau end_date IS NULL)
-        // 3) Fallback PIC pembimbing aktif saat ini (end_date IS NULL)
-        // 4) '-' jika tidak ada
-        $records->each(function (Logbook $logbook) {
-            if ($logbook->reviewer) {
-                $logbook->pic_in_charge = $logbook->reviewer->name;
-                return;
-            }
+        $combinedItems = collect();
 
-            $logDate = $logbook->log_date ? Carbon::parse($logbook->log_date)->format('Y-m-d') : null;
-            $assignments = $logbook->intern?->internPicAssignments ?? collect();
+        foreach ($logbookRecords as $lb) {
+            // Tentukan penanggung jawab
+            $picInCharge = '-';
+            if ($lb->reviewer) {
+                $picInCharge = $lb->reviewer->name;
+            } else {
+                $logDate = $lb->log_date ? $lb->log_date->format('Y-m-d') : null;
+                $assignments = $lb->intern?->internPicAssignments ?? collect();
 
-            if ($logDate) {
-                $matchedAssignment = $assignments->first(function ($assignment) use ($logDate) {
-                    $startDate = $assignment->start_date ? Carbon::parse($assignment->start_date)->format('Y-m-d') : null;
-                    $endDate = $assignment->end_date ? Carbon::parse($assignment->end_date)->format('Y-m-d') : null;
+                if ($logDate) {
+                    $matchedAssignment = $assignments->first(function ($assignment) use ($logDate) {
+                        $start = $assignment->start_date ? Carbon::parse($assignment->start_date)->format('Y-m-d') : null;
+                        $end = $assignment->end_date ? Carbon::parse($assignment->end_date)->format('Y-m-d') : null;
+                        return (is_null($start) || $start <= $logDate) && (is_null($end) || $end >= $logDate);
+                    });
 
-                    $started = is_null($startDate) || $startDate <= $logDate;
-                    $ended = is_null($endDate) || $endDate >= $logDate;
+                    if ($matchedAssignment && $matchedAssignment->pic) {
+                        $picInCharge = $matchedAssignment->pic->name;
+                    }
+                }
 
-                    return $started && $ended;
-                });
-
-                if ($matchedAssignment && $matchedAssignment->pic) {
-                    $logbook->pic_in_charge = $matchedAssignment->pic->name;
-                    return;
+                if ($picInCharge === '-') {
+                    $activeAssignment = $assignments->first(fn ($a) => is_null($a->end_date));
+                    if ($activeAssignment && $activeAssignment->pic) {
+                        $picInCharge = $activeAssignment->pic->name;
+                    }
                 }
             }
 
-            $currentActiveAssignment = $assignments->first(fn ($a) => is_null($a->end_date));
-            if ($currentActiveAssignment && $currentActiveAssignment->pic) {
-                $logbook->pic_in_charge = $currentActiveAssignment->pic->name;
-                return;
-            }
+            $combinedItems->push([
+                'source_type' => 'manual',
+                'type_label' => 'Manual',
+                'date' => $lb->log_date,
+                'intern' => $lb->intern,
+                'intern_name' => $lb->intern?->name ?? 'Peserta #' . $lb->intern_user_id,
+                'title' => $lb->title,
+                'description' => $lb->activity_description,
+                'status_label' => $lb->status?->label() ?? 'Manual',
+                'status_value' => $lb->status?->value ?? 'manual',
+                'pic_in_charge' => $picInCharge,
+                'meta_info' => null,
+            ]);
+        }
 
-            $logbook->pic_in_charge = '-';
-        });
-
-        return [
-            'logbooks' => $records,
-            'summary' => [
-                'total_entries' => $records->count(),
-                'approved_count' => $records->where('status', LogbookStatus::Approved)->count(),
-                'pending_count' => $records->where('status', LogbookStatus::Pending)->count(),
-                'revision_requested_count' => $records->where('status', LogbookStatus::RevisionRequested)->count(),
-            ],
-        ];
-    }
-
-    /**
-     * 4. Rekapitulasi Penugasan & Progres Tugas.
-     * Query langsung tabel tasks tanpa task_submissions / task_reviews.
-     */
-    public function getTaskReport(string $startDate, string $endDate, ?int $internId = null): array
-    {
-        $now = Carbon::now(config('wantrace.timezone', 'Asia/Jakarta'));
-
-        $query = Task::with([
+        // B. Tugas PIC (Task)
+        $taskQuery = Task::with([
             'intern',
             'pic',
-            'acceptedByUser',
             'latestSubmission.latestReview',
         ])
             ->withCount('submissions')
@@ -253,37 +360,78 @@ class ReportService
                         $sub->where('assigned_at', '<=', $endDate . ' 23:59:59')
                             ->where('deadline_at', '>=', $startDate . ' 00:00:00');
                     });
-            })
-            ->orderBy('assigned_at', 'desc');
+            });
 
         if ($internId) {
-            $query->where('intern_user_id', $internId);
+            $taskQuery->where('intern_user_id', $internId);
         } else {
-            $query->whereHas('intern', fn ($q) => $q->where('role', 'intern'));
+            $taskQuery->whereHas('intern', fn ($q) => $q->where('role', 'intern'));
         }
 
-        $records = $query->get();
+        $taskRecords = $taskQuery->get();
 
-        $overdueCount = $records->filter(fn (Task $t) => $t->isOverdue($now))->count();
-        $acceptedCount = $records->where('status', TaskStatus::Accepted)->count();
-        $inProgressCount = $records->where('status', TaskStatus::InProgress)->count();
-        $submittedCount = $records->where('status', TaskStatus::Submitted)->count();
+        foreach ($taskRecords as $task) {
+            $isOverdue = $task->isOverdue($now);
+            $latestSub = $task->latestSubmission;
+            $latestRev = $latestSub?->latestReview;
+
+            $metaInfo = [];
+            if ($task->deadline_at) {
+                $metaInfo[] = 'Deadline: ' . $task->deadline_at->format('d/m/Y H:i');
+            }
+            if ($task->submissions_count > 0 && $latestSub) {
+                $subText = 'Submisi v' . $latestSub->submission_number . ' (' . $task->submissions_count . 'x)';
+                if ($latestRev) {
+                    $subText .= ' • Review: ' . ($latestRev->decision?->label() ?? $latestRev->decision?->value);
+                }
+                $metaInfo[] = $subText;
+            }
+
+            $combinedItems->push([
+                'source_type' => 'task',
+                'type_label' => 'Tugas PIC',
+                'date' => $task->assigned_at ? $task->assigned_at->copy()->startOfDay() : ($task->deadline_at ? $task->deadline_at->copy()->startOfDay() : null),
+                'intern' => $task->intern,
+                'intern_name' => $task->intern?->name ?? 'Peserta #' . $task->intern_user_id,
+                'title' => $task->title,
+                'description' => $task->description,
+                'status_label' => $isOverdue ? 'Overdue' : ($task->status?->label() ?? 'Tugas'),
+                'status_value' => $isOverdue ? 'overdue' : ($task->status?->value ?? 'task'),
+                'pic_in_charge' => $task->pic?->name ?? '-',
+                'meta_info' => ! empty($metaInfo) ? implode(' • ', $metaInfo) : null,
+            ]);
+        }
+
+        // Urutkan gabungan: tanggal terbaru di atas
+        $sortedItems = $combinedItems->sort(function ($a, $b) {
+            $dateA = $a['date'] ? $a['date']->format('Y-m-d H:i:s') : '0000-00-00 00:00:00';
+            $dateB = $b['date'] ? $b['date']->format('Y-m-d H:i:s') : '0000-00-00 00:00:00';
+            $cmp = strcmp($dateB, $dateA);
+            if ($cmp !== 0) {
+                return $cmp;
+            }
+            return strcmp($a['intern_name'], $b['intern_name']);
+        })->values();
 
         return [
-            'tasks' => $records,
+            'entries' => $sortedItems,
             'summary' => [
-                'total_tasks' => $records->count(),
-                'accepted_count' => $acceptedCount,
-                'in_progress_count' => $inProgressCount,
-                'submitted_count' => $submittedCount,
-                'overdue_count' => $overdueCount,
+                'total_items' => $sortedItems->count(),
+                'manual_logbooks_count' => $logbookRecords->count(),
+                'tasks_count' => $taskRecords->count(),
+                'tasks_accepted_count' => $taskRecords->where('status', TaskStatus::Accepted)->count(),
+                'tasks_overdue_count' => $taskRecords->filter(fn (Task $t) => $t->isOverdue($now))->count(),
             ],
         ];
     }
 
     /**
-     * 5. Rekapitulasi Monitoring Evaluasi Peserta Magang (Ringkasan Komposit per Peserta).
-     * TIDAK ADA formula nilai akhir / skor / bobot apa pun.
+     * 4. Rekapitulasi Monitoring Evaluasi Peserta Magang (Revisi 3):
+     * - Kehadiran hanya: Hadir Sah (valid_presence_count), Izin Sah, Sakit Sah.
+     * - Hapus kolom Ditolak.
+     * - Logbook Manual: hanya angka total jumlah logbook manual ($logbooksTotal).
+     * - Ringkasan Tugas tetap ringkas (Total, Selesai, Overdue).
+     * - Murni agregasi data faktual TANPA formula nilai akhir / skor.
      */
     public function getMonitoringReport(
         string $startDate,
@@ -297,28 +445,21 @@ class ReportService
         $workingDays = $workingDays ?? $this->calendarService->getWorkingDaysList($startDate, $endDate);
 
         $internsQuery = User::where('role', 'intern')->orderBy('name', 'asc');
-
         if ($internId) {
             $internsQuery->where('id', $internId);
         }
-
         $interns = $internsQuery->get();
 
         $summaries = [];
 
         foreach ($interns as $intern) {
-            // Presensi
-            $attendances = Attendance::where('intern_user_id', $intern->id)
+            // Presensi Sah (Valid)
+            $validPresenceCount = Attendance::valid()
+                ->where('intern_user_id', $intern->id)
                 ->betweenDates($startDate, $endDate)
-                ->get();
+                ->count();
 
-            $validAttendances = $attendances->where('verification_status', '!=', 'rejected');
-            $onTimeCount = $validAttendances->where('status', 'on_time')->count();
-            $lateCount = $validAttendances->where('status', 'late')->count();
-            $validPresenceCount = $validAttendances->count();
-            $rejectedCount = $attendances->where('verification_status', 'rejected')->count();
-
-            // Hari izin/sakit approved dalam hari kerja periode
+            // Hari izin dan sakit approved dalam hari kerja periode
             $approvedLeaves = LeaveRequest::approved()
                 ->where('intern_user_id', $intern->id)
                 ->where(function ($q) use ($startDate, $endDate) {
@@ -328,23 +469,28 @@ class ReportService
                 ->get();
 
             $approvedLeaveDays = 0;
+            $approvedSickDays = 0;
+
             foreach ($workingDays as $workingDate) {
                 foreach ($approvedLeaves as $leave) {
-                    if ($workingDate >= $leave->start_date->format('Y-m-d') && $workingDate <= $leave->end_date->format('Y-m-d')) {
-                        $approvedLeaveDays++;
+                    $start = $leave->start_date?->format('Y-m-d');
+                    $end = $leave->end_date?->format('Y-m-d');
+                    if ($start && $end && $workingDate >= $start && $workingDate <= $end) {
+                        if ($leave->isSick()) {
+                            $approvedSickDays++;
+                        } else {
+                            $approvedLeaveDays++;
+                        }
                         break;
                     }
                 }
             }
 
-            // Logbook manual
-            $logbooks = Logbook::manual()
+            // Logbook manual (cukup total angka saja)
+            $logbooksTotal = Logbook::manual()
                 ->where('intern_user_id', $intern->id)
                 ->whereBetween('log_date', [$startDate, $endDate])
-                ->get();
-
-            $logbooksTotal = $logbooks->count();
-            $logbooksApproved = $logbooks->where('status', LogbookStatus::Approved)->count();
+                ->count();
 
             // Tugas
             $tasks = Task::where('intern_user_id', $intern->id)
@@ -360,7 +506,6 @@ class ReportService
 
             $tasksTotal = $tasks->count();
             $tasksAccepted = $tasks->where('status', TaskStatus::Accepted)->count();
-            $tasksInProgress = $tasks->where('status', TaskStatus::InProgress)->count();
             $tasksOverdue = $tasks->filter(fn (Task $t) => $t->isOverdue($now))->count();
 
             $summaries[] = [
@@ -368,15 +513,11 @@ class ReportService
                 'is_active' => (bool) $intern->is_active,
                 'working_days_count' => $workingDaysCount,
                 'valid_presence_count' => $validPresenceCount,
-                'on_time_count' => $onTimeCount,
-                'late_count' => $lateCount,
-                'rejected_count' => $rejectedCount,
                 'approved_leave_days' => $approvedLeaveDays,
+                'approved_sick_days' => $approvedSickDays,
                 'logbooks_total' => $logbooksTotal,
-                'logbooks_approved' => $logbooksApproved,
                 'tasks_total' => $tasksTotal,
                 'tasks_accepted' => $tasksAccepted,
-                'tasks_in_progress' => $tasksInProgress,
                 'tasks_overdue' => $tasksOverdue,
             ];
         }

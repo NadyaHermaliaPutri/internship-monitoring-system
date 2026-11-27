@@ -10,7 +10,10 @@ use App\Models\AuditLog;
 use App\Models\LeaveRequest;
 use App\Models\Logbook;
 use App\Models\MediaFile;
+use App\Models\PicAssignment;
 use App\Models\Task;
+use App\Models\TaskReview;
+use App\Models\TaskSubmission;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -62,9 +65,13 @@ class ReportTest extends TestCase
     }
 
     /**
-     * 2. Admin dapat mengakses halaman laporan dan melihat preview kelima jenis laporan.
+     * 2. Admin dapat mengakses halaman laporan dan melihat preview ke-4 jenis laporan resmi:
+     * - attendance (Rekap Presensi)
+     * - leave (Rekap Izin & Sakit)
+     * - logbook (Rekap Logbook & Tugas)
+     * - monitoring (Rekap Monitoring Peserta)
      */
-    public function test_admin_can_access_and_preview_all_five_report_types(): void
+    public function test_admin_can_access_and_preview_all_four_report_types(): void
     {
         $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
         $intern = User::factory()->create(['role' => 'intern', 'name' => 'Budi Santoso', 'is_active' => true]);
@@ -79,17 +86,12 @@ class ReportTest extends TestCase
         $resLeave->assertOk();
         $resLeave->assertSee('Rekapitulasi Pengajuan Izin');
 
-        // C. Logbook Manual
+        // C. Logbook & Tugas Gabungan
         $resLogbook = $this->actingAs($admin)->get('/admin/laporan?report_type=logbook&start_date=2026-11-01&end_date=2026-11-30');
         $resLogbook->assertOk();
-        $resLogbook->assertSee('Rekapitulasi Logbook');
+        $resLogbook->assertSee('Rekapitulasi Logbook &amp; Tugas', false);
 
-        // D. Tugas
-        $resTask = $this->actingAs($admin)->get('/admin/laporan?report_type=task&start_date=2026-11-01&end_date=2026-11-30');
-        $resTask->assertOk();
-        $resTask->assertSee('Rekapitulasi Penugasan');
-
-        // E. Monitoring Komposit
+        // D. Monitoring Komposit
         $resMonitoring = $this->actingAs($admin)->get('/admin/laporan?report_type=monitoring&start_date=2026-11-01&end_date=2026-11-30');
         $resMonitoring->assertOk();
         $resMonitoring->assertSee('Rekapitulasi Monitoring Evaluasi Peserta Magang');
@@ -97,13 +99,13 @@ class ReportTest extends TestCase
     }
 
     /**
-     * 3. Admin dapat mengunduh ekspor PDF (application/pdf) untuk SEMUA 5 jenis laporan dan tercatat di audit_logs.
+     * 3. Admin dapat mengunduh ekspor PDF (application/pdf) untuk SEMUA 4 jenis laporan dan tercatat di audit_logs.
      */
-    public function test_admin_can_export_pdf_for_all_five_report_types_and_logs_audit(): void
+    public function test_admin_can_export_pdf_for_all_four_report_types_and_logs_audit(): void
     {
         $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
         $intern = User::factory()->create(['role' => 'intern', 'is_active' => true]);
-        $types = ['attendance', 'leave', 'logbook', 'task', 'monitoring'];
+        $types = ['attendance', 'leave', 'logbook', 'monitoring'];
 
         foreach ($types as $type) {
             $response = $this->actingAs($admin)->get("/admin/laporan/export-pdf?report_type={$type}&start_date=2026-11-01&end_date=2026-11-30");
@@ -122,13 +124,13 @@ class ReportTest extends TestCase
     }
 
     /**
-     * 4. Admin dapat mengunduh ekspor Excel (.xlsx) untuk SEMUA 5 jenis laporan dan tercatat di audit_logs.
+     * 4. Admin dapat mengunduh ekspor Excel (.xlsx) untuk SEMUA 4 jenis laporan dan tercatat di audit_logs.
      */
-    public function test_admin_can_export_excel_for_all_five_report_types_and_logs_audit(): void
+    public function test_admin_can_export_excel_for_all_four_report_types_and_logs_audit(): void
     {
         $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
         $intern = User::factory()->create(['role' => 'intern', 'is_active' => true]);
-        $types = ['attendance', 'leave', 'logbook', 'task', 'monitoring'];
+        $types = ['attendance', 'leave', 'logbook', 'monitoring'];
 
         foreach ($types as $type) {
             $response = $this->actingAs($admin)->get("/admin/laporan/export-excel?report_type={$type}&start_date=2026-11-01&end_date=2026-11-30");
@@ -148,6 +150,7 @@ class ReportTest extends TestCase
 
     /**
      * 5. Validasi backend menolak parameter laporan invalid dan end_date < start_date.
+     * Opsi lama 'task' terpisah ditolak karena sudah digabung ke 'logbook'.
      */
     public function test_export_validation_rejects_invalid_inputs(): void
     {
@@ -157,22 +160,29 @@ class ReportTest extends TestCase
         $resInvalidType = $this->actingAs($admin)->get('/admin/laporan/export-pdf?report_type=arbitrary&start_date=2026-11-01&end_date=2026-11-30');
         $resInvalidType->assertSessionHasErrors(['report_type']);
 
+        // Opsi 'task' mandiri sudah tidak diizinkan
+        $resTaskStandalone = $this->actingAs($admin)->get('/admin/laporan/export-pdf?report_type=task&start_date=2026-11-01&end_date=2026-11-30');
+        $resTaskStandalone->assertSessionHasErrors(['report_type']);
+
         // end_date lebih awal dari start_date
         $resInvalidDates = $this->actingAs($admin)->get('/admin/laporan/export-pdf?report_type=attendance&start_date=2026-11-30&end_date=2026-11-01');
         $resInvalidDates->assertSessionHasErrors(['end_date']);
     }
 
     /**
-     * 6. Konsistensi Presensi: Presensi dengan verification_status = 'rejected'
-     * tidak dihitung sebagai hadir sah (Attendance::scopeValid()).
+     * 6. Revisi 1: Presensi ditolak tidak masuk ke laporan presensi sah;
+     * Hari kerja tanpa presensi sah/izin tampil sebagai "Tidak Hadir";
+     * Tanggal di masa depan (> today) tidak dianggap "Tidak Hadir".
      */
-    public function test_rejected_attendance_is_not_counted_as_valid_presence(): void
+    public function test_attendance_report_excludes_rejected_and_shows_absent_for_working_days(): void
     {
+        Carbon::setTestNow(Carbon::parse('2026-11-18 12:00:00', 'Asia/Jakarta'));
+
         $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
-        $intern = User::factory()->create(['role' => 'intern', 'name' => 'Peserta Uji', 'is_active' => true]);
+        $intern = User::factory()->create(['role' => 'intern', 'name' => 'Peserta Uji Presensi', 'is_active' => true]);
         $media = $this->createMedia($intern);
 
-        // Presensi sah
+        // 1) Presensi sah on_time pada hari kerja (10 Nov 2026 - Selasa -> 'Hadir')
         Attendance::create([
             'intern_user_id' => $intern->id,
             'attendance_date' => '2026-11-10',
@@ -182,7 +192,7 @@ class ReportTest extends TestCase
             'photo_media_id' => $media->id,
         ]);
 
-        // Presensi ditolak HR
+        // 2) Presensi ditolak HR pada hari kerja (11 Nov 2026 - Rabu -> 'Tidak Hadir')
         Attendance::create([
             'intern_user_id' => $intern->id,
             'attendance_date' => '2026-11-11',
@@ -190,76 +200,111 @@ class ReportTest extends TestCase
             'status' => 'late',
             'verification_status' => 'rejected',
             'photo_media_id' => $media->id,
-            'notes' => 'Foto blur, bukan di lokasi',
+            'notes' => 'Foto selfie tidak sesuai lokasi',
         ]);
 
-        $response = $this->actingAs($admin)->get('/admin/laporan?report_type=attendance&start_date=2026-11-01&end_date=2026-11-30');
+        // 3) Izin disetujui pada hari kerja (12 Nov 2026 - Kamis -> 'Izin')
+        LeaveRequest::create([
+            'intern_user_id' => $intern->id,
+            'leave_type' => 'leave',
+            'start_date' => '2026-11-12',
+            'end_date' => '2026-11-12',
+            'reason' => 'Urusan keluarga mendesak',
+            'status' => 'approved',
+            'reviewed_by' => $admin->id,
+            'reviewed_at' => now(),
+        ]);
+
+        // 4) Presensi sah late pada hari kerja (13 Nov 2026 - Jumat -> 'Terlambat')
+        Attendance::create([
+            'intern_user_id' => $intern->id,
+            'attendance_date' => '2026-11-13',
+            'checked_in_at' => '2026-11-13 08:20:00',
+            'status' => 'late',
+            'verification_status' => 'verified',
+            'photo_media_id' => $media->id,
+        ]);
+
+        // 5) Sakit disetujui pada hari kerja (16 Nov 2026 - Senin -> 'Sakit')
+        LeaveRequest::create([
+            'intern_user_id' => $intern->id,
+            'leave_type' => 'sick',
+            'start_date' => '2026-11-16',
+            'end_date' => '2026-11-16',
+            'reason' => 'Demam tinggi',
+            'status' => 'approved',
+            'reviewed_by' => $admin->id,
+            'reviewed_at' => now(),
+        ]);
+
+        // Periode laporan: 10 Nov s.d. 20 Nov 2026 (hari ini 18 Nov, masa depan 19-20 Nov)
+        $response = $this->actingAs($admin)->get("/admin/laporan?report_type=attendance&start_date=2026-11-10&end_date=2026-11-20&intern_id={$intern->id}");
         $response->assertOk();
 
-        // Di preview, Hadir Sah harus 1, Ditolak HR harus 1
         $reportData = $response->viewData('reportData');
-        $this->assertEquals(1, $reportData['summary']['total_valid_presence']);
-        $this->assertEquals(1, $reportData['summary']['rejected_count']);
+        $attendances = $reportData['attendances'];
+
+        // Row 10 Nov (Sah on_time -> 'Hadir')
+        $row10 = $attendances->first(fn ($r) => $r['date']->format('Y-m-d') === '2026-11-10');
+        $this->assertNotNull($row10);
+        $this->assertEquals('Hadir', $row10['status']);
+
+        // Row 11 Nov (Ditolak HR, tidak ada presensi sah lain -> tampil sebagai 'Tidak Hadir')
+        $row11 = $attendances->first(fn ($r) => $r['date']->format('Y-m-d') === '2026-11-11');
+        $this->assertNotNull($row11);
+        $this->assertEquals('Tidak Hadir', $row11['status']);
+
+        // Row 12 Nov ('Izin')
+        $row12 = $attendances->first(fn ($r) => $r['date']->format('Y-m-d') === '2026-11-12');
+        $this->assertNotNull($row12);
+        $this->assertEquals('Izin', $row12['status']);
+
+        // Row 13 Nov ('Terlambat')
+        $row13 = $attendances->first(fn ($r) => $r['date']->format('Y-m-d') === '2026-11-13');
+        $this->assertNotNull($row13);
+        $this->assertEquals('Terlambat', $row13['status']);
+
+        // Row 16 Nov ('Sakit')
+        $row16 = $attendances->first(fn ($r) => $r['date']->format('Y-m-d') === '2026-11-16');
+        $this->assertNotNull($row16);
+        $this->assertEquals('Sakit', $row16['status']);
+
+        // Row 19 Nov & 20 Nov (Masa depan > 18 Nov) TIDAK boleh masuk sebagai 'Tidak Hadir'
+        $row19 = $attendances->first(fn ($r) => $r['date']->format('Y-m-d') === '2026-11-19');
+        $this->assertNull($row19);
+
+        // Ringkasan presensi: Hadir Valid = 2 (1 on_time + 1 late), Ditolak HR tidak ada di summary
+        $this->assertEquals(2, $reportData['summary']['total_valid_presence']);
+        $this->assertEquals(1, $reportData['summary']['on_time_count']);
+        $this->assertEquals(1, $reportData['summary']['late_count']);
+        $this->assertArrayNotHasKey('rejected_count', $reportData['summary']);
+
+        // View menampilkan tepat 5 label standar tanpa Verifikasi HR dan tanpa kata "Sah"
+        $response->assertSee('Hadir');
+        $response->assertSee('Terlambat');
+        $response->assertSee('Izin');
+        $response->assertSee('Sakit');
+        $response->assertSee('Tidak Hadir');
+        $response->assertDontSee('Verifikasi HR');
+        $response->assertDontSee('Izin Sah');
+        $response->assertDontSee('Sakit Sah');
+        $response->assertDontSee('Hadir Sah');
     }
 
     /**
-     * 7. Konsistensi Logbook: Catatan logbook dengan source = 'task_assignment'
-     * tidak masuk ke dalam rekapitulasi logbook manual.
+     * 7. Revisi 2: Penggabungan Rekap Logbook & Tugas:
+     * - Menampilkan logbook manual dan tugas PIC secara terpadu.
+     * - Kolom Jenis ('Manual' / 'Tugas PIC') & Penanggung Jawab dari nama PIC.
+     * - Logbook source 'task_assignment' tidak masuk ganda.
      */
-    public function test_task_assignment_logbook_is_excluded_from_manual_logbook_report(): void
+    public function test_combined_logbook_and_task_report_contains_both_sources_with_pic_in_charge(): void
     {
         $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
-        $intern = User::factory()->create(['role' => 'intern', 'is_active' => true]);
+        $picMentor = User::factory()->create(['role' => 'pic', 'name' => 'Pak Rudi PIC', 'is_active' => true]);
+        $picTaskCreator = User::factory()->create(['role' => 'pic', 'name' => 'Bu Siska Tech Lead', 'is_active' => true]);
+        $intern = User::factory()->create(['role' => 'intern', 'name' => 'Peserta Aktif Gabungan', 'is_active' => true]);
 
-        // Logbook manual
-        Logbook::create([
-            'intern_user_id' => $intern->id,
-            'log_date' => '2026-11-10',
-            'title' => 'Eksperimen Manual UI',
-            'activity_description' => 'Mengerjakan mockup dan styling halaman laporan.',
-            'result' => 'Selesai 100%',
-            'source' => LogbookSource::Manual,
-            'status' => LogbookStatus::Approved,
-        ]);
-
-        // Logbook otomatis dari penugasan tugas
-        Logbook::create([
-            'intern_user_id' => $intern->id,
-            'log_date' => '2026-11-10',
-            'title' => 'Penugasan Otomatis Sistem',
-            'activity_description' => 'Logbook otomatis dibuat dari task assignment.',
-            'result' => null,
-            'source' => LogbookSource::TaskAssignment,
-            'status' => LogbookStatus::Pending,
-        ]);
-
-        $response = $this->actingAs($admin)->get('/admin/laporan?report_type=logbook&start_date=2026-11-01&end_date=2026-11-30');
-        $response->assertOk();
-        $response->assertSee('Eksperimen Manual UI');
-        $response->assertDontSee('Penugasan Otomatis Sistem');
-
-        // Pastikan kolom baru 'Penanggung Jawab' ada di preview dan bukan kolom lama yang berlebihan
-        $response->assertSee('Penanggung Jawab');
-        $response->assertDontSee('Status Approval');
-
-        $reportData = $response->viewData('reportData');
-        $this->assertEquals(1, $reportData['summary']['total_entries']);
-    }
-
-    /**
-     * 8. Penanggung Jawab pada Laporan Logbook:
-     * - Menampilkan reviewer->name jika sudah direview
-     * - Menampilkan PIC aktif via pic_assignments jika belum direview
-     */
-    public function test_logbook_report_displays_correct_pic_in_charge(): void
-    {
-        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
-        $picMentor = User::factory()->create(['role' => 'pic', 'name' => 'Pak Budi PIC', 'is_active' => true]);
-        $picReviewer = User::factory()->create(['role' => 'pic', 'name' => 'Bu Ani Reviewer', 'is_active' => true]);
-        $intern = User::factory()->create(['role' => 'intern', 'name' => 'Peserta Bimbingan', 'is_active' => true]);
-
-        // Buat penugasan pembimbing
-        \App\Models\PicAssignment::create([
+        PicAssignment::create([
             'intern_user_id' => $intern->id,
             'pic_user_id' => $picMentor->id,
             'start_date' => '2026-11-01',
@@ -267,56 +312,155 @@ class ReportTest extends TestCase
             'assigned_by' => $admin->id,
         ]);
 
-        // 1) Logbook sudah direview
+        // A. Logbook manual
         Logbook::create([
             'intern_user_id' => $intern->id,
-            'log_date' => '2026-11-05',
-            'title' => 'Aktivitas Hari 1',
-            'activity_description' => 'Membaca dokumentasi.',
-            'source' => LogbookSource::Manual,
-            'status' => LogbookStatus::Approved,
-            'reviewed_by' => $picReviewer->id,
-            'reviewed_at' => now(),
-        ]);
-
-        // 2) Logbook belum direview
-        Logbook::create([
-            'intern_user_id' => $intern->id,
-            'log_date' => '2026-11-06',
-            'title' => 'Aktivitas Hari 2',
-            'activity_description' => 'Membuat kerangka modul.',
+            'log_date' => '2026-11-10',
+            'title' => 'Eksperimen Manual UI',
+            'activity_description' => 'Mengerjakan mockup dan styling halaman laporan.',
             'source' => LogbookSource::Manual,
             'status' => LogbookStatus::Pending,
+        ]);
+
+        // B. Logbook otomatis (task_assignment) -> HARUS DIKECUALIKAN AGAR TIDAK GANDA
+        Logbook::create([
+            'intern_user_id' => $intern->id,
+            'log_date' => '2026-11-11',
+            'title' => 'Logbook Otomatis Task Assignment',
+            'activity_description' => 'Otomatis dibuat sistem.',
+            'source' => LogbookSource::TaskAssignment,
+            'status' => LogbookStatus::Pending,
+        ]);
+
+        // C. Tugas dari PIC
+        $task = Task::create([
+            'pic_user_id' => $picTaskCreator->id,
+            'intern_user_id' => $intern->id,
+            'title' => 'Implementasi Modul Ekspor PDF',
+            'description' => 'Fitur PDF portrait tanpa logo.',
+            'assigned_at' => '2026-11-12 09:00:00',
+            'deadline_at' => '2026-11-20 17:00:00',
+            'status' => TaskStatus::InProgress,
         ]);
 
         $response = $this->actingAs($admin)->get('/admin/laporan?report_type=logbook&start_date=2026-11-01&end_date=2026-11-30');
         $response->assertOk();
 
+        // Cek data gabungan
         $reportData = $response->viewData('reportData');
-        $logbooks = $reportData['logbooks'];
+        $entries = $reportData['entries'];
 
-        $reviewedLog = $logbooks->firstWhere('title', 'Aktivitas Hari 1');
-        $pendingLog = $logbooks->firstWhere('title', 'Aktivitas Hari 2');
+        $this->assertEquals(2, $entries->count()); // 1 manual + 1 task, logbook task_assignment dikecualikan
 
-        $this->assertEquals('Bu Ani Reviewer', $reviewedLog->pic_in_charge);
-        $this->assertEquals('Pak Budi PIC', $pendingLog->pic_in_charge);
+        $manualEntry = $entries->firstWhere('source_type', 'manual');
+        $taskEntry = $entries->firstWhere('source_type', 'task');
 
-        // Pastikan nama penanggung jawab tampil di view
-        $response->assertSee('Bu Ani Reviewer');
-        $response->assertSee('Pak Budi PIC');
+        $this->assertNotNull($manualEntry);
+        $this->assertNotNull($taskEntry);
+
+        $this->assertEquals('Manual', $manualEntry['type_label']);
+        $this->assertEquals('Pak Rudi PIC', $manualEntry['pic_in_charge']); // Dari pembimbing aktif
+        $this->assertEquals('Tugas PIC', $taskEntry['type_label']);
+        $this->assertEquals('Bu Siska Tech Lead', $taskEntry['pic_in_charge']); // Dari PIC pembuat tugas
+
+        // Assert di HTML preview
+        $response->assertSee('Eksperimen Manual UI');
+        $response->assertSee('Implementasi Modul Ekspor PDF');
+        $response->assertDontSee('Logbook Otomatis Task Assignment');
+        $response->assertSee('Pak Rudi PIC');
+        $response->assertSee('Bu Siska Tech Lead');
     }
 
     /**
-     * 8. Batasan Bisnis: Laporan tidak memuat formula nilai akhir, skor, grade, atau bobot otomatis apa pun.
+     * 8. Revisi 3: Rekap Monitoring Peserta:
+     * - Hanya menampilkan Hadir Sah, Izin Sah, Sakit Sah.
+     * - Hapus kolom Ditolak.
+     * - Logbook Manual hanya jumlah angka saja.
+     * - Bebas dari formula nilai akhir / skor.
      */
-    public function test_reports_do_not_contain_final_score_or_grading_formulas(): void
+    public function test_monitoring_report_contains_only_valid_presence_and_manual_logbook_count(): void
     {
         $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
-        $intern = User::factory()->create(['role' => 'intern', 'name' => 'Peserta Monitoring', 'is_active' => true]);
+        $intern = User::factory()->create(['role' => 'intern', 'name' => 'Peserta Monitoring Refactor', 'is_active' => true]);
+        $media = $this->createMedia($intern);
+
+        // 1 Hadir Sah
+        Attendance::create([
+            'intern_user_id' => $intern->id,
+            'attendance_date' => '2026-11-10',
+            'checked_in_at' => '2026-11-10 07:50:00',
+            'status' => 'on_time',
+            'verification_status' => 'verified',
+            'photo_media_id' => $media->id,
+        ]);
+
+        // 1 Presensi Ditolak (TIDAK BOLEH DIHITUNG/DITAMPILKAN DI MONITORING)
+        Attendance::create([
+            'intern_user_id' => $intern->id,
+            'attendance_date' => '2026-11-11',
+            'checked_in_at' => '2026-11-11 08:30:00',
+            'status' => 'late',
+            'verification_status' => 'rejected',
+            'photo_media_id' => $media->id,
+        ]);
+
+        // 1 Izin Sah
+        LeaveRequest::create([
+            'intern_user_id' => $intern->id,
+            'leave_type' => 'leave',
+            'start_date' => '2026-11-12',
+            'end_date' => '2026-11-12',
+            'reason' => 'Izin keperluan kampus',
+            'status' => 'approved',
+            'reviewed_by' => $admin->id,
+        ]);
+
+        // 2 Logbook Manual
+        Logbook::create([
+            'intern_user_id' => $intern->id,
+            'log_date' => '2026-11-10',
+            'title' => 'Logbook 1',
+            'activity_description' => 'Aktivitas 1',
+            'source' => LogbookSource::Manual,
+            'status' => LogbookStatus::Approved,
+        ]);
+        Logbook::create([
+            'intern_user_id' => $intern->id,
+            'log_date' => '2026-11-12',
+            'title' => 'Logbook 2',
+            'activity_description' => 'Aktivitas 2',
+            'source' => LogbookSource::Manual,
+            'status' => LogbookStatus::Pending,
+        ]);
 
         $response = $this->actingAs($admin)->get('/admin/laporan?report_type=monitoring&start_date=2026-11-01&end_date=2026-11-30');
         $response->assertOk();
 
+        $reportData = $response->viewData('reportData');
+        $summary = collect($reportData['intern_summaries'])->firstWhere('intern.id', $intern->id);
+
+        $this->assertEquals(1, $summary['valid_presence_count']);
+        $this->assertEquals(1, $summary['approved_leave_days']);
+        $this->assertEquals(0, $summary['approved_sick_days']);
+        $this->assertEquals(2, $summary['logbooks_total']); // Hanya jumlah angka logbook manual
+        $this->assertArrayNotHasKey('rejected_count', $summary);
+
+        // Tidak ada "Catatan Evaluasi HR", kolom "Status Akun", atau label "Hadir Sah"
+        $response->assertDontSee('Catatan Evaluasi HR');
+        $response->assertDontSee('Status Akun');
+        $response->assertDontSee('Hadir Sah');
+
+        // Verifikasi juga template PDF monitoring bebas dari blok/kolom tersebut
+        $pdfHtml = view('admin.reports.pdf.monitoring', [
+            'data' => $reportData,
+            'metadata' => $reportData['metadata'],
+            'summary' => $reportData['summary'],
+        ])->render();
+        $this->assertStringNotContainsString('Catatan Evaluasi HR', $pdfHtml);
+        $this->assertStringNotContainsString('Status Akun', $pdfHtml);
+        $this->assertStringNotContainsString('Hadir Sah', $pdfHtml);
+
+        // Tanpa skor akhir
         $content = strtolower($response->getContent());
         $this->assertStringNotContainsString('nilai akhir', $content);
         $this->assertStringNotContainsString('grade', $content);
@@ -356,68 +500,10 @@ class ReportTest extends TestCase
         $response->assertOk();
 
         $reportData = $response->viewData('reportData');
-        $this->assertEquals(1, $reportData['summary']['total_records']);
-        $this->assertEquals($internA->id, $reportData['attendances']->first()->intern_user_id);
-        $this->assertCount(1, $reportData['attendances']);
-        $this->assertEquals('Peserta A', $reportData['attendances']->first()->intern->name);
-    }
+        $attendances = $reportData['attendances'];
 
-    /**
-     * 10. Laporan tugas memperkaya informasi dengan riwayat pengumpulan (TaskSubmission) dan review PIC (TaskReview).
-     */
-    public function test_task_report_includes_submission_count_and_latest_review_details(): void
-    {
-        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
-        $pic = User::factory()->create(['role' => 'pic', 'is_active' => true]);
-        $intern = User::factory()->create(['role' => 'intern', 'name' => 'Peserta Tugas', 'is_active' => true]);
-
-        $task = Task::create([
-            'pic_user_id' => $pic->id,
-            'intern_user_id' => $intern->id,
-            'title' => 'Implementasi Modul Ekspor',
-            'description' => 'Membuat fitur ekspor PDF dan Excel.',
-            'assigned_at' => '2026-11-10 09:00:00',
-            'deadline_at' => '2026-11-20 17:00:00',
-            'status' => TaskStatus::RevisionRequested,
-        ]);
-
-        $submission = \App\Models\TaskSubmission::create([
-            'task_id' => $task->id,
-            'submitted_by' => $intern->id,
-            'submission_number' => 1,
-            'submission_note' => 'Sudah selesai tahap awal.',
-            'submitted_at' => '2026-11-15 14:00:00',
-        ]);
-
-        \App\Models\TaskReview::create([
-            'task_submission_id' => $submission->id,
-            'reviewed_by' => $pic->id,
-            'decision' => \App\Enums\TaskReviewDecision::RevisionRequested,
-            'feedback' => 'Tolong rapikan format tabel PDF.',
-            'reviewed_at' => '2026-11-16 10:00:00',
-        ]);
-
-        $response = $this->actingAs($admin)->get('/admin/laporan?report_type=task&start_date=2026-11-01&end_date=2026-11-30');
-        $response->assertOk();
-
-        // Cek data di view
-        $reportData = $response->viewData('reportData');
-        $retrievedTask = $reportData['tasks']->first();
-        $this->assertEquals(1, $retrievedTask->submissions_count);
-        $this->assertNotNull($retrievedTask->latestSubmission);
-        $this->assertEquals(1, $retrievedTask->latestSubmission->submission_number);
-        $this->assertNotNull($retrievedTask->latestSubmission->latestReview);
-        $this->assertEquals(\App\Enums\TaskReviewDecision::RevisionRequested, $retrievedTask->latestSubmission->latestReview->decision);
-
-        // Cek teks pada HTML preview
-        $response->assertSee('Versi ke-1 (Total 1x)');
-        $response->assertSee('Perlu Revisi');
-
-        // Cek teks pada ekspor PDF & Excel
-        $pdfResponse = $this->actingAs($admin)->get('/admin/laporan/export-pdf?report_type=task&start_date=2026-11-01&end_date=2026-11-30');
-        $pdfResponse->assertOk();
-
-        $excelResponse = $this->actingAs($admin)->get('/admin/laporan/export-excel?report_type=task&start_date=2026-11-01&end_date=2026-11-30');
-        $excelResponse->assertOk();
+        // Semua baris kehadiran yang dievaluasi hanya milik Intern A
+        $this->assertTrue($attendances->every(fn ($row) => $row['intern_user_id'] === $internA->id));
+        $this->assertEquals(1, $reportData['summary']['total_valid_presence']);
     }
 }

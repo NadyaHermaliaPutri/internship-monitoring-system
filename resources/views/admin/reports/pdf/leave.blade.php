@@ -1,7 +1,7 @@
 @extends('admin.reports.pdf.layout')
 
 @section('content')
-    <table class="summary-boxes" cellpadding="0" cellspacing="6">
+    <table class="summary-boxes" cellpadding="0" cellspacing="5">
         <tr>
             <td class="summary-card" style="width: 20%;">
                 <div class="summary-card-title">Total Pengajuan</div>
@@ -29,13 +29,13 @@
     <table class="data-table">
         <thead>
             <tr>
-                <th style="width: 4%;" class="text-center">No</th>
+                <th style="width: 5%;" class="text-center">No</th>
                 <th style="width: 20%;">Nama Peserta</th>
                 <th style="width: 10%;" class="text-center">Jenis</th>
-                <th style="width: 20%;">Rentang Tanggal</th>
-                <th style="width: 22%;">Alasan</th>
-                <th style="width: 10%;" class="text-center">Status</th>
-                <th style="width: 14%;">Peninjau</th>
+                <th style="width: 21%;">Rentang Tanggal</th>
+                <th style="width: 20%;">Alasan</th>
+                <th style="width: 11%;" class="text-center">Status</th>
+                <th style="width: 13%;">Peninjau</th>
             </tr>
         </thead>
         <tbody>
@@ -67,7 +67,7 @@
                     <td>
                         @if($item->reviewer)
                             <div>{{ $item->reviewer->name }}</div>
-                            <div style="font-size: 8px; color: #64748b; margin-top: 2px;">{{ $item->reviewed_at?->translatedFormat('d/m/Y H:i') }}</div>
+                            <div style="font-size: 7px; color: #64748b; margin-top: 1px;">{{ $item->reviewed_at?->translatedFormat('d/m/Y H:i') }}</div>
                         @else
                             <span style="color: #94a3b8;">-</span>
                         @endif
@@ -75,7 +75,7 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="7" class="text-center" style="padding: 18px; color: #64748b;">
+                    <td colspan="7" class="text-center" style="padding: 16px; color: #64748b;">
                         Tidak ada pengajuan izin atau sakit pada periode dan filter terpilih.
                     </td>
                 </tr>

@@ -128,8 +128,6 @@ Route::middleware('auth')->group(function () {
     Route::middleware('role:pic')->prefix('pic')->name('pic.')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'pic'])->name('dashboard');
 
-        // Early Warning System (EWS) - Modul 4
-        Route::get('/ews', [EwsController::class, 'picIndex'])->name('ews.index');
         Route::prefix('presensi')->name('attendance.')->group(function () {
             Route::get('/', [AttendanceController::class, 'picIndex'])->name('index');
         });

@@ -178,10 +178,10 @@
                     </a>
                 </div>
 
-                <!-- Menu Early Warning (EWS) - Khusus Admin & PIC -->
-                @if(in_array(auth()->user()?->role, ['admin', 'pic'], true))
+                {{-- Menu Early Warning (EWS) - Khusus Admin / HR --}}
+                @if(auth()->user()?->role === 'admin')
                     <div class="relative w-full pl-5 {{ $isEwsActive ? 'z-10' : '' }}">
-                        <a href="{{ route($rolePrefix . '.ews.index') }}" class="relative flex items-center gap-3 py-3 pl-4 pr-6 {{ $isEwsActive ? 'bg-[#eef4f8] text-[#015987] font-bold' : 'text-sky-100 hover:bg-white/10 font-medium' }} text-xs rounded-l-full w-full shadow-none transition">
+                        <a href="{{ route('admin.ews.index') }}" class="relative flex items-center gap-3 py-3 pl-4 pr-6 {{ $isEwsActive ? 'bg-[#eef4f8] text-[#015987] font-bold' : 'text-sky-100 hover:bg-white/10 font-medium' }} text-xs rounded-l-full w-full shadow-none transition">
                             @if($isEwsActive)
                                 <span class="hidden lg:block absolute -top-5 right-0 w-5 h-5 pointer-events-none">
                                     <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">

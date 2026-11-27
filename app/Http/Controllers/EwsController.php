@@ -61,33 +61,6 @@ class EwsController extends Controller
     }
 
     /**
-     * Halaman Monitoring EWS Khusus Peserta Bimbingan PIC.
-     */
-    public function picIndex(Request $request): View
-    {
-        $timezone = config('wantrace.timezone', 'Asia/Jakarta');
-        $today = Carbon::now($timezone)->format('Y-m-d');
-        $date = $request->query('date', $today);
-        $type = $request->query('type', 'all');
-
-        $summary = $this->ewsService->getPicEwsSummary($request->user()->id, $date);
-        $warnings = $this->filterWarnings($summary['warnings_list'], $type);
-        $settings = EwsSetting::getSettings();
-        $isWorkingDay = $this->calendarService->isWorkingDay($date);
-
-        return view('ews.index', [
-            'summary' => $summary,
-            'warnings' => $warnings,
-            'date' => $date,
-            'today' => $today,
-            'type' => $type,
-            'settings' => $settings,
-            'isWorkingDay' => $isWorkingDay,
-            'isPicView' => true,
-        ]);
-    }
-
-    /**
      * Menyaring daftar peringatan EWS berdasarkan kategori indikator yang dipilih.
      */
     protected function filterWarnings($warnings, string $type)

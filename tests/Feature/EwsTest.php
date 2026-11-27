@@ -306,81 +306,42 @@ class EwsTest extends TestCase
     }
 
     /**
-     * 8. Otorisasi dan pembatasan cakupan EWS:
-     * - PIC & Intern dilarang mengubah pengaturan cutoff (403).
-     * - Intern dilarang mengakses halaman EWS admin maupun pic (403).
-     * - PIC hanya dapat melihat peserta bimbingan dan tugas miliknya.
+     * 8. Otorisasi dan pembatasan akses EWS khusus Admin/HR:
+     * - Admin dapat mengakses /admin/ews dan mengubah pengaturan cutoff.
+     * - PIC & Intern ditolak (403) saat mencoba mengakses /admin/ews maupun mengubah pengaturan cutoff.
+     * - Route /pic/ews sudah dihapus (404) dan menu sidebar EWS tidak muncul untuk PIC.
      */
     public function test_authorization_and_scoping_on_ews_routes(): void
     {
         $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
-        $pic1 = User::factory()->create(['role' => 'pic', 'name' => 'PIC Alfa', 'is_active' => true]);
-        $pic2 = User::factory()->create(['role' => 'pic', 'name' => 'PIC Bravo', 'is_active' => true]);
+        $pic = User::factory()->create(['role' => 'pic', 'name' => 'PIC Alfa', 'is_active' => true]);
         $intern = User::factory()->create(['role' => 'intern', 'is_active' => true]);
 
-        // 1. Intern mencoba akses
+        // 1. Admin dapat mengakses halaman EWS & melihat menu sidebar EWS
+        $adminResponse = $this->actingAs($admin)->get('/admin/ews');
+        $adminResponse->assertOk();
+        $adminResponse->assertSee('Early Warning (EWS)');
+
+        // 2. Intern ditolak (403) mengakses /admin/ews maupun mengubah pengaturan cutoff
         $this->actingAs($intern)->get('/admin/ews')->assertForbidden();
-        $this->actingAs($intern)->get('/pic/ews')->assertForbidden();
         $this->actingAs($intern)->put('/admin/ews/settings', [
             'attendance_cutoff_time' => '09:00',
             'logbook_cutoff_time' => '17:00',
         ])->assertForbidden();
 
-        // 2. PIC mencoba update settings
-        $this->actingAs($pic1)->put('/admin/ews/settings', [
+        // 3. PIC ditolak (403) mengakses /admin/ews maupun mengubah pengaturan cutoff
+        $this->actingAs($pic)->get('/admin/ews')->assertForbidden();
+        $this->actingAs($pic)->put('/admin/ews/settings', [
             'attendance_cutoff_time' => '09:00',
             'logbook_cutoff_time' => '17:00',
         ])->assertForbidden();
 
-        // 3. Cakupan PIC: PIC 1 hanya melihat bimbingannya, tidak melihat bimbingan PIC 2
-        $intern1 = User::factory()->create(['role' => 'intern', 'name' => 'Bimbingan Alfa', 'is_active' => true]);
-        $intern2 = User::factory()->create(['role' => 'intern', 'name' => 'Bimbingan Bravo', 'is_active' => true]);
+        // 4. Route /pic/ews sudah tidak ada (404) & menu sidebar EWS tidak tampil di dashboard PIC
+        $this->actingAs($pic)->get('/pic/ews')->assertNotFound();
+        $this->actingAs($intern)->get('/pic/ews')->assertNotFound();
 
-        PicAssignment::create([
-            'pic_user_id' => $pic1->id,
-            'intern_user_id' => $intern1->id,
-            'assigned_by' => $admin->id,
-            'start_date' => '2026-11-01',
-            'end_date' => null,
-        ]);
-
-        PicAssignment::create([
-            'pic_user_id' => $pic2->id,
-            'intern_user_id' => $intern2->id,
-            'assigned_by' => $admin->id,
-            'start_date' => '2026-11-01',
-            'end_date' => null,
-        ]);
-
-        // Tugas PIC 1 overdue
-        Task::create([
-            'pic_user_id' => $pic1->id,
-            'intern_user_id' => $intern1->id,
-            'title' => 'Tugas Milik PIC Alfa',
-            'description' => 'Khusus Alfa',
-            'assigned_at' => '2026-11-10 09:00:00',
-            'deadline_at' => '2026-11-15 17:00:00',
-            'status' => TaskStatus::InProgress,
-        ]);
-
-        // Tugas PIC 2 overdue
-        Task::create([
-            'pic_user_id' => $pic2->id,
-            'intern_user_id' => $intern2->id,
-            'title' => 'Tugas Rahasia PIC Bravo',
-            'description' => 'Khusus Bravo',
-            'assigned_at' => '2026-11-10 09:00:00',
-            'deadline_at' => '2026-11-15 17:00:00',
-            'status' => TaskStatus::InProgress,
-        ]);
-
-        Carbon::setTestNow(Carbon::parse('2026-11-18 10:00:00', 'Asia/Jakarta'));
-
-        $responsePic1 = $this->actingAs($pic1)->get('/pic/ews');
-        $responsePic1->assertOk();
-        $responsePic1->assertSee('Bimbingan Alfa');
-        $responsePic1->assertSee('Tugas Milik PIC Alfa');
-        $responsePic1->assertDontSee('Bimbingan Bravo');
-        $responsePic1->assertDontSee('Tugas Rahasia PIC Bravo');
+        $picDashboard = $this->actingAs($pic)->get('/pic/dashboard');
+        $picDashboard->assertOk();
+        $picDashboard->assertDontSee('Early Warning (EWS)');
     }
 }

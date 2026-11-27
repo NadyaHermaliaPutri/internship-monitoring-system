@@ -5,39 +5,40 @@
     <title>{{ $metadata['report_title'] ?? 'Laporan WANTRACE' }}</title>
     <style>
         @page {
-            margin: 25px 30px 42px 30px;
+            size: A4 portrait;
+            margin: 24px 28px 36px 28px;
         }
         body {
             font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-            font-size: 10px;
+            font-size: 8.5px;
             color: #1e293b;
-            line-height: 1.4;
+            line-height: 1.35;
             margin: 0;
             padding: 0;
         }
 
-        /* 1. KOP SURAT RESMI PERUSAHAAN */
+        /* 1. KOP SURAT RESMI PERUSAHAAN (BERBASIS TIPOGRAFI TANPA LOGO) */
         .kop-table {
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 0px;
         }
-        .kop-logo-cell {
-            width: 58px;
-            vertical-align: middle;
-            padding-right: 12px;
-        }
-        .kop-logo {
-            width: 50px;
-            height: auto;
-        }
         .kop-instansi-cell {
             vertical-align: middle;
             text-align: left;
         }
-        .kop-title {
-            font-size: 14px;
+        .kop-brand-badge {
+            display: inline-block;
+            font-size: 7.5px;
             font-weight: bold;
+            color: #0284c7;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            margin-bottom: 2px;
+        }
+        .kop-title {
+            font-size: 13.5px;
+            font-weight: 800;
             color: #015987;
             letter-spacing: 0.8px;
             text-transform: uppercase;
@@ -46,11 +47,11 @@
             padding: 0;
         }
         .kop-sub {
-            font-size: 9px;
-            font-weight: bold;
+            font-size: 8px;
+            font-weight: 600;
             color: #475569;
-            margin-top: 3px;
-            letter-spacing: 0.3px;
+            margin-top: 2px;
+            letter-spacing: 0.2px;
         }
         .kop-meta-cell {
             width: 200px;
@@ -62,7 +63,7 @@
             background-color: #e0f2fe;
             color: #0369a1;
             border: 1px solid #bae6fd;
-            font-size: 8px;
+            font-size: 7.5px;
             font-weight: bold;
             letter-spacing: 0.5px;
             padding: 3px 8px;
@@ -70,15 +71,15 @@
             text-transform: uppercase;
         }
         .kop-print-date {
-            font-size: 8px;
+            font-size: 7.5px;
             color: #64748b;
-            margin-top: 4px;
+            margin-top: 3px;
         }
         .kop-divider-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 10px;
-            margin-bottom: 14px;
+            margin-top: 8px;
+            margin-bottom: 12px;
         }
         .kop-divider-thick {
             height: 2px;
@@ -93,35 +94,35 @@
         /* 2. BLOK JUDUL DOKUMEN */
         .report-header-box {
             text-align: center;
-            margin-bottom: 14px;
+            margin-bottom: 12px;
         }
         .report-main-title {
-            font-size: 13px;
+            font-size: 12.5px;
             font-weight: bold;
             color: #0f172a;
             text-transform: uppercase;
-            letter-spacing: 0.6px;
+            letter-spacing: 0.5px;
             margin: 0;
         }
         .report-subtitle {
-            font-size: 9px;
+            font-size: 8px;
             color: #64748b;
-            margin-top: 3px;
+            margin-top: 2px;
         }
 
-        /* 3. BLOK METADATA LAPORAN (2 KOLOM RAPI) */
+        /* 3. BLOK METADATA LAPORAN */
         .meta-container {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 14px;
+            margin-bottom: 12px;
             background-color: #f8fafc;
             border: 1px solid #e2e8f0;
-            border-left: 4px solid #015987;
+            border-left: 3.5px solid #015987;
         }
         .meta-container td {
-            padding: 6px 10px;
+            padding: 5px 8px;
             vertical-align: middle;
-            font-size: 9px;
+            font-size: 8px;
         }
         .meta-label {
             font-weight: bold;
@@ -137,26 +138,26 @@
         .summary-boxes {
             width: 100%;
             border-collapse: separate;
-            border-spacing: 6px 0;
-            margin-bottom: 14px;
+            border-spacing: 5px 0;
+            margin-bottom: 12px;
         }
         .summary-card {
             background-color: #ffffff;
             border: 1px solid #cbd5e1;
-            border-top: 3px solid #015987;
-            padding: 6px 8px;
+            border-top: 2.5px solid #015987;
+            padding: 5px 6px;
             text-align: center;
             border-radius: 2px;
         }
         .summary-card-title {
-            font-size: 8px;
+            font-size: 7px;
             color: #475569;
             text-transform: uppercase;
             font-weight: bold;
-            letter-spacing: 0.3px;
+            letter-spacing: 0.2px;
         }
         .summary-card-val {
-            font-size: 13px;
+            font-size: 11.5px;
             font-weight: bold;
             color: #0f172a;
             margin-top: 2px;
@@ -166,7 +167,9 @@
         .data-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 8px;
+            margin-top: 6px;
+            table-layout: fixed;
+            word-wrap: break-word;
         }
         .data-table thead {
             display: table-header-group;
@@ -177,20 +180,23 @@
         .data-table th {
             background-color: #015987;
             color: #ffffff;
-            font-size: 9px;
+            font-size: 7.5px;
             font-weight: bold;
             text-align: left;
-            padding: 7px 8px;
+            padding: 5px 6px;
             border: 1px solid #014467;
             vertical-align: middle;
-            letter-spacing: 0.3px;
+            letter-spacing: 0.2px;
+            word-wrap: break-word;
         }
         .data-table td {
-            font-size: 9px;
-            padding: 6px 8px;
+            font-size: 7.5px;
+            padding: 4.5px 5px;
             border: 1px solid #cbd5e1;
             vertical-align: top;
             color: #1e293b;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
         }
         .data-table tr:nth-child(even) {
             background-color: #f8fafc;
@@ -199,13 +205,14 @@
         /* 6. BADGES STATUS */
         .badge {
             display: inline-block;
-            padding: 2px 5px;
-            font-size: 8px;
+            padding: 1.5px 4px;
+            font-size: 7px;
             font-weight: bold;
             border-radius: 2px;
             text-transform: uppercase;
             border: 1px solid transparent;
-            letter-spacing: 0.2px;
+            letter-spacing: 0.1px;
+            white-space: nowrap;
         }
         .badge-success { background-color: #dcfce7; color: #166534; border-color: #bbf7d0; }
         .badge-warning { background-color: #fef3c7; color: #92400e; border-color: #fde68a; }
@@ -216,13 +223,13 @@
         /* 7. FOOTER RESMI DOKUMEN */
         .footer-table {
             position: fixed;
-            bottom: -25px;
+            bottom: -22px;
             left: 0;
             right: 0;
             width: 100%;
             border-top: 1px solid #cbd5e1;
             padding-top: 4px;
-            font-size: 8px;
+            font-size: 7px;
             color: #64748b;
         }
         .footer-left {
@@ -241,28 +248,19 @@
 </head>
 <body>
     @php
-        $logoPath = public_path('images/wi-logo.png');
-        $logoBase64 = '';
-        if (file_exists($logoPath)) {
-            $logoBase64 = 'data:image/png;base64,' . base64_encode(file_get_contents($logoPath));
-        }
         $printDate = $metadata['generated_at'] ?? now();
     @endphp
 
-    <!-- 1. KOP SURAT RESMI PERUSAHAAN -->
+    <!-- 1. KOP SURAT RESMI PERUSAHAAN (TANPA LOGO GAMBAR) -->
     <table class="kop-table" cellpadding="0" cellspacing="0">
         <tr>
-            @if($logoBase64)
-                <td class="kop-logo-cell">
-                    <img src="{{ $logoBase64 }}" alt="Logo WAN" class="kop-logo">
-                </td>
-            @endif
             <td class="kop-instansi-cell">
+                <div class="kop-brand-badge">WANTRACE &bull; SISTEM MONITORING &amp; EVALUASI MAGANG</div>
                 <div class="kop-title">PT WAN TEKNOLOGI INTERNASIONAL</div>
-                <div class="kop-sub">WANTRACE &bull; Sistem Monitoring &amp; Evaluasi Kegiatan Magang</div>
+                <div class="kop-sub">Divisi Human Resources &bull; Pengawasan Teknis &amp; Rekapitulasi Historis Peserta</div>
             </td>
             <td class="kop-meta-cell">
-                <span class="badge-doc-internal">Dokumen Internal Perusahaan</span>
+                <span class="badge-doc-internal">DOKUMEN INTERNAL PERUSAHAAN</span>
                 <div class="kop-print-date">
                     Dicetak: {{ $printDate->translatedFormat('d F Y, H:i') }} WIB
                 </div>

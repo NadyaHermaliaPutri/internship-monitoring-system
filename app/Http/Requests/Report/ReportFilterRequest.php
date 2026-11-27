@@ -27,7 +27,7 @@ class ReportFilterRequest extends FormRequest
             'report_type' => [
                 'required',
                 'string',
-                Rule::in(['attendance', 'leave', 'logbook', 'task', 'monitoring']),
+                Rule::in(['attendance', 'leave', 'logbook', 'monitoring']),
             ],
             'intern_id' => [
                 'nullable',
@@ -53,7 +53,7 @@ class ReportFilterRequest extends FormRequest
     {
         return [
             'report_type.required' => 'Jenis laporan wajib dipilih.',
-            'report_type.in' => 'Jenis laporan tidak valid. Pilih salah satu: Presensi, Izin/Sakit, Logbook, Tugas, atau Monitoring.',
+            'report_type.in' => 'Jenis laporan tidak valid. Pilih salah satu: Presensi, Izin/Sakit, Logbook & Tugas, atau Monitoring.',
             'intern_id.exists' => 'Peserta magang yang dipilih tidak valid atau bukan peserta magang.',
             'start_date.required' => 'Tanggal awal periode wajib diisi.',
             'start_date.date' => 'Format tanggal awal tidak valid.',

@@ -13,7 +13,7 @@
                 <span class="text-[#015987] font-semibold">Laporan &amp; Rekapitulasi</span>
             </div>
             <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Laporan &amp; Rekapitulasi Evaluasi</h1>
-            <p class="text-xs text-slate-500 mt-1">Rekapitulasi data historis presensi, izin, logbook, tugas, dan monitoring komposit peserta magang.</p>
+            <p class="text-xs text-slate-500 mt-1">Rekapitulasi data historis presensi, izin, logbook &amp; tugas, dan monitoring komposit peserta magang.</p>
         </div>
 
         <!-- Tombol Aksi Ekspor -->
@@ -41,14 +41,13 @@
     <!-- 2. Form Filter Laporan -->
     <div class="bg-white rounded-2xl shadow-xs border border-slate-200/80 p-5">
         <form id="reportFilterForm" method="GET" action="{{ route('admin.reports.index') }}" class="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-4 items-end">
-            <!-- Jenis Laporan -->
+            <!-- Jenis Laporan (4 Jenis Resmi) -->
             <div class="space-y-1.5">
                 <label for="report_type" class="block text-xs font-bold text-slate-700">Jenis Laporan <span class="text-rose-500">*</span></label>
                 <select name="report_type" id="report_type" class="w-full text-xs rounded-xl border-slate-300 shadow-2xs focus:border-[#015987] focus:ring focus:ring-[#015987]/15">
                     <option value="attendance" {{ $reportType === 'attendance' ? 'selected' : '' }}>Rekap Presensi</option>
                     <option value="leave" {{ $reportType === 'leave' ? 'selected' : '' }}>Rekap Izin &amp; Sakit</option>
-                    <option value="logbook" {{ $reportType === 'logbook' ? 'selected' : '' }}>Rekap Logbook Manual</option>
-                    <option value="task" {{ $reportType === 'task' ? 'selected' : '' }}>Rekap Tugas Magang</option>
+                    <option value="logbook" {{ $reportType === 'logbook' ? 'selected' : '' }}>Rekap Logbook &amp; Tugas</option>
                     <option value="monitoring" {{ $reportType === 'monitoring' ? 'selected' : '' }}>Rekap Monitoring Peserta</option>
                 </select>
             </div>
@@ -126,9 +125,9 @@
                 <span class="text-[10px] text-slate-400">Dalam periode</span>
             </div>
             <div class="bg-white rounded-xl border border-slate-200/80 p-4">
-                <span class="text-[11px] font-bold text-emerald-700 uppercase">Hadir Sah</span>
+                <span class="text-[11px] font-bold text-emerald-700 uppercase">Total Hadir</span>
                 <p class="text-2xl font-extrabold text-emerald-600 mt-1">{{ $reportData['summary']['total_valid_presence'] ?? 0 }}</p>
-                <span class="text-[10px] text-slate-400">Non-rejected</span>
+                <span class="text-[10px] text-slate-400">Presensi valid</span>
             </div>
             <div class="bg-white rounded-xl border border-slate-200/80 p-4">
                 <span class="text-[11px] font-bold text-sky-700 uppercase">Tepat Waktu</span>
@@ -141,9 +140,9 @@
                 <span class="text-[10px] text-slate-400">&ge; 08:05 WIB</span>
             </div>
             <div class="bg-white rounded-xl border border-slate-200/80 p-4">
-                <span class="text-[11px] font-bold text-rose-700 uppercase">Ditolak HR</span>
-                <p class="text-2xl font-extrabold text-rose-600 mt-1">{{ $reportData['summary']['rejected_count'] ?? 0 }}</p>
-                <span class="text-[10px] text-slate-400">Presensi invalid</span>
+                <span class="text-[11px] font-bold text-rose-700 uppercase">Tidak Hadir</span>
+                <p class="text-2xl font-extrabold text-rose-600 mt-1">{{ $reportData['summary']['absent_count'] ?? 0 }}</p>
+                <span class="text-[10px] text-slate-400">Hari kerja tanpa presensi</span>
             </div>
         </div>
     @elseif($reportType === 'leave')
@@ -168,43 +167,20 @@
     @elseif($reportType === 'logbook')
         <div class="grid grid-cols-2 md:grid-cols-4 gap-3.5">
             <div class="bg-white rounded-xl border border-slate-200/80 p-4">
-                <span class="text-[11px] font-bold text-slate-500 uppercase">Total Logbook Manual</span>
-                <p class="text-2xl font-extrabold text-slate-800 mt-1">{{ $reportData['summary']['total_entries'] ?? 0 }}</p>
+                <span class="text-[11px] font-bold text-slate-500 uppercase">Total Aktivitas &amp; Tugas</span>
+                <p class="text-2xl font-extrabold text-slate-800 mt-1">{{ $reportData['summary']['total_items'] ?? 0 }}</p>
             </div>
             <div class="bg-white rounded-xl border border-slate-200/80 p-4">
-                <span class="text-[11px] font-bold text-emerald-700 uppercase">Disetujui</span>
-                <p class="text-2xl font-extrabold text-emerald-600 mt-1">{{ $reportData['summary']['approved_count'] ?? 0 }}</p>
+                <span class="text-[11px] font-bold text-sky-700 uppercase">Logbook Manual</span>
+                <p class="text-2xl font-extrabold text-sky-600 mt-1">{{ $reportData['summary']['manual_logbooks_count'] ?? 0 }}</p>
             </div>
             <div class="bg-white rounded-xl border border-slate-200/80 p-4">
-                <span class="text-[11px] font-bold text-amber-700 uppercase">Menunggu Review</span>
-                <p class="text-2xl font-extrabold text-amber-600 mt-1">{{ $reportData['summary']['pending_count'] ?? 0 }}</p>
+                <span class="text-[11px] font-bold text-indigo-700 uppercase">Tugas dari PIC</span>
+                <p class="text-2xl font-extrabold text-indigo-600 mt-1">{{ $reportData['summary']['tasks_count'] ?? 0 }}</p>
             </div>
             <div class="bg-white rounded-xl border border-slate-200/80 p-4">
-                <span class="text-[11px] font-bold text-rose-700 uppercase">Perlu Revisi</span>
-                <p class="text-2xl font-extrabold text-rose-600 mt-1">{{ $reportData['summary']['revision_requested_count'] ?? 0 }}</p>
-            </div>
-        </div>
-    @elseif($reportType === 'task')
-        <div class="grid grid-cols-2 md:grid-cols-5 gap-3.5">
-            <div class="bg-white rounded-xl border border-slate-200/80 p-4">
-                <span class="text-[11px] font-bold text-slate-500 uppercase">Total Tugas</span>
-                <p class="text-2xl font-extrabold text-slate-800 mt-1">{{ $reportData['summary']['total_tasks'] ?? 0 }}</p>
-            </div>
-            <div class="bg-white rounded-xl border border-slate-200/80 p-4">
-                <span class="text-[11px] font-bold text-emerald-700 uppercase">Selesai (Accepted)</span>
-                <p class="text-2xl font-extrabold text-emerald-600 mt-1">{{ $reportData['summary']['accepted_count'] ?? 0 }}</p>
-            </div>
-            <div class="bg-white rounded-xl border border-slate-200/80 p-4">
-                <span class="text-[11px] font-bold text-sky-700 uppercase">In Progress</span>
-                <p class="text-2xl font-extrabold text-sky-600 mt-1">{{ $reportData['summary']['in_progress_count'] ?? 0 }}</p>
-            </div>
-            <div class="bg-white rounded-xl border border-slate-200/80 p-4">
-                <span class="text-[11px] font-bold text-amber-700 uppercase">Submitted</span>
-                <p class="text-2xl font-extrabold text-amber-600 mt-1">{{ $reportData['summary']['submitted_count'] ?? 0 }}</p>
-            </div>
-            <div class="bg-white rounded-xl border border-slate-200/80 p-4">
-                <span class="text-[11px] font-bold text-rose-700 uppercase">Overdue</span>
-                <p class="text-2xl font-extrabold text-rose-600 mt-1">{{ $reportData['summary']['overdue_count'] ?? 0 }}</p>
+                <span class="text-[11px] font-bold text-emerald-700 uppercase">Tugas Selesai</span>
+                <p class="text-2xl font-extrabold text-emerald-600 mt-1">{{ $reportData['summary']['tasks_accepted_count'] ?? 0 }}</p>
             </div>
         </div>
     @elseif($reportType === 'monitoring')
@@ -240,46 +216,38 @@
                             <th class="py-3 px-4">Tanggal</th>
                             <th class="py-3 px-4">Peserta Magang</th>
                             <th class="py-3 px-4">Jam Masuk</th>
-                            <th class="py-3 px-4">Status Presensi</th>
-                            <th class="py-3 px-4">Verifikasi HR</th>
-                            <th class="py-3 px-4">Peninjau / Catatan</th>
+                            <th class="py-3 px-4">Status Kehadiran</th>
+                            <th class="py-3 px-4">Catatan / Reviewer</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
                         @forelse($reportData['attendances'] as $idx => $row)
                             <tr class="hover:bg-slate-50/50 transition">
                                 <td class="py-3 px-4 text-center text-slate-400 font-medium">{{ $idx + 1 }}</td>
-                                <td class="py-3 px-4 font-semibold text-slate-800">{{ $row->attendance_date?->translatedFormat('d M Y') }}</td>
-                                <td class="py-3 px-4 font-bold text-slate-900">{{ $row->intern?->name ?? 'Peserta #' . $row->intern_user_id }}</td>
-                                <td class="py-3 px-4 font-mono text-slate-600">{{ $row->checked_in_at?->format('H:i:s') ?? '-' }} WIB</td>
+                                <td class="py-3 px-4 font-semibold text-slate-800">{{ $row['date']->translatedFormat('d M Y') }}</td>
+                                <td class="py-3 px-4 font-bold text-slate-900">{{ $row['intern']->name }}</td>
+                                <td class="py-3 px-4 font-mono text-slate-600">{{ $row['time_in'] }}</td>
                                 <td class="py-3 px-4">
-                                    @if($row->isOnTime())
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">Tepat Waktu</span>
-                                    @elseif($row->isLate())
+                                    @if($row['status'] === 'Hadir')
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">Hadir</span>
+                                    @elseif($row['status'] === 'Terlambat')
                                         <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">Terlambat</span>
+                                    @elseif(in_array($row['status'], ['Izin', 'Sakit'], true))
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-sky-100 text-sky-800">{{ $row['status'] }}</span>
                                     @else
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-800">{{ $row->status }}</span>
-                                    @endif
-                                </td>
-                                <td class="py-3 px-4">
-                                    @if($row->verification_status === 'verified')
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">Terverifikasi</span>
-                                    @elseif($row->verification_status === 'rejected')
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800">Ditolak</span>
-                                    @else
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-sky-100 text-sky-800">Submitted</span>
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800">{{ $row['status'] }}</span>
                                     @endif
                                 </td>
                                 <td class="py-3 px-4 text-slate-500">
-                                    <div>{{ $row->notes ?: '-' }}</div>
-                                    @if($row->reviewer)
-                                        <div class="text-[10px] text-slate-400 mt-0.5">Oleh: {{ $row->reviewer->name }}</div>
+                                    <div>{{ $row['notes'] }}</div>
+                                    @if($row['reviewer_name'])
+                                        <div class="text-[10px] text-slate-400 mt-0.5">Oleh: {{ $row['reviewer_name'] }}</div>
                                     @endif
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" class="py-12 text-center text-slate-400">Tidak ada catatan presensi pada filter terpilih.</td>
+                                <td colspan="6" class="py-12 text-center text-slate-400">Tidak ada catatan hari kerja pada periode dan filter terpilih.</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -339,145 +307,68 @@
                     </tbody>
                 </table>
             @elseif($reportType === 'logbook')
+                <!-- Gabungan Rekap Logbook & Tugas -->
                 <table class="w-full text-left border-collapse text-xs">
                     <thead>
                         <tr class="bg-slate-50/75 border-b border-slate-200/80 text-[11px] font-bold text-slate-600">
                             <th class="py-3 px-4 text-center w-12">No</th>
                             <th class="py-3 px-4">Tanggal</th>
                             <th class="py-3 px-4">Nama Peserta</th>
+                            <th class="py-3 px-4">Jenis</th>
                             <th class="py-3 px-4">Aktivitas / Kegiatan</th>
                             <th class="py-3 px-4">Penanggung Jawab</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
-                        @forelse($reportData['logbooks'] as $idx => $row)
+                        @forelse($reportData['entries'] as $idx => $row)
                             <tr class="hover:bg-slate-50/50 transition">
                                 <td class="py-3 px-4 text-center text-slate-400 font-medium">{{ $idx + 1 }}</td>
-                                <td class="py-3 px-4 font-semibold text-slate-800">{{ $row->log_date?->translatedFormat('d M Y') }}</td>
+                                <td class="py-3 px-4 font-semibold text-slate-800">
+                                    {{ $row['date'] ? $row['date']->translatedFormat('d M Y') : '-' }}
+                                </td>
+                                <td class="py-3 px-4 font-bold text-slate-900">{{ $row['intern_name'] }}</td>
                                 <td class="py-3 px-4">
-                                    <div class="font-bold text-slate-900">{{ $row->intern?->name ?? 'Peserta #' . $row->intern_user_id }}</div>
+                                    @if($row['source_type'] === 'manual')
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-sky-100 text-sky-800">Manual</span>
+                                    @else
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-800">Tugas PIC</span>
+                                    @endif
                                 </td>
                                 <td class="py-3 px-4 max-w-sm">
-                                    <div class="font-bold text-slate-800">{{ $row->title }}</div>
-                                    <div class="text-slate-500 text-[11px] mt-0.5 line-clamp-2">{{ $row->activity_description }}</div>
+                                    <div class="font-bold text-slate-800">{{ $row['title'] }}</div>
+                                    @if($row['description'])
+                                        <div class="text-slate-500 text-[11px] mt-0.5 line-clamp-2">{{ $row['description'] }}</div>
+                                    @endif
+                                    @if($row['meta_info'])
+                                        <div class="text-[10px] text-slate-400 mt-1 font-medium">{{ $row['meta_info'] }}</div>
+                                    @endif
                                 </td>
-                                <td class="py-3 px-4 text-slate-700 font-medium">
-                                    {{ $row->pic_in_charge ?? ($row->reviewer?->name ?? '-') }}
+                                <td class="py-3 px-4 text-slate-700 font-semibold">
+                                    {{ $row['pic_in_charge'] }}
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="5" class="py-12 text-center text-slate-400">Tidak ada logbook manual pada filter terpilih.</td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            @elseif($reportType === 'task')
-                <table class="w-full text-left border-collapse text-xs">
-                    <thead>
-                        <tr class="bg-slate-50/75 border-b border-slate-200/80 text-[11px] font-bold text-slate-600">
-                            <th class="py-3 px-4 text-center w-12">No</th>
-                            <th class="py-3 px-4">Judul Tugas</th>
-                            <th class="py-3 px-4">Peserta Penerima</th>
-                            <th class="py-3 px-4">PIC Pemberi</th>
-                            <th class="py-3 px-4">Penugasan &amp; Deadline</th>
-                            <th class="py-3 px-4">Pengumpulan &amp; Review</th>
-                            <th class="py-3 px-4">Status Terkini</th>
-                            <th class="py-3 px-4">Penyelesaian</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-slate-100">
-                        @forelse($reportData['tasks'] as $idx => $row)
-                            @php 
-                                $isOverdue = $row->isOverdue(); 
-                                $latestSub = $row->latestSubmission;
-                                $latestRev = $latestSub?->latestReview;
-                            @endphp
-                            <tr class="hover:bg-slate-50/50 transition">
-                                <td class="py-3 px-4 text-center text-slate-400 font-medium">{{ $idx + 1 }}</td>
-                                <td class="py-3 px-4 max-w-xs">
-                                    <div class="font-bold text-slate-900">{{ $row->title }}</div>
-                                    @if($row->description)
-                                        <div class="text-slate-400 text-[11px] line-clamp-1 mt-0.5">{{ $row->description }}</div>
-                                    @endif
-                                </td>
-                                <td class="py-3 px-4 font-semibold text-slate-800">{{ $row->intern?->name ?? 'Peserta #' . $row->intern_user_id }}</td>
-                                <td class="py-3 px-4 text-slate-600">{{ $row->pic?->name ?? 'PIC #' . $row->pic_user_id }}</td>
-                                <td class="py-3 px-4">
-                                    <div class="text-slate-500 text-[11px]">Diberikan: {{ $row->assigned_at?->translatedFormat('d M Y') ?? '-' }}</div>
-                                    <div class="font-semibold {{ $isOverdue ? 'text-rose-600 font-bold' : 'text-slate-700' }}">
-                                        Deadline: {{ $row->deadline_at?->translatedFormat('d M Y, H:i') ?? '-' }}
-                                    </div>
-                                </td>
-                                <td class="py-3 px-4">
-                                    @if($row->submissions_count > 0 && $latestSub)
-                                        <div class="font-medium text-slate-700">
-                                            Versi ke-{{ $latestSub->submission_number }} (Total {{ $row->submissions_count }}x)
-                                        </div>
-                                        <div class="text-[10px] text-slate-400">{{ $latestSub->submitted_at?->translatedFormat('d/m/Y H:i') }}</div>
-                                        @if($latestRev)
-                                            <div class="text-[10px] mt-0.5 font-semibold {{ $latestRev->decision?->value === 'approved' ? 'text-emerald-600' : 'text-amber-600' }}">
-                                                Review: {{ $latestRev->decision?->label() ?? $latestRev->decision?->value }}
-                                            </div>
-                                        @endif
-                                    @else
-                                        <span class="text-slate-400 text-[11px]">Belum dikumpulkan</span>
-                                    @endif
-                                </td>
-                                <td class="py-3 px-4">
-                                    <div class="flex flex-col gap-1 items-start">
-                                        @if($row->status?->value === 'accepted')
-                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">Accepted</span>
-                                        @elseif($row->status?->value === 'in_progress')
-                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-sky-100 text-sky-800">In Progress</span>
-                                        @elseif($row->status?->value === 'submitted')
-                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">Submitted</span>
-                                        @else
-                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-800">{{ $row->status?->value }}</span>
-                                        @endif
-
-                                        @if($isOverdue)
-                                            <span class="inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-extrabold bg-rose-600 text-white animate-pulse">OVERDUE</span>
-                                        @endif
-                                    </div>
-                                </td>
-                                <td class="py-3 px-4 text-slate-500">
-                                    @if($row->accepted_at)
-                                        <div class="font-medium text-emerald-700">{{ $row->accepted_at->translatedFormat('d M Y, H:i') }}</div>
-                                        @if($row->acceptedByUser)
-                                            <div class="text-[10px] text-slate-400">Oleh: {{ $row->acceptedByUser->name }}</div>
-                                        @endif
-                                    @else
-                                        <span class="text-slate-300">-</span>
-                                    @endif
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="7" class="py-12 text-center text-slate-400">Tidak ada catatan tugas pada filter terpilih.</td>
+                                <td colspan="6" class="py-12 text-center text-slate-400">Tidak ada catatan logbook atau tugas pada filter terpilih.</td>
                             </tr>
                         @endforelse
                     </tbody>
                 </table>
             @elseif($reportType === 'monitoring')
+                <!-- Rekap Monitoring Peserta -->
                 <table class="w-full text-left border-collapse text-xs">
                     <thead>
                         <tr class="bg-slate-50/75 border-b border-slate-200/80 text-[11px] font-bold text-slate-600">
                             <th class="py-3 px-4 text-center w-12" rowspan="2">No</th>
                             <th class="py-3 px-4" rowspan="2">Nama Peserta Magang</th>
-                            <th class="py-3 px-4 text-center" rowspan="2">Status Akun</th>
-                            <th class="py-2 px-3 text-center border-l border-r border-slate-200" colspan="4">Presensi ({{ $reportData['metadata']['working_days_count'] ?? 0 }} Hari Kerja)</th>
-                            <th class="py-3 px-4 text-center" rowspan="2">Izin/Sakit (Hari)</th>
-                            <th class="py-2 px-3 text-center border-l border-r border-slate-200" colspan="2">Logbook Manual</th>
-                            <th class="py-2 px-3 text-center border-l border-slate-200" colspan="3">Tugas Magang</th>
+                            <th class="py-2 px-3 text-center border-l border-r border-slate-200" colspan="3">Presensi ({{ $reportData['metadata']['working_days_count'] ?? 0 }} Hari Kerja)</th>
+                            <th class="py-3 px-4 text-center border-r border-slate-200" rowspan="2">Logbook Manual</th>
+                            <th class="py-2 px-3 text-center" colspan="3">Tugas Magang</th>
                         </tr>
                         <tr class="bg-slate-100/60 border-b border-slate-200/80 text-[10px] font-bold text-slate-500">
-                            <th class="py-2 px-3 text-center text-emerald-700 border-l border-slate-200">Hadir Sah</th>
-                            <th class="py-2 px-3 text-center text-sky-700">Tepat</th>
-                            <th class="py-2 px-3 text-center text-amber-700">Telat</th>
-                            <th class="py-2 px-3 text-center text-rose-700 border-r border-slate-200">Ditolak</th>
-                            <th class="py-2 px-3 text-center border-l border-slate-200">Total</th>
-                            <th class="py-2 px-3 text-center text-emerald-700 border-r border-slate-200">Approved</th>
+                            <th class="py-2 px-3 text-center text-emerald-700 border-l border-slate-200">Hadir</th>
+                            <th class="py-2 px-3 text-center text-sky-700">Izin (Hari)</th>
+                            <th class="py-2 px-3 text-center text-amber-700 border-r border-slate-200">Sakit (Hari)</th>
                             <th class="py-2 px-3 text-center border-l border-slate-200">Total</th>
                             <th class="py-2 px-3 text-center text-emerald-700">Selesai</th>
                             <th class="py-2 px-3 text-center text-rose-700">Overdue</th>
@@ -488,20 +379,10 @@
                             <tr class="hover:bg-slate-50/50 transition">
                                 <td class="py-3 px-4 text-center text-slate-400 font-medium">{{ $idx + 1 }}</td>
                                 <td class="py-3 px-4 font-bold text-slate-900">{{ $row['intern']->name }}</td>
-                                <td class="py-3 px-4 text-center">
-                                    @if($row['is_active'])
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">Aktif</span>
-                                    @else
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600">Nonaktif</span>
-                                    @endif
-                                </td>
                                 <td class="py-3 px-3 text-center font-bold text-emerald-700 border-l border-slate-100">{{ $row['valid_presence_count'] }}</td>
-                                <td class="py-3 px-3 text-center text-sky-700 font-medium">{{ $row['on_time_count'] }}</td>
-                                <td class="py-3 px-3 text-center text-amber-700 font-medium">{{ $row['late_count'] }}</td>
-                                <td class="py-3 px-3 text-center text-rose-700 font-medium border-r border-slate-100">{{ $row['rejected_count'] }}</td>
-                                <td class="py-3 px-4 text-center text-slate-700 font-medium">{{ $row['approved_leave_days'] }}</td>
-                                <td class="py-3 px-3 text-center text-slate-700 font-medium border-l border-slate-100">{{ $row['logbooks_total'] }}</td>
-                                <td class="py-3 px-3 text-center text-emerald-700 font-bold border-r border-slate-100">{{ $row['logbooks_approved'] }}</td>
+                                <td class="py-3 px-3 text-center text-sky-700 font-medium">{{ $row['approved_leave_days'] }}</td>
+                                <td class="py-3 px-3 text-center text-amber-700 font-medium border-r border-slate-100">{{ $row['approved_sick_days'] }}</td>
+                                <td class="py-3 px-4 text-center font-bold text-slate-800 border-r border-slate-100">{{ $row['logbooks_total'] }}</td>
                                 <td class="py-3 px-3 text-center text-slate-700 font-medium border-l border-slate-100">{{ $row['tasks_total'] }}</td>
                                 <td class="py-3 px-3 text-center text-emerald-700 font-bold">{{ $row['tasks_accepted'] }}</td>
                                 <td class="py-3 px-3 text-center {{ $row['tasks_overdue'] > 0 ? 'text-rose-600 font-bold' : 'text-slate-400' }}">
@@ -510,7 +391,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="13" class="py-12 text-center text-slate-400">Tidak ada peserta magang yang ditemukan.</td>
+                                <td colspan="9" class="py-12 text-center text-slate-400">Tidak ada peserta magang yang ditemukan.</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -525,7 +406,6 @@ function submitReportExport(targetUrl, openInNewTab) {
     const form = document.getElementById('reportFilterForm');
     if (!form) return;
 
-    // Ambil nilai filter yang sedang aktif diinputkan user pada form
     const formData = new FormData(form);
     const params = new URLSearchParams();
 

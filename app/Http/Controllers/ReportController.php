@@ -36,7 +36,7 @@ class ReportController extends Controller
         $endDate = $request->query('end_date', $now->copy()->endOfMonth()->format('Y-m-d'));
 
         // Validasi format tanggal & tipe dasar jika ada query string yang dikirim
-        if ($request->has('report_type') && ! in_array($reportType, ['attendance', 'leave', 'logbook', 'task', 'monitoring'], true)) {
+        if ($request->has('report_type') && ! in_array($reportType, ['attendance', 'leave', 'logbook', 'monitoring'], true)) {
             $reportType = 'attendance';
         }
 
@@ -81,13 +81,11 @@ class ReportController extends Controller
             internId: $internId
         );
 
-        $orientation = in_array($reportType, ['attendance', 'monitoring', 'task'], true) ? 'landscape' : 'portrait';
-
         $pdf = Pdf::loadView('admin.reports.pdf.' . $reportType, [
             'data' => $reportData,
             'metadata' => $reportData['metadata'] ?? [],
             'summary' => $reportData['summary'] ?? [],
-        ])->setPaper('a4', $orientation);
+        ])->setPaper('a4', 'portrait');
 
         $filename = "laporan_{$reportType}_{$startDate}_sd_{$endDate}.pdf";
 
