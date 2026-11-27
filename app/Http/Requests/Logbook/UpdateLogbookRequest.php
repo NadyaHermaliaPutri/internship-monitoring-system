@@ -60,6 +60,13 @@ class UpdateLogbookRequest extends FormRequest
                 'integer',
                 Rule::exists('tasks', 'id')->where('intern_user_id', $internId),
             ],
+            'target_pic_user_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('users', 'id')->where(function ($query) {
+                    $query->where('role', 'pic')->where('is_active', true);
+                }),
+            ],
             'title' => ['required', 'string', 'max:150'],
             'activity_description' => ['nullable', 'string', 'max:5000'],
             'activity_status' => ['nullable', 'string', Rule::in(LogbookActivityStatus::values())],

@@ -36,10 +36,13 @@ class LogbookTest extends TestCase
 
     public function test_intern_can_create_multiple_manual_logbooks_on_the_same_day(): void
     {
+        $pic = User::factory()->create(['role' => 'pic', 'is_active' => true]);
         $intern = User::factory()->create(['role' => 'intern', 'is_active' => true]);
 
+        // 1. Logbook dengan PIC tujuan -> dimulai sebagai Sedang Dikerjakan & status null (belum masuk antrian review PIC)
         $response1 = $this->actingAs($intern)->post(route('intern.logbooks.store'), [
             'log_date' => '2026-11-18',
+            'target_pic_user_id' => $pic->id,
             'title' => 'Slicing Halaman Logbook',
             'activity_description' => 'Membuat komponen form dan tabel riwayat logbook responsif.',
             'result' => 'Halaman blade selesai dibuat.',
@@ -47,8 +50,10 @@ class LogbookTest extends TestCase
 
         $response1->assertRedirect(route('intern.logbooks.index'));
 
+        // 2. Logbook Mandiri / Umum (tanpa PIC) -> dimulai sebagai Sedang Dikerjakan & status null
         $response2 = $this->actingAs($intern)->post(route('intern.logbooks.store'), [
             'log_date' => '2026-11-18',
+            'target_pic_user_id' => '',
             'title' => 'Integrasi Validasi Form Request',
             'activity_description' => 'Menambahkan validasi batas tanggal mundur 7 hari pada form request.',
             'result' => 'Validasi lulus unit test.',
@@ -59,10 +64,23 @@ class LogbookTest extends TestCase
         $this->assertDatabaseCount('logbooks', 2);
         $this->assertDatabaseHas('logbooks', [
             'intern_user_id' => $intern->id,
+            'target_pic_user_id' => $pic->id,
             'title' => 'Slicing Halaman Logbook',
             'source' => LogbookSource::Manual->value,
-            'status' => LogbookStatus::Pending->value,
+            'activity_status' => LogbookActivityStatus::SedangDikerjakan->value,
+            'status' => null,
         ]);
+        $this->assertDatabaseHas('logbooks', [
+            'intern_user_id' => $intern->id,
+            'target_pic_user_id' => null,
+            'title' => 'Integrasi Validasi Form Request',
+            'source' => LogbookSource::Manual->value,
+            'activity_status' => LogbookActivityStatus::SedangDikerjakan->value,
+            'status' => null,
+        ]);
+
+        // EWS harian tetap menghitung KEDUA logbook manual (baik yang memilih PIC maupun Mandiri)
+        $this->assertSame(2, Logbook::query()->forEwsFulfillment($intern->id, '2026-11-18')->count());
     }
 
     public function test_intern_cannot_create_logbook_for_future_date_or_older_than_max_backdate_days(): void
@@ -134,6 +152,7 @@ class LogbookTest extends TestCase
 
         $logbook = Logbook::factory()->revisionRequested($pic, 'Tolong perjelas metrik pengujian.')->create([
             'intern_user_id' => $intern->id,
+            'target_pic_user_id' => $pic->id,
             'log_date' => '2026-11-17',
             'title' => 'Judul Awal',
             'activity_description' => 'Deskripsi awal sebelum direvisi peserta.',
@@ -201,55 +220,56 @@ class LogbookTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_pic_can_only_view_logbooks_within_assigned_period_and_admin_can_view_all(): void
+    public function test_pic_can_only_view_logbooks_targeted_to_them_and_admin_can_view_all_including_mandiri(): void
     {
         $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
         $picA = User::factory()->create(['role' => 'pic', 'is_active' => true]);
         $picB = User::factory()->create(['role' => 'pic', 'is_active' => true]);
         $intern = User::factory()->create(['role' => 'intern', 'is_active' => true]);
 
-        // PIC A ditugaskan ke intern untuk periode 2026-11-01 s/d 2026-11-15
-        DB::table('pic_assignments')->insert([
+        $logbookForPicA = Logbook::factory()->create([
             'intern_user_id' => $intern->id,
-            'pic_user_id' => $picA->id,
-            'start_date' => '2026-11-01',
-            'end_date' => '2026-11-15',
-            'assigned_by' => $admin->id,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        $logbookInPeriod = Logbook::factory()->create([
-            'intern_user_id' => $intern->id,
+            'target_pic_user_id' => $picA->id,
             'log_date' => '2026-11-12',
+            'status' => LogbookStatus::Pending,
         ]);
 
-        $logbookOutsidePeriod = Logbook::factory()->create([
+        $mandiriLogbook = Logbook::factory()->create([
             'intern_user_id' => $intern->id,
+            'target_pic_user_id' => null,
             'log_date' => '2026-11-18',
+            'status' => null,
         ]);
 
-        // PIC A bisa lihat logbook tanggal 12 Nov, tapi ditolak untuk 18 Nov
+        // PIC A bisa melihat logbook yang ditujukan ke PIC A, tapi ditolak untuk logbook Mandiri (tanpa PIC)
         $this->actingAs($picA)
-            ->get(route('pic.logbooks.show', $logbookInPeriod))
+            ->get(route('pic.logbooks.show', $logbookForPicA))
             ->assertOk();
 
         $this->actingAs($picA)
-            ->get(route('pic.logbooks.show', $logbookOutsidePeriod))
+            ->get(route('pic.logbooks.show', $mandiriLogbook))
             ->assertForbidden();
 
-        // PIC B (tidak pernah ditugaskan) ditolak keduanya
+        // PIC B ditolak keduanya
         $this->actingAs($picB)
-            ->get(route('pic.logbooks.show', $logbookInPeriod))
+            ->get(route('pic.logbooks.show', $logbookForPicA))
             ->assertForbidden();
 
-        // Admin bisa melihat keduanya
-        $this->actingAs($admin)
-            ->get(route('admin.logbooks.show', $logbookInPeriod))
+        $this->actingAs($picB)
+            ->get(route('pic.logbooks.show', $mandiriLogbook))
+            ->assertForbidden();
+
+        // Peserta pemilik & Admin bisa melihat keduanya (termasuk Mandiri)
+        $this->actingAs($intern)
+            ->get(route('intern.logbooks.show', $mandiriLogbook))
             ->assertOk();
 
         $this->actingAs($admin)
-            ->get(route('admin.logbooks.show', $logbookOutsidePeriod))
+            ->get(route('admin.logbooks.show', $logbookForPicA))
+            ->assertOk();
+
+        $this->actingAs($admin)
+            ->get(route('admin.logbooks.show', $mandiriLogbook))
             ->assertOk();
     }
 
@@ -520,6 +540,7 @@ class LogbookTest extends TestCase
         $this->actingAs($ownerIntern)
             ->post(route('intern.logbooks.store'), [
                 'log_date' => '2026-11-18',
+                'target_pic_user_id' => $authorizedPic->id,
                 'title' => 'Bukti privat peserta',
                 'evidence_file' => UploadedFile::fake()->image('privat.png', 400, 300),
             ])
@@ -566,7 +587,7 @@ class LogbookTest extends TestCase
 
             $response = $this->actingAs($intern)->get(route('intern.logbooks.index'));
             $response->assertOk();
-            $response->assertSee('Otomatis Penugasan PIC');
+            $response->assertSee('Otomatis Tugas');
             $response->assertSee($status->label());
         }
 
@@ -578,6 +599,7 @@ class LogbookTest extends TestCase
 
     public function test_manual_logbook_activity_status_dropdown_and_automatic_baru_dikasih_on_task_assignment(): void
     {
+        $pic = User::factory()->create(['role' => 'pic', 'is_active' => true]);
         $intern = User::factory()->create(['role' => 'intern', 'is_active' => true]);
         $task = Task::factory()->create(['intern_user_id' => $intern->id]);
 
@@ -596,6 +618,7 @@ class LogbookTest extends TestCase
         $this->actingAs($intern)
             ->post(route('intern.logbooks.store'), [
                 'log_date' => '2026-11-18',
+                'target_pic_user_id' => $pic->id,
                 'title' => 'Integrasi dropdown status',
                 'result' => 'Progres 50%',
                 'activity_status' => LogbookActivityStatus::SedangDikerjakan->value,
@@ -604,18 +627,21 @@ class LogbookTest extends TestCase
 
         $logbook = Logbook::query()->where('title', 'Integrasi dropdown status')->firstOrFail();
         $this->assertSame(LogbookActivityStatus::SedangDikerjakan, $logbook->activity_status);
-        $this->assertSame(LogbookStatus::Pending, $logbook->status);
+        $this->assertNull($logbook->status);
 
         $this->actingAs($intern)
             ->put(route('intern.logbooks.update', $logbook), [
                 'log_date' => '2026-11-18',
+                'target_pic_user_id' => $pic->id,
                 'title' => 'Integrasi dropdown status',
                 'result' => 'Progres 100%',
                 'activity_status' => LogbookActivityStatus::Selesai->value,
             ])
             ->assertRedirect(route('intern.logbooks.show', $logbook));
 
-        $this->assertSame(LogbookActivityStatus::Selesai, $logbook->fresh()->activity_status);
+        $logbook->refresh();
+        $this->assertSame(LogbookActivityStatus::Selesai, $logbook->activity_status);
+        $this->assertSame(LogbookStatus::Pending, $logbook->status);
         $this->assertDatabaseHas('logbook_revisions', [
             'logbook_id' => $logbook->id,
             'revision_no' => 1,
@@ -756,53 +782,95 @@ class LogbookTest extends TestCase
         $clampedPage2->assertDontSee('Belum ada catatan logbook');
     }
 
-    public function test_intern_can_mark_own_in_progress_manual_logbook_as_completed_without_altering_review_status(): void
+    public function test_completing_manual_logbook_transitions_pic_targeted_to_pending_and_keeps_mandiri_null(): void
     {
         $intern = User::factory()->create(['role' => 'intern', 'is_active' => true]);
         $otherIntern = User::factory()->create(['role' => 'intern', 'is_active' => true]);
         $pic = User::factory()->create(['role' => 'pic', 'is_active' => true]);
 
-        $manualInProgress = Logbook::factory()->create([
+        $picTargetedInProgress = Logbook::factory()->create([
             'intern_user_id' => $intern->id,
+            'target_pic_user_id' => $pic->id,
             'log_date' => '2026-11-18',
-            'title' => 'Integrasi halaman dashboard',
-            'status' => LogbookStatus::Pending,
+            'title' => 'Integrasi halaman dashboard PIC',
+            'status' => null,
+            'activity_status' => LogbookActivityStatus::SedangDikerjakan,
+        ]);
+
+        $mandiriInProgress = Logbook::factory()->create([
+            'intern_user_id' => $intern->id,
+            'target_pic_user_id' => null,
+            'log_date' => '2026-11-18',
+            'title' => 'Belajar dokumentasi Laravel Mandiri',
+            'status' => null,
             'activity_status' => LogbookActivityStatus::SedangDikerjakan,
         ]);
 
         $approvedLogbook = Logbook::factory()->approved()->create([
             'intern_user_id' => $intern->id,
+            'target_pic_user_id' => $pic->id,
             'log_date' => '2026-11-18',
-            'activity_status' => LogbookActivityStatus::SedangDikerjakan,
+            'activity_status' => LogbookActivityStatus::Selesai,
         ]);
 
         $task = Task::factory()->create(['pic_user_id' => $pic->id, 'intern_user_id' => $intern->id]);
         $autoLogbook = Logbook::factory()->fromTaskAssignment($task->id, 'Penugasan PIC: API')->create([
             'intern_user_id' => $intern->id,
             'log_date' => '2026-11-18',
-            'activity_status' => LogbookActivityStatus::SedangDikerjakan,
+            'activity_status' => LogbookActivityStatus::BaruDikasih,
         ]);
 
         // 1. Peserta lain & PIC ditolak (403)
-        $this->actingAs($otherIntern)->patch(route('intern.logbooks.complete', $manualInProgress))->assertForbidden();
-        $this->actingAs($pic)->patch(route('intern.logbooks.complete', $manualInProgress))->assertForbidden();
+        $this->actingAs($otherIntern)->patch(route('intern.logbooks.complete', $picTargetedInProgress))->assertForbidden();
+        $this->actingAs($pic)->patch(route('intern.logbooks.complete', $picTargetedInProgress))->assertForbidden();
 
         // 2. Logbook approved & logbook task_assignment ditolak (403)
         $this->actingAs($intern)->patch(route('intern.logbooks.complete', $approvedLogbook))->assertForbidden();
         $this->actingAs($intern)->patch(route('intern.logbooks.complete', $autoLogbook))->assertForbidden();
 
-        // 3. Peserta pemilik berhasil menandai Selesai -> hanya activity_status berubah ke Selesai, status review tetap Pending
+        // 3. Klik Selesai pada logbook bertarget PIC -> activity_status Selesai & status Pending (Menunggu Review)
         $this->actingAs($intern)
             ->from(route('intern.logbooks.index'))
-            ->patch(route('intern.logbooks.complete', $manualInProgress))
+            ->patch(route('intern.logbooks.complete', $picTargetedInProgress))
             ->assertRedirect(route('intern.logbooks.index'))
             ->assertSessionHas('success_title', 'Kegiatan Selesai');
 
-        $manualInProgress->refresh();
-        $this->assertSame(LogbookActivityStatus::Selesai, $manualInProgress->activity_status);
-        $this->assertSame(LogbookStatus::Pending, $manualInProgress->status);
+        $picTargetedInProgress->refresh();
+        $this->assertSame(LogbookActivityStatus::Selesai, $picTargetedInProgress->activity_status);
+        $this->assertSame(LogbookStatus::Pending, $picTargetedInProgress->status);
+        $this->assertSame('Menunggu Review', $picTargetedInProgress->displayStatusBadge()['label']);
 
-        // 4. Tidak bisa ditandai Selesai dua kali (403)
-        $this->actingAs($intern)->patch(route('intern.logbooks.complete', $manualInProgress))->assertForbidden();
+        // 4. Klik Selesai pada logbook Mandiri -> activity_status Selesai & status tetap null (tidak pernah Menunggu Review)
+        $this->actingAs($intern)
+            ->from(route('intern.logbooks.index'))
+            ->patch(route('intern.logbooks.complete', $mandiriInProgress))
+            ->assertRedirect(route('intern.logbooks.index'));
+
+        $mandiriInProgress->refresh();
+        $this->assertSame(LogbookActivityStatus::Selesai, $mandiriInProgress->activity_status);
+        $this->assertNull($mandiriInProgress->status);
+        $this->assertSame('Selesai', $mandiriInProgress->displayStatusBadge()['label']);
+
+        // 5. Mengubah target PIC pada logbook Selesai: Mandiri -> PIC menjadi Pending, PIC -> Mandiri menjadi null
+        $this->actingAs($intern)->put(route('intern.logbooks.update', $mandiriInProgress), [
+            'log_date' => '2026-11-18',
+            'target_pic_user_id' => $pic->id,
+            'title' => 'Belajar dokumentasi Laravel Mandiri',
+            'result' => 'Ringkasan selesai dan diajukan ke PIC.',
+        ])->assertRedirect(route('intern.logbooks.show', $mandiriInProgress));
+
+        $this->assertSame(LogbookStatus::Pending, $mandiriInProgress->fresh()->status);
+
+        $this->actingAs($intern)->put(route('intern.logbooks.update', $mandiriInProgress), [
+            'log_date' => '2026-11-18',
+            'target_pic_user_id' => '',
+            'title' => 'Belajar dokumentasi Laravel Mandiri',
+            'result' => 'Dikembalikan menjadi catatan mandiri.',
+        ])->assertRedirect(route('intern.logbooks.show', $mandiriInProgress));
+
+        $this->assertNull($mandiriInProgress->fresh()->status);
+
+        // 6. Tidak bisa ditandai Selesai dua kali (403)
+        $this->actingAs($intern)->patch(route('intern.logbooks.complete', $picTargetedInProgress))->assertForbidden();
     }
 }

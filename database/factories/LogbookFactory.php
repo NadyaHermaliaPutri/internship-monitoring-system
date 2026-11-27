@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\LogbookActivityStatus;
 use App\Enums\LogbookSource;
 use App\Enums\LogbookStatus;
 use App\Models\Logbook;
@@ -25,6 +26,7 @@ class LogbookFactory extends Factory
             'title' => fake()->sentence(4),
             'activity_description' => fake()->paragraph(3),
             'result' => fake()->sentence(8),
+            'activity_status' => LogbookActivityStatus::Selesai,
             'source' => LogbookSource::Manual,
             'task_id' => null,
             'status' => LogbookStatus::Pending,
@@ -60,6 +62,7 @@ class LogbookFactory extends Factory
             'title' => $title ?? 'Penugasan: '.fake()->sentence(3),
             'activity_description' => 'Catatan otomatis sistem saat PIC memberikan tugas kepada peserta.',
             'result' => null,
+            'activity_status' => LogbookActivityStatus::BaruDikasih,
             'source' => LogbookSource::TaskAssignment,
             'task_id' => $taskId ?? Task::factory()->create([
                 'intern_user_id' => $attributes['intern_user_id'],

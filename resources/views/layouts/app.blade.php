@@ -4,7 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="theme-color" content="#015987">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="WANTRACE">
     <title>@yield('title', 'Dashboard') - WANTRACE | PT WAN Teknologi Internasional</title>
+
+    <!-- PWA Manifest & Icons -->
+    <link rel="manifest" href="{{ asset('manifest.webmanifest') }}">
+    <link rel="apple-touch-icon" href="{{ asset('icons/icon-192x192.png') }}">
 
     <!-- Google Fonts: Plus Jakarta Sans & Quando -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -63,29 +72,38 @@
 </head>
 <body class="bg-[#eef4f8] text-slate-800 antialiased min-h-screen flex overflow-x-hidden">
 
+    <!-- Backdrop Sidebar Mobile -->
+    <div id="mobile-sidebar-backdrop" class="fixed inset-0 bg-slate-900/50 z-30 hidden lg:hidden" aria-hidden="true"></div>
+
     <!-- ============================================================== -->
-    <!-- SIDEBAR KIRI (NEMPEL FULL SCREEN DI KIRI - WARNA BIRU #015987) -->
+    <!-- SIDEBAR KIRI (RESPONSIF DRAWER DI MOBILE, STICKY DI DESKTOP) -->
     <!-- ============================================================== -->
-    <aside class="w-64 bg-[#015987] text-white flex flex-col flex-shrink-0 justify-between py-6 sticky top-0 h-screen z-30">
+    <aside id="app-sidebar" class="fixed inset-y-0 left-0 w-64 bg-[#015987] text-white flex flex-col flex-shrink-0 justify-between py-6 h-screen z-40 transform -translate-x-full transition-transform duration-200 ease-in-out lg:sticky lg:top-0 lg:translate-x-0 lg:z-30 overflow-y-auto">
         
         <div>
             <!-- 1. Header Logo WANTRACE -->
-            <div class="flex items-center gap-3 px-6 pt-2 pb-6 border-b border-white/10">
-                <img src="{{ asset('images/wi-logo.png') }}" alt="Logo WANTRACE" class="w-9 h-auto object-contain drop-shadow">
-                <div>
-                    <span class="font-quando text-lg font-bold tracking-wider text-white uppercase block leading-none">WANTRACE</span>
-                    <span class="font-quando text-[10px] text-sky-200 tracking-wide block mt-1">Internship System</span>
+            <div class="flex items-center justify-between gap-3 px-6 pt-2 pb-6 border-b border-white/10">
+                <div class="flex items-center gap-3">
+                    <img src="{{ asset('images/wi-logo.png') }}" alt="Logo WANTRACE" class="w-9 h-auto object-contain drop-shadow">
+                    <div>
+                        <span class="font-quando text-lg font-bold tracking-wider text-white uppercase block leading-none">WANTRACE</span>
+                        <span class="font-quando text-[10px] text-sky-200 tracking-wide block mt-1">Internship System</span>
+                    </div>
                 </div>
+                <button type="button" id="mobile-sidebar-close" class="lg:hidden p-1.5 rounded-lg text-sky-100 hover:bg-white/10" aria-label="Tutup menu">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
             </div>
 
-            <!-- 2. Profil Singkat Pengguna (Foto Bulat, Status is_active, & Nama) -->
+            <!-- 2. Profil Singkat Pengguna -->
             <div class="px-6 my-7 flex flex-col items-center text-center">
                 <div class="relative inline-block">
                     <div class="w-20 h-20 rounded-full ring-4 ring-white/20 shadow-lg overflow-hidden bg-gradient-to-tr from-sky-400 to-indigo-600 flex items-center justify-center text-white font-bold text-xl">
                         {{ strtoupper(substr(auth()->user()->name ?? 'SA', 0, 2)) }}
                     </div>
 
-                    <!-- Titik Indikator Status Database (is_active) -->
                     @if(auth()->user()?->is_active)
                         <span class="absolute bottom-0 right-0 w-5 h-5 rounded-full bg-emerald-500 ring-4 ring-[#015987] shadow-xs" title="Status: Aktif"></span>
                     @else
@@ -106,7 +124,6 @@
                     @endif
                 </p>
 
-                <!-- Keterangan Status jika Nonaktif / Selesai Magang -->
                 @if(! (auth()->user()?->is_active))
                     <span class="inline-flex items-center gap-1.5 mt-2 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-rose-500/20 text-rose-200 border border-rose-400/30">
                         <span class="w-1.5 h-1.5 rounded-full bg-rose-400"></span>
@@ -115,10 +132,11 @@
                 @endif
             </div>
 
-            <!-- 3. Navigasi Sidebar (Desain Pinterest Tab Nempel ke Kanan Sesuai Gambar 2) -->
+            <!-- 3. Navigasi Sidebar -->
             @php
                 $rolePrefix = auth()->user()->role ?? 'admin';
                 $isDashboardActive = request()->routeIs('*.dashboard');
+                $isEwsActive = request()->routeIs('*.ews.*');
                 $isLogbookActive = request()->routeIs('*.logbooks.*');
                 $isTaskActive = request()->routeIs('*.tasks.*');
                 $isAdminCalendarActive = request()->routeIs('admin.calendar.*');
@@ -126,34 +144,30 @@
                 $isAdminLeaveActive = request()->routeIs('admin.leave.*');
                 $isInternAttendanceActive = request()->routeIs('intern.attendance.*');
                 $isInternLeaveActive = request()->routeIs('intern.leave.*');
+                $isReportsActive = request()->routeIs('admin.reports.*');
             @endphp
             <nav class="mt-6 w-full space-y-1">
                 <!-- Menu Dashboard (Semua Role) -->
                 <div class="relative w-full pl-5 {{ $isDashboardActive ? 'z-10' : '' }}">
                     <a href="{{ route($rolePrefix . '.dashboard') }}" class="relative flex items-center gap-3 py-3 pl-4 pr-6 {{ $isDashboardActive ? 'bg-[#eef4f8] text-[#015987] font-bold' : 'text-sky-100 hover:bg-white/10 font-medium' }} text-xs rounded-l-full w-full shadow-none transition">
                         @if($isDashboardActive)
-                            <!-- Lekukan Cekung Atas (Top Concave Fillet) -->
-                            <span class="absolute -top-5 right-0 w-5 h-5 pointer-events-none">
+                            <span class="hidden lg:block absolute -top-5 right-0 w-5 h-5 pointer-events-none">
                                 <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">
                                     <path d="M20 0 L20 20 L0 20 A20 20 0 0 0 20 0 Z" fill="#eef4f8"/>
                                 </svg>
                             </span>
                         @endif
 
-                        <!-- Icon 4-Kotak Outline Sesuai Gambar 2 -->
                         <svg class="w-4 h-4 {{ $isDashboardActive ? 'text-[#015987]' : 'text-sky-200' }} flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                             <rect x="3" y="3" width="7" height="7" rx="1.5"></rect>
                             <rect x="14" y="3" width="7" height="7" rx="1.5"></rect>
                             <rect x="3" y="14" width="7" height="7" rx="1.5"></rect>
                             <rect x="14" y="14" width="7" height="7" rx="1.5"></rect>
                         </svg>
-                        
-                        <!-- Teks Dashboard -->
                         <span>Dashboard</span>
 
                         @if($isDashboardActive)
-                            <!-- Lekukan Cekung Bawah (Bottom Concave Fillet) -->
-                            <span class="absolute -bottom-5 right-0 w-5 h-5 pointer-events-none">
+                            <span class="hidden lg:block absolute -bottom-5 right-0 w-5 h-5 pointer-events-none">
                                 <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">
                                     <path d="M20 20 L20 0 L0 0 A20 20 0 0 1 20 20 Z" fill="#eef4f8"/>
                                 </svg>
@@ -162,12 +176,39 @@
                     </a>
                 </div>
 
-                <!-- Menu Logbook Peserta (Semua Role) -->
+                {{-- Menu Early Warning (EWS) - Khusus Admin / HR --}}
+                @if(auth()->user()?->role === 'admin')
+                    <div class="relative w-full pl-5 {{ $isEwsActive ? 'z-10' : '' }}">
+                        <a href="{{ route('admin.ews.index') }}" class="relative flex items-center gap-3 py-3 pl-4 pr-6 {{ $isEwsActive ? 'bg-[#eef4f8] text-[#015987] font-bold' : 'text-sky-100 hover:bg-white/10 font-medium' }} text-xs rounded-l-full w-full shadow-none transition">
+                            @if($isEwsActive)
+                                <span class="hidden lg:block absolute -top-5 right-0 w-5 h-5 pointer-events-none">
+                                    <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">
+                                        <path d="M20 0 L20 20 L0 20 A20 20 0 0 0 20 0 Z" fill="#eef4f8"/>
+                                    </svg>
+                                </span>
+                            @endif
+
+                            <svg class="w-4 h-4 {{ $isEwsActive ? 'text-[#015987]' : 'text-sky-200' }} flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                            </svg>
+                            <span>Early Warning (EWS)</span>
+
+                            @if($isEwsActive)
+                                <span class="hidden lg:block absolute -bottom-5 right-0 w-5 h-5 pointer-events-none">
+                                    <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">
+                                        <path d="M20 20 L20 0 L0 0 A20 20 0 0 1 20 20 Z" fill="#eef4f8"/>
+                                    </svg>
+                                </span>
+                            @endif
+                        </a>
+                    </div>
+                @endif
+
+                <!-- Menu Logbook Harian (Semua Role) -->
                 <div class="relative w-full pl-5 {{ $isLogbookActive ? 'z-10' : '' }}">
                     <a href="{{ route($rolePrefix . '.logbooks.index') }}" class="relative flex items-center gap-3 py-3 pl-4 pr-6 {{ $isLogbookActive ? 'bg-[#eef4f8] text-[#015987] font-bold' : 'text-sky-100 hover:bg-white/10 font-medium' }} text-xs rounded-l-full w-full shadow-none transition">
                         @if($isLogbookActive)
-                            <!-- Lekukan Cekung Atas (Top Concave Fillet) -->
-                            <span class="absolute -top-5 right-0 w-5 h-5 pointer-events-none">
+                            <span class="hidden lg:block absolute -top-5 right-0 w-5 h-5 pointer-events-none">
                                 <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">
                                     <path d="M20 0 L20 20 L0 20 A20 20 0 0 0 20 0 Z" fill="#eef4f8"/>
                                 </svg>
@@ -177,12 +218,10 @@
                         <svg class="w-4 h-4 {{ $isLogbookActive ? 'text-[#015987]' : 'text-sky-200' }} flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                         </svg>
-
-                        <span>Logbook Peserta</span>
+                        <span>Logbook Harian</span>
 
                         @if($isLogbookActive)
-                            <!-- Lekukan Cekung Bawah (Bottom Concave Fillet) -->
-                            <span class="absolute -bottom-5 right-0 w-5 h-5 pointer-events-none">
+                            <span class="hidden lg:block absolute -bottom-5 right-0 w-5 h-5 pointer-events-none">
                                 <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">
                                     <path d="M20 20 L20 0 L0 0 A20 20 0 0 1 20 20 Z" fill="#eef4f8"/>
                                 </svg>
@@ -190,11 +229,12 @@
                         @endif
                     </a>
                 </div>
-                <!-- Menu Tugas Peserta (Semua Role) -->
+
+                <!-- Menu Tugas Magang (Semua Role) -->
                 <div class="relative w-full pl-5 {{ $isTaskActive ? 'z-10' : '' }}">
                     <a href="{{ route($rolePrefix . '.tasks.index') }}" class="relative flex items-center gap-3 py-3 pl-4 pr-6 {{ $isTaskActive ? 'bg-[#eef4f8] text-[#015987] font-bold' : 'text-sky-100 hover:bg-white/10 font-medium' }} text-xs rounded-l-full w-full shadow-none transition">
                         @if($isTaskActive)
-                            <span class="absolute -top-5 right-0 w-5 h-5 pointer-events-none">
+                            <span class="hidden lg:block absolute -top-5 right-0 w-5 h-5 pointer-events-none">
                                 <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">
                                     <path d="M20 0 L20 20 L0 20 A20 20 0 0 0 20 0 Z" fill="#eef4f8"/>
                                 </svg>
@@ -204,11 +244,10 @@
                         <svg class="w-4 h-4 {{ $isTaskActive ? 'text-[#015987]' : 'text-sky-200' }} flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
                         </svg>
-
-                        <span>Tugas Peserta</span>
+                        <span>Tugas Magang</span>
 
                         @if($isTaskActive)
-                            <span class="absolute -bottom-5 right-0 w-5 h-5 pointer-events-none">
+                            <span class="hidden lg:block absolute -bottom-5 right-0 w-5 h-5 pointer-events-none">
                                 <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">
                                     <path d="M20 20 L20 0 L0 0 A20 20 0 0 1 20 20 Z" fill="#eef4f8"/>
                                 </svg>
@@ -217,15 +256,12 @@
                     </a>
                 </div>
 
-                {{-- ============================================================== --}}
-                {{-- MENU KHUSUS ADMINISTRATOR / HR --}}
-                {{-- ============================================================== --}}
                 @if(auth()->user()?->role === 'admin')
                     <!-- Menu 1: Presensi Peserta (Admin/HR) -->
                     <div class="relative w-full pl-5 {{ $isAdminAttendanceActive ? 'z-10' : '' }}">
                         @if($isAdminAttendanceActive)
                             <a href="{{ route('admin.attendance.index') }}" class="relative flex items-center gap-3 py-3 pl-4 pr-6 bg-[#eef4f8] text-[#015987] font-bold text-xs rounded-l-full w-full shadow-none block">
-                                <span class="absolute -top-5 right-0 w-5 h-5 pointer-events-none">
+                                <span class="hidden lg:block absolute -top-5 right-0 w-5 h-5 pointer-events-none">
                                     <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">
                                         <path d="M20 0 L20 20 L0 20 A20 20 0 0 0 20 0 Z" fill="#eef4f8"/>
                                     </svg>
@@ -234,7 +270,7 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                 </svg>
                                 <span>Presensi Peserta</span>
-                                <span class="absolute -bottom-5 right-0 w-5 h-5 pointer-events-none">
+                                <span class="hidden lg:block absolute -bottom-5 right-0 w-5 h-5 pointer-events-none">
                                     <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">
                                         <path d="M20 20 L20 0 L0 0 A20 20 0 0 1 20 20 Z" fill="#eef4f8"/>
                                     </svg>
@@ -254,7 +290,7 @@
                     <div class="relative w-full pl-5 {{ $isAdminCalendarActive ? 'z-10' : '' }}">
                         @if($isAdminCalendarActive)
                             <a href="{{ route('admin.calendar.index') }}" class="relative flex items-center gap-3 py-3 pl-4 pr-6 bg-[#eef4f8] text-[#015987] font-bold text-xs rounded-l-full w-full shadow-none block">
-                                <span class="absolute -top-5 right-0 w-5 h-5 pointer-events-none">
+                                <span class="hidden lg:block absolute -top-5 right-0 w-5 h-5 pointer-events-none">
                                     <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">
                                         <path d="M20 0 L20 20 L0 20 A20 20 0 0 0 20 0 Z" fill="#eef4f8"/>
                                     </svg>
@@ -263,7 +299,7 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                                 </svg>
                                 <span>Kalender Kerja</span>
-                                <span class="absolute -bottom-5 right-0 w-5 h-5 pointer-events-none">
+                                <span class="hidden lg:block absolute -bottom-5 right-0 w-5 h-5 pointer-events-none">
                                     <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">
                                         <path d="M20 20 L20 0 L0 0 A20 20 0 0 1 20 20 Z" fill="#eef4f8"/>
                                     </svg>
@@ -283,7 +319,7 @@
                     <div class="relative w-full pl-5 {{ $isAdminLeaveActive ? 'z-10' : '' }}">
                         @if($isAdminLeaveActive)
                             <a href="{{ route('admin.leave.index') }}" class="relative flex items-center gap-3 py-3 pl-4 pr-6 bg-[#eef4f8] text-[#015987] font-bold text-xs rounded-l-full w-full shadow-none block">
-                                <span class="absolute -top-5 right-0 w-5 h-5 pointer-events-none">
+                                <span class="hidden lg:block absolute -top-5 right-0 w-5 h-5 pointer-events-none">
                                     <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">
                                         <path d="M20 0 L20 20 L0 20 A20 20 0 0 0 20 0 Z" fill="#eef4f8"/>
                                     </svg>
@@ -292,7 +328,7 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                                 </svg>
                                 <span>Verifikasi Izin/Sakit</span>
-                                <span class="absolute -bottom-5 right-0 w-5 h-5 pointer-events-none">
+                                <span class="hidden lg:block absolute -bottom-5 right-0 w-5 h-5 pointer-events-none">
                                     <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">
                                         <path d="M20 20 L20 0 L0 0 A20 20 0 0 1 20 20 Z" fill="#eef4f8"/>
                                     </svg>
@@ -313,7 +349,7 @@
                     <div class="relative w-full pl-5 {{ $isUserManagementActive ? 'z-10' : '' }}">
                         @if($isUserManagementActive)
                             <a href="{{ route('admin.users.index') }}" class="relative flex items-center gap-3 py-3 pl-4 pr-6 bg-[#eef4f8] text-[#015987] font-bold text-xs rounded-l-full w-full shadow-none block">
-                                <span class="absolute -top-5 right-0 w-5 h-5 pointer-events-none">
+                                <span class="hidden lg:block absolute -top-5 right-0 w-5 h-5 pointer-events-none">
                                     <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">
                                         <path d="M20 0 L20 20 L0 20 A20 20 0 0 0 20 0 Z" fill="#eef4f8"/>
                                     </svg>
@@ -322,7 +358,7 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
                                 </svg>
                                 <span>Kelola Akun</span>
-                                <span class="absolute -bottom-5 right-0 w-5 h-5 pointer-events-none">
+                                <span class="hidden lg:block absolute -bottom-5 right-0 w-5 h-5 pointer-events-none">
                                     <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">
                                         <path d="M20 20 L20 0 L0 0 A20 20 0 0 1 20 20 Z" fill="#eef4f8"/>
                                     </svg>
@@ -343,7 +379,7 @@
                     <div class="relative w-full pl-5 {{ $isInternProfileActive ? 'z-10' : '' }}">
                         @if($isInternProfileActive)
                             <a href="{{ route('admin.intern-profiles.index') }}" class="relative flex items-center gap-3 py-3 pl-4 pr-6 bg-[#eef4f8] text-[#015987] font-bold text-xs rounded-l-full w-full shadow-none block">
-                                <span class="absolute -top-5 right-0 w-5 h-5 pointer-events-none">
+                                <span class="hidden lg:block absolute -top-5 right-0 w-5 h-5 pointer-events-none">
                                     <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">
                                         <path d="M20 0 L20 20 L0 20 A20 20 0 0 0 20 0 Z" fill="#eef4f8"/>
                                     </svg>
@@ -353,7 +389,7 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/>
                                 </svg>
                                 <span>Profil Peserta</span>
-                                <span class="absolute -bottom-5 right-0 w-5 h-5 pointer-events-none">
+                                <span class="hidden lg:block absolute -bottom-5 right-0 w-5 h-5 pointer-events-none">
                                     <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">
                                         <path d="M20 20 L20 0 L0 0 A20 20 0 0 1 20 20 Z" fill="#eef4f8"/>
                                     </svg>
@@ -369,17 +405,43 @@
                             </a>
                         @endif
                     </div>
+
+                    <!-- Menu 6: Laporan & Rekapitulasi (Admin/HR Only) -->
+                    <div class="relative w-full pl-5 {{ $isReportsActive ? 'z-10' : '' }}">
+                        @if($isReportsActive)
+                            <a href="{{ route('admin.reports.index') }}" class="relative flex items-center gap-3 py-3 pl-4 pr-6 bg-[#eef4f8] text-[#015987] font-bold text-xs rounded-l-full w-full shadow-none block">
+                                <span class="hidden lg:block absolute -top-5 right-0 w-5 h-5 pointer-events-none">
+                                    <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">
+                                        <path d="M20 0 L20 20 L0 20 A20 20 0 0 0 20 0 Z" fill="#eef4f8"/>
+                                    </svg>
+                                </span>
+                                <svg class="w-4 h-4 text-[#015987] flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                </svg>
+                                <span>Laporan &amp; Rekap</span>
+                                <span class="hidden lg:block absolute -bottom-5 right-0 w-5 h-5 pointer-events-none">
+                                    <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">
+                                        <path d="M20 20 L20 0 L0 0 A20 20 0 0 1 20 20 Z" fill="#eef4f8"/>
+                                    </svg>
+                                </span>
+                            </a>
+                        @else
+                            <a href="{{ route('admin.reports.index') }}" class="flex items-center gap-3 py-3 pl-4 pr-6 text-white/80 hover:text-white hover:bg-white/10 font-medium text-xs rounded-l-full w-full transition">
+                                <svg class="w-4 h-4 text-white/80 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                </svg>
+                                <span>Laporan &amp; Rekap</span>
+                            </a>
+                        @endif
+                    </div>
                 @endif
 
-                {{-- ============================================================== --}}
-                {{-- MENU KHUSUS PESERTA MAGANG (INTERN) --}}
-                {{-- ============================================================== --}}
                 @if(auth()->user()?->role === 'intern')
                     <!-- Menu: Presensi Masuk (Peserta Magang) -->
                     <div class="relative w-full pl-5 {{ $isInternAttendanceActive ? 'z-10' : '' }}">
                         @if($isInternAttendanceActive)
                             <a href="{{ route('intern.attendance.index') }}" class="relative flex items-center gap-3 py-3 pl-4 pr-6 bg-[#eef4f8] text-[#015987] font-bold text-xs rounded-l-full w-full shadow-none block">
-                                <span class="absolute -top-5 right-0 w-5 h-5 pointer-events-none">
+                                <span class="hidden lg:block absolute -top-5 right-0 w-5 h-5 pointer-events-none">
                                     <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">
                                         <path d="M20 0 L20 20 L0 20 A20 20 0 0 0 20 0 Z" fill="#eef4f8"/>
                                     </svg>
@@ -389,7 +451,7 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
                                 </svg>
                                 <span>Presensi</span>
-                                <span class="absolute -bottom-5 right-0 w-5 h-5 pointer-events-none">
+                                <span class="hidden lg:block absolute -bottom-5 right-0 w-5 h-5 pointer-events-none">
                                     <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">
                                         <path d="M20 20 L20 0 L0 0 A20 20 0 0 1 20 20 Z" fill="#eef4f8"/>
                                     </svg>
@@ -410,7 +472,7 @@
                     <div class="relative w-full pl-5 {{ $isInternLeaveActive ? 'z-10' : '' }}">
                         @if($isInternLeaveActive)
                             <a href="{{ route('intern.leave.index') }}" class="relative flex items-center gap-3 py-3 pl-4 pr-6 bg-[#eef4f8] text-[#015987] font-bold text-xs rounded-l-full w-full shadow-none block">
-                                <span class="absolute -top-5 right-0 w-5 h-5 pointer-events-none">
+                                <span class="hidden lg:block absolute -top-5 right-0 w-5 h-5 pointer-events-none">
                                     <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">
                                         <path d="M20 0 L20 20 L0 20 A20 20 0 0 0 20 0 Z" fill="#eef4f8"/>
                                     </svg>
@@ -419,7 +481,7 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                                 </svg>
                                 <span>Pengajuan Izin</span>
-                                <span class="absolute -bottom-5 right-0 w-5 h-5 pointer-events-none">
+                                <span class="hidden lg:block absolute -bottom-5 right-0 w-5 h-5 pointer-events-none">
                                     <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">
                                         <path d="M20 20 L20 0 L0 0 A20 20 0 0 1 20 20 Z" fill="#eef4f8"/>
                                     </svg>
@@ -438,7 +500,7 @@
             </nav>
         </div>
 
-        <!-- 4. Tombol Keluar Sistem (Di Bagian Paling Bawah) -->
+        <!-- 4. Tombol Keluar Sistem -->
         <div class="px-6 pt-6 border-t border-white/10 mt-auto">
             <form method="POST" action="{{ route('logout') }}">
                 @csrf
@@ -454,27 +516,48 @@
     </aside>
 
     <!-- ============================================================== -->
-    <!-- AREA KANAN: TOP HEADER & KONTEN UTAMA (FULL SCREEN #eef4f8) -->
+    <!-- AREA KANAN: TOP HEADER & KONTEN UTAMA -->
     <!-- ============================================================== -->
     <div class="flex-1 flex flex-col min-w-0 h-screen overflow-hidden bg-[#eef4f8]">
         
+        <!-- Banner Peringatan Offline (PWA Network Check) -->
+        <div id="network-offline-banner" class="hidden bg-rose-600 text-white text-xs font-medium px-4 py-2.5 text-center flex-shrink-0">
+            Koneksi internet terputus. Presensi, pengajuan izin, logbook, dan pengiriman tugas memerlukan koneksi internet aktif.
+        </div>
+
         <!-- Top Header Navbar (Flex item normal di atas main agar konten tidak terpotong) -->
-        <header class="px-8 pt-7 pb-5 flex flex-col md:flex-row md:items-center justify-between gap-4 z-30 bg-[#eef4f8] border-b border-slate-200/60 shadow-2xs flex-shrink-0">
-            <!-- Judul Halaman -->
-            <div class="min-w-0 flex-1">
-                <div class="flex flex-wrap items-center gap-2.5">
-                    <h1 class="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
-                        @yield('page-title', 'Dashboard Monitoring Magang')
-                    </h1>
-                    @yield('page-badge')
+        <header class="px-4 sm:px-6 lg:px-8 pt-5 lg:pt-7 pb-4 lg:pb-5 flex flex-col md:flex-row md:items-center justify-between gap-4 z-30 bg-[#eef4f8] border-b border-slate-200/60 shadow-2xs flex-shrink-0">
+            <!-- Judul Halaman + Tombol Hamburger Mobile -->
+            <div class="flex items-start gap-3 min-w-0 flex-1">
+                <button type="button" id="mobile-sidebar-open" class="lg:hidden p-2.5 rounded-xl bg-white border border-slate-200/80 text-[#015987] shadow-xs mt-0.5 flex-shrink-0" aria-label="Buka menu navigasi">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                    </svg>
+                </button>
+
+                <div class="min-w-0 flex-1">
+                    <div class="flex flex-wrap items-center gap-2.5">
+                        <h1 class="text-lg sm:text-xl lg:text-2xl font-bold text-slate-900 tracking-tight">
+                            @yield('page-title', 'Dashboard Monitoring Magang')
+                        </h1>
+                        @yield('page-badge')
+                    </div>
+                    <p class="text-xs text-[#015987] font-semibold mt-1.5 leading-relaxed">
+                        @yield('page-subtitle', 'PT WAN Teknologi Internasional')
+                    </p>
                 </div>
-                <p class="text-xs text-[#015987] font-semibold mt-1.5 leading-relaxed">
-                    @yield('page-subtitle', 'PT WAN Teknologi Internasional')
-                </p>
             </div>
 
-            <!-- Sisi Kanan: Widget Tanggal, Search Bar, & Tombol Aksi Sesuai Mockup -->
-            <div class="flex items-center gap-3 flex-shrink-0">
+            <!-- Sisi Kanan: Install PWA, Widget Tanggal, Search Bar, & Tombol Aksi -->
+            <div class="flex flex-wrap items-center gap-2.5 sm:gap-3 flex-shrink-0">
+                <!-- Tombol Install PWA (muncul otomatis jika browser mendukung) -->
+                <button type="button" id="pwa-install-btn" class="hidden items-center gap-1.5 text-xs font-semibold text-white bg-[#015987] hover:bg-[#014467] px-3 py-2.5 rounded-xl shadow-xs transition">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                    </svg>
+                    <span>Pasang Aplikasi</span>
+                </button>
+
                 @if(View::hasSection('custom-header-right'))
                     @yield('custom-header-right')
                 @else
@@ -483,30 +566,30 @@
                         <svg class="w-3.5 h-3.5 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                         </svg>
-                        <span>{{ \Carbon\Carbon::now()->translatedFormat('l, d F Y') }}</span>
+                        <span>{{ \Carbon\Carbon::now('Asia/Jakarta')->translatedFormat('l, d F Y') }}</span>
                     </div>
 
-                <!-- Search Input (Hanya untuk Admin & PIC — terhubung ke filter pencarian tugas) -->
-                @if(in_array(auth()->user()?->role, ['admin', 'pic'], true))
-                    <form
-                        method="GET"
-                        action="{{ auth()->user()->isPic() ? route('pic.tasks.index') : route('admin.tasks.index') }}"
-                        class="relative hidden sm:block"
-                    >
-                        <input
-                            type="text"
-                            name="search"
-                            value="{{ request('search') }}"
-                            placeholder="@yield('search-placeholder', 'Cari tugas...')"
-                            class="w-64 pl-9 pr-3.5 py-2.5 text-xs bg-white border border-slate-200/80 rounded-xl text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 shadow-xs transition"
+                    <!-- Search Input (Hanya untuk Admin & PIC — terhubung ke filter pencarian tugas) -->
+                    @if(in_array(auth()->user()?->role, ['admin', 'pic'], true))
+                        <form
+                            method="GET"
+                            action="{{ auth()->user()->isPic() ? route('pic.tasks.index') : route('admin.tasks.index') }}"
+                            class="relative hidden sm:block"
                         >
-                        <button type="submit" aria-label="Cari" class="absolute left-3 top-3 text-slate-400 hover:text-[#015987] cursor-pointer">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                            </svg>
-                        </button>
-                    </form>
-                @endif
+                            <input
+                                type="text"
+                                name="search"
+                                value="{{ request('search') }}"
+                                placeholder="@yield('search-placeholder', 'Cari tugas...')"
+                                class="w-48 lg:w-64 pl-9 pr-3.5 py-2.5 text-xs bg-white border border-slate-200/80 rounded-xl text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 shadow-xs transition"
+                            >
+                            <button type="submit" aria-label="Cari" class="absolute left-3 top-3 text-slate-400 hover:text-[#015987] cursor-pointer">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                                </svg>
+                            </button>
+                        </form>
+                    @endif
 
                     @yield('header-actions')
 
@@ -639,7 +722,7 @@
         </header>
 
         <!-- Konten Utama Halaman -->
-        <main class="flex-1 overflow-y-auto px-8 pb-12 pt-6">
+        <main class="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 pb-12 pt-4 lg:pt-6">
             @yield('content')
         </main>
 
@@ -656,208 +739,287 @@
 
     <script>
         (function () {
+            // 1. Mobile Sidebar Drawer
+            const sidebar = document.getElementById('app-sidebar');
+            const backdrop = document.getElementById('mobile-sidebar-backdrop');
+            const openBtn = document.getElementById('mobile-sidebar-open');
+            const closeBtn = document.getElementById('mobile-sidebar-close');
+
+            function openSidebar() {
+                sidebar?.classList.remove('-translate-x-full');
+                backdrop?.classList.remove('hidden');
+            }
+
+            function closeSidebar() {
+                sidebar?.classList.add('-translate-x-full');
+                backdrop?.classList.add('hidden');
+            }
+
+            openBtn?.addEventListener('click', openSidebar);
+            closeBtn?.addEventListener('click', closeSidebar);
+            backdrop?.addEventListener('click', closeSidebar);
+
+            // 2. Indikator Koneksi Offline
+            const offlineBanner = document.getElementById('network-offline-banner');
+            function syncNetworkStatus() {
+                if (!navigator.onLine) {
+                    offlineBanner?.classList.remove('hidden');
+                } else {
+                    offlineBanner?.classList.add('hidden');
+                }
+            }
+            window.addEventListener('online', syncNetworkStatus);
+            window.addEventListener('offline', syncNetworkStatus);
+            syncNetworkStatus();
+
+            // 3. Registrasi Service Worker PWA
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('/sw.js').catch((err) => {
+                        console.warn('Registrasi Service Worker gagal:', err);
+                    });
+                });
+            }
+
+            // 4. Prompt Instalasi PWA (beforeinstallprompt)
+            let deferredPrompt = null;
+            const installBtn = document.getElementById('pwa-install-btn');
+
+            window.addEventListener('beforeinstallprompt', (event) => {
+                event.preventDefault();
+                deferredPrompt = event;
+                installBtn?.classList.remove('hidden');
+                installBtn?.classList.add('inline-flex');
+            });
+
+            installBtn?.addEventListener('click', async () => {
+                if (!deferredPrompt) return;
+                deferredPrompt.prompt();
+                await deferredPrompt.userChoice;
+                deferredPrompt = null;
+                installBtn.classList.add('hidden');
+                installBtn.classList.remove('inline-flex');
+            });
+
+            // 5. Pengaman Form Submit Saat Offline (Mencegah Kehilangan Data / Gagal Request Tanpa Feedback)
+            document.addEventListener('submit', (event) => {
+                if (!navigator.onLine) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    if (typeof window.showErrorAlert === 'function') {
+                        window.showErrorAlert(
+                            'Koneksi Internet Terputus',
+                            'Aktivitas ini membutuhkan koneksi internet aktif. Transaksi tidak dapat diproses secara offline. Pastikan perangkat Anda terhubung kembali ke internet.'
+                        );
+                    } else {
+                        alert('Koneksi Internet Terputus: Aktivitas ini membutuhkan koneksi internet aktif.');
+                    }
+                }
+            }, true);
+
+            // 6. Dropdown Notifikasi Real-Time Header
             const wrapper = document.getElementById('header-notification-wrapper');
             const btn = document.getElementById('header-notification-btn');
             const dropdown = document.getElementById('header-notification-dropdown');
-            if (!wrapper || !btn || !dropdown) return;
+            if (wrapper && btn && dropdown) {
+                const closeDropdown = () => {
+                    dropdown.classList.add('hidden');
+                    btn.setAttribute('aria-expanded', 'false');
+                };
 
-            const closeDropdown = () => {
-                dropdown.classList.add('hidden');
-                btn.setAttribute('aria-expanded', 'false');
-            };
-
-            btn.addEventListener('click', (event) => {
-                event.stopPropagation();
-                const isHidden = dropdown.classList.contains('hidden');
-                if (isHidden) {
-                    dropdown.classList.remove('hidden');
-                    btn.setAttribute('aria-expanded', 'true');
-                } else {
-                    closeDropdown();
-                }
-            });
-
-            document.addEventListener('click', (event) => {
-                if (!wrapper.contains(event.target)) {
-                    closeDropdown();
-                }
-            });
-
-            document.addEventListener('keydown', (event) => {
-                if (event.key === 'Escape' && !dropdown.classList.contains('hidden')) {
-                    closeDropdown();
-                }
-            });
-
-            // Live Polling Notifikasi In-App (setiap 5 detik saat tab aktif)
-            const feedUrl = @json(route('notifications.feed'));
-            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
-            const badgeEl = document.getElementById('header-notification-badge');
-            const pillEl = document.getElementById('header-notification-count-pill');
-            const readAllForm = document.getElementById('header-notification-readall-form');
-            const listEl = document.getElementById('header-notification-list');
-            const toastContainer = document.getElementById('live-notification-toast');
-
-            const initialItems = @json($notifItems);
-            const knownDbIds = new Set(
-                (initialItems || []).filter(i => i.is_database && i.id).map(i => String(i.id))
-            );
-
-            function escapeHtml(str) {
-                return String(str ?? '')
-                    .replace(/&/g, '&amp;')
-                    .replace(/</g, '&lt;')
-                    .replace(/>/g, '&gt;')
-                    .replace(/"/g, '&quot;')
-                    .replace(/'/g, '&#039;');
-            }
-
-            function iconSvg(type) {
-                if (type === 'danger') {
-                    return '<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>';
-                }
-                if (type === 'warning') {
-                    return '<path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>';
-                }
-                return '<path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>';
-            }
-
-            function iconBgClass(type) {
-                if (type === 'danger') return 'bg-rose-50 text-rose-500';
-                if (type === 'warning') return 'bg-amber-50 text-amber-600';
-                return 'bg-sky-50 text-[#015987]';
-            }
-
-            function showToast(item) {
-                if (!toastContainer) return;
-                const toast = document.createElement('div');
-                toast.className = 'pointer-events-auto bg-white border border-sky-200 shadow-xl rounded-2xl p-4 flex items-start gap-3 transition-all';
-                toast.innerHTML = `
-                    <span class="w-8 h-8 rounded-xl ${iconBgClass(item.type)} flex items-center justify-center shrink-0 mt-0.5">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">${iconSvg(item.type)}</svg>
-                    </span>
-                    <div class="min-w-0 flex-1">
-                        <a href="${escapeHtml(item.action_url || item.url || '#')}" class="block group">
-                            <p class="text-xs font-bold text-[#015987] group-hover:underline">${escapeHtml(item.title)}</p>
-                            <p class="text-[11px] text-slate-600 mt-0.5 leading-snug">${escapeHtml(item.message)}</p>
-                        </a>
-                    </div>
-                    <button type="button" class="text-slate-400 hover:text-slate-600 text-sm leading-none px-1" aria-label="Tutup">&times;</button>
-                `;
-                toast.querySelector('button')?.addEventListener('click', () => toast.remove());
-                toastContainer.appendChild(toast);
-                setTimeout(() => toast.remove(), 6000);
-            }
-
-            function renderDropdown(data) {
-                const count = Number(data.unread_count || 0);
-                const unreadDb = Number(data.unread_db_count || 0);
-                const items = Array.isArray(data.items) ? data.items : [];
-
-                if (badgeEl) {
-                    if (count > 0) {
-                        badgeEl.textContent = count > 9 ? '9+' : String(count);
-                        badgeEl.classList.remove('hidden');
+                btn.addEventListener('click', (event) => {
+                    event.stopPropagation();
+                    const isHidden = dropdown.classList.contains('hidden');
+                    if (isHidden) {
+                        dropdown.classList.remove('hidden');
+                        btn.setAttribute('aria-expanded', 'true');
                     } else {
-                        badgeEl.classList.add('hidden');
+                        closeDropdown();
                     }
-                }
+                });
 
-                if (pillEl) {
-                    if (count > 0) {
-                        pillEl.textContent = `${count} perlu perhatian`;
-                        pillEl.className = 'px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-600 border border-rose-200';
-                    } else {
-                        pillEl.textContent = 'Semua beres';
-                        pillEl.className = 'text-[11px] text-slate-400';
+                document.addEventListener('click', (event) => {
+                    if (!wrapper.contains(event.target)) {
+                        closeDropdown();
                     }
-                }
+                });
 
-                if (readAllForm) {
-                    readAllForm.classList.toggle('hidden', unreadDb <= 0);
-                }
-
-                if (listEl) {
-                    if (items.length === 0) {
-                        listEl.innerHTML = `
-                            <div class="px-5 py-8 text-center">
-                                <p class="text-xs font-semibold text-slate-500">Tidak ada notifikasi baru</p>
-                                <p class="text-[11px] text-slate-400 mt-1">Semua tugas dan catatan Anda sudah terpantau.</p>
-                            </div>
-                        `;
-                    } else {
-                        listEl.innerHTML = items.map(item => {
-                            const bg = iconBgClass(item.type);
-                            const svg = iconSvg(item.type);
-                            const metaHtml = item.meta ? `<p class="text-[10px] font-semibold text-slate-400 mt-1">${escapeHtml(item.meta)}</p>` : '';
-                            if (item.is_database && item.read_url) {
-                                return `
-                                    <form method="POST" action="${escapeHtml(item.read_url)}">
-                                        <input type="hidden" name="_token" value="${escapeHtml(csrfToken)}">
-                                        <button type="submit" class="w-full text-left flex items-start gap-3 px-4 py-3 bg-sky-50/30 hover:bg-slate-50 transition cursor-pointer">
-                                            <span class="w-8 h-8 rounded-xl ${bg} flex items-center justify-center shrink-0 mt-0.5">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">${svg}</svg>
-                                            </span>
-                                            <div class="min-w-0 flex-1">
-                                                <div class="flex items-center justify-between gap-2">
-                                                    <p class="text-xs font-bold text-slate-800">${escapeHtml(item.title)}</p>
-                                                    <span class="w-2 h-2 rounded-full bg-[#015987] shrink-0" title="Belum dibaca"></span>
-                                                </div>
-                                                <p class="text-[11px] text-slate-500 mt-0.5 leading-snug">${escapeHtml(item.message)}</p>
-                                                ${metaHtml}
-                                            </div>
-                                        </button>
-                                    </form>
-                                `;
-                            }
-                            return `
-                                <a href="${escapeHtml(item.url || '#')}" class="flex items-start gap-3 px-4 py-3 hover:bg-slate-50 transition">
-                                    <span class="w-8 h-8 rounded-xl ${bg} flex items-center justify-center shrink-0 mt-0.5">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">${svg}</svg>
-                                    </span>
-                                    <div class="min-w-0 flex-1">
-                                        <p class="text-xs font-bold text-slate-800">${escapeHtml(item.title)}</p>
-                                        <p class="text-[11px] text-slate-500 mt-0.5 leading-snug">${escapeHtml(item.message)}</p>
-                                        ${metaHtml}
-                                    </div>
-                                </a>
-                            `;
-                        }).join('');
+                document.addEventListener('keydown', (event) => {
+                    if (event.key === 'Escape' && !dropdown.classList.contains('hidden')) {
+                        closeDropdown();
                     }
-                }
-            }
+                });
 
-            async function pollNotifications() {
-                if (document.visibilityState !== 'visible') return;
-                try {
-                    const res = await fetch(feedUrl, {
-                        headers: {
-                            'Accept': 'application/json',
-                            'X-Requested-With': 'XMLHttpRequest'
-                        },
-                        credentials: 'same-origin'
-                    });
-                    if (!res.ok) return;
-                    const data = await res.json();
+                // Live Polling Notifikasi In-App (setiap 5 detik saat tab aktif)
+                const feedUrl = @json(route('notifications.feed'));
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+                const badgeEl = document.getElementById('header-notification-badge');
+                const pillEl = document.getElementById('header-notification-count-pill');
+                const readAllForm = document.getElementById('header-notification-readall-form');
+                const listEl = document.getElementById('header-notification-list');
+                const toastContainer = document.getElementById('live-notification-toast');
+
+                const initialItems = @json($headerNotifications['items'] ?? []);
+                const knownDbIds = new Set(
+                    (initialItems || []).filter(i => i.is_database && i.id).map(i => String(i.id))
+                );
+
+                function escapeHtml(str) {
+                    return String(str ?? '')
+                        .replace(/&/g, '&amp;')
+                        .replace(/</g, '&lt;')
+                        .replace(/>/g, '&gt;')
+                        .replace(/"/g, '&quot;')
+                        .replace(/'/g, '&#039;');
+                }
+
+                function iconSvg(type) {
+                    if (type === 'danger') {
+                        return '<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>';
+                    }
+                    if (type === 'warning') {
+                        return '<path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>';
+                    }
+                    return '<path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>';
+                }
+
+                function iconBgClass(type) {
+                    if (type === 'danger') return 'bg-rose-50 text-rose-500';
+                    if (type === 'warning') return 'bg-amber-50 text-amber-600';
+                    return 'bg-sky-50 text-[#015987]';
+                }
+
+                function showToast(item) {
+                    if (!toastContainer) return;
+                    const toast = document.createElement('div');
+                    toast.className = 'pointer-events-auto bg-white border border-sky-200 shadow-xl rounded-2xl p-4 flex items-start gap-3 transition-all';
+                    toast.innerHTML = `
+                        <span class="w-8 h-8 rounded-xl ${iconBgClass(item.type)} flex items-center justify-center shrink-0 mt-0.5">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">${iconSvg(item.type)}</svg>
+                        </span>
+                        <div class="min-w-0 flex-1">
+                            <a href="${escapeHtml(item.action_url || item.url || '#')}" class="block group">
+                                <p class="text-xs font-bold text-[#015987] group-hover:underline">${escapeHtml(item.title)}</p>
+                                <p class="text-[11px] text-slate-600 mt-0.5 leading-snug">${escapeHtml(item.message)}</p>
+                            </a>
+                        </div>
+                        <button type="button" class="text-slate-400 hover:text-slate-600 text-sm leading-none px-1" aria-label="Tutup">&times;</button>
+                    `;
+                    toast.querySelector('button')?.addEventListener('click', () => toast.remove());
+                    toastContainer.appendChild(toast);
+                    setTimeout(() => toast.remove(), 6000);
+                }
+
+                function renderDropdown(data) {
+                    const count = Number(data.unread_count || 0);
+                    const unreadDb = Number(data.unread_db_count || 0);
                     const items = Array.isArray(data.items) ? data.items : [];
-                    items.forEach(item => {
-                        if (item.is_database && item.id && !knownDbIds.has(String(item.id))) {
-                            knownDbIds.add(String(item.id));
-                            showToast(item);
-                        }
-                    });
-                    renderDropdown(data);
-                } catch (err) {
-                    // Abaikan error jaringan sementara saat polling
-                }
-            }
 
-            setInterval(pollNotifications, 5000);
-            document.addEventListener('visibilitychange', () => {
-                if (document.visibilityState === 'visible') {
-                    pollNotifications();
+                    if (badgeEl) {
+                        if (count > 0) {
+                            badgeEl.textContent = count > 9 ? '9+' : String(count);
+                            badgeEl.classList.remove('hidden');
+                        } else {
+                            badgeEl.classList.add('hidden');
+                        }
+                    }
+
+                    if (pillEl) {
+                        if (count > 0) {
+                            pillEl.textContent = `${count} perlu perhatian`;
+                            pillEl.className = 'px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-600 border border-rose-200';
+                        } else {
+                            pillEl.textContent = 'Semua beres';
+                            pillEl.className = 'text-[11px] text-slate-400';
+                        }
+                    }
+
+                    if (readAllForm) {
+                        readAllForm.classList.toggle('hidden', unreadDb <= 0);
+                    }
+
+                    if (listEl) {
+                        if (items.length === 0) {
+                            listEl.innerHTML = `
+                                <div class="px-5 py-8 text-center">
+                                    <p class="text-xs font-semibold text-slate-500">Tidak ada notifikasi baru</p>
+                                    <p class="text-[11px] text-slate-400 mt-1">Semua tugas dan catatan Anda sudah terpantau.</p>
+                                </div>
+                            `;
+                        } else {
+                            listEl.innerHTML = items.map(item => {
+                                const bg = iconBgClass(item.type);
+                                const svg = iconSvg(item.type);
+                                const metaHtml = item.meta ? `<p class="text-[10px] font-semibold text-slate-400 mt-1">${escapeHtml(item.meta)}</p>` : '';
+                                if (item.is_database && item.read_url) {
+                                    return `
+                                        <form method="POST" action="${escapeHtml(item.read_url)}">
+                                            <input type="hidden" name="_token" value="${escapeHtml(csrfToken)}">
+                                            <button type="submit" class="w-full text-left flex items-start gap-3 px-4 py-3 bg-sky-50/30 hover:bg-slate-50 transition cursor-pointer">
+                                                <span class="w-8 h-8 rounded-xl ${bg} flex items-center justify-center shrink-0 mt-0.5">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">${svg}</svg>
+                                                </span>
+                                                <div class="min-w-0 flex-1">
+                                                    <div class="flex items-center justify-between gap-2">
+                                                        <p class="text-xs font-bold text-slate-800">${escapeHtml(item.title)}</p>
+                                                        <span class="w-2 h-2 rounded-full bg-[#015987] shrink-0" title="Belum dibaca"></span>
+                                                    </div>
+                                                    <p class="text-[11px] text-slate-500 mt-0.5 leading-snug">${escapeHtml(item.message)}</p>
+                                                    ${metaHtml}
+                                                </div>
+                                            </button>
+                                        </form>
+                                    `;
+                                }
+                                return `
+                                    <a href="${escapeHtml(item.url || '#')}" class="flex items-start gap-3 px-4 py-3 hover:bg-slate-50 transition">
+                                        <span class="w-8 h-8 rounded-xl ${bg} flex items-center justify-center shrink-0 mt-0.5">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">${svg}</svg>
+                                        </span>
+                                        <div class="min-w-0 flex-1">
+                                            <p class="text-xs font-bold text-slate-800">${escapeHtml(item.title)}</p>
+                                            <p class="text-[11px] text-slate-500 mt-0.5 leading-snug">${escapeHtml(item.message)}</p>
+                                            ${metaHtml}
+                                        </div>
+                                    </a>
+                                `;
+                            }).join('');
+                        }
+                    }
                 }
-            });
+
+                async function pollNotifications() {
+                    if (document.visibilityState !== 'visible') return;
+                    try {
+                        const res = await fetch(feedUrl, {
+                            headers: {
+                                'Accept': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest'
+                            },
+                            credentials: 'same-origin'
+                        });
+                        if (!res.ok) return;
+                        const data = await res.json();
+                        const items = Array.isArray(data.items) ? data.items : [];
+                        items.forEach(item => {
+                            if (item.is_database && item.id && !knownDbIds.has(String(item.id))) {
+                                knownDbIds.add(String(item.id));
+                                showToast(item);
+                            }
+                        });
+                        renderDropdown(data);
+                    } catch (err) {
+                        // Abaikan error jaringan sementara saat polling
+                    }
+                }
+
+                setInterval(pollNotifications, 5000);
+                document.addEventListener('visibilitychange', () => {
+                    if (document.visibilityState === 'visible') {
+                        pollNotifications();
+                    }
+                });
+            }
         })();
     </script>
 

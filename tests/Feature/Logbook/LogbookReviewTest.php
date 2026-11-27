@@ -9,7 +9,6 @@ use App\Models\Task;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class LogbookReviewTest extends TestCase
@@ -28,78 +27,82 @@ class LogbookReviewTest extends TestCase
         parent::tearDown();
     }
 
-    private function assignInternToPic(User $pic, User $intern, string $startDate = '2026-11-01', ?string $endDate = null): void
+    public function test_pic_can_only_view_and_review_logbooks_targeted_to_them_not_mandiri_or_other_pic(): void
     {
-        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
-
-        DB::table('pic_assignments')->insert([
-            'intern_user_id' => $intern->id,
-            'pic_user_id' => $pic->id,
-            'start_date' => $startDate,
-            'end_date' => $endDate,
-            'assigned_by' => $admin->id,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-    }
-
-    public function test_pic_can_only_view_and_review_logbooks_within_assigned_period(): void
-    {
-        $pic = User::factory()->create(['role' => 'pic', 'is_active' => true]);
+        $picA = User::factory()->create(['role' => 'pic', 'is_active' => true]);
+        $picB = User::factory()->create(['role' => 'pic', 'is_active' => true]);
         $intern = User::factory()->create(['role' => 'intern', 'is_active' => true]);
-        $unassignedIntern = User::factory()->create(['role' => 'intern', 'is_active' => true]);
 
-        // PIC ditugaskan ke intern hanya untuk periode 2026-11-01 s/d 2026-11-18
-        $this->assignInternToPic($pic, $intern, '2026-11-01', '2026-11-18');
-
-        $logbookInPeriod = Logbook::factory()->create([
+        $logbookForPicA = Logbook::factory()->create([
             'intern_user_id' => $intern->id,
-            'log_date' => '2026-11-15',
-            'status' => LogbookStatus::Pending,
-        ]);
-
-        $logbookOutsidePeriod = Logbook::factory()->create([
-            'intern_user_id' => $intern->id,
+            'target_pic_user_id' => $picA->id,
             'log_date' => '2026-11-20',
             'status' => LogbookStatus::Pending,
         ]);
 
-        $logbookUnassignedIntern = Logbook::factory()->create([
-            'intern_user_id' => $unassignedIntern->id,
-            'log_date' => '2026-11-15',
+        $logbookForPicB = Logbook::factory()->create([
+            'intern_user_id' => $intern->id,
+            'target_pic_user_id' => $picB->id,
+            'log_date' => '2026-11-20',
             'status' => LogbookStatus::Pending,
         ]);
 
-        // 1. Dalam periode: boleh lihat & boleh review
-        $this->actingAs($pic)->get(route('pic.logbooks.show', $logbookInPeriod))->assertOk();
-        $this->actingAs($pic)->post(route('pic.logbooks.review', $logbookInPeriod), [
-            'decision' => LogbookStatus::Approved->value,
-        ])->assertRedirect(route('pic.logbooks.show', $logbookInPeriod));
+        $mandiriLogbook = Logbook::factory()->create([
+            'intern_user_id' => $intern->id,
+            'target_pic_user_id' => null,
+            'log_date' => '2026-11-20',
+            'status' => null,
+        ]);
 
-        // 2. Di luar periode (tanggal 20 Nov > 18 Nov): ditolak 403
-        $this->actingAs($pic)->get(route('pic.logbooks.show', $logbookOutsidePeriod))->assertForbidden();
-        $this->actingAs($pic)->post(route('pic.logbooks.review', $logbookOutsidePeriod), [
+        // 1. Ditujukan ke PIC A: boleh lihat & boleh review oleh PIC A
+        $this->actingAs($picA)->get(route('pic.logbooks.show', $logbookForPicA))->assertOk();
+        $this->actingAs($picA)->post(route('pic.logbooks.review', $logbookForPicA), [
+            'decision' => LogbookStatus::Approved->value,
+        ])->assertRedirect(route('pic.logbooks.show', $logbookForPicA));
+
+        // 2. Ditujukan ke PIC B: ditolak 403 bagi PIC A
+        $this->actingAs($picA)->get(route('pic.logbooks.show', $logbookForPicB))->assertForbidden();
+        $this->actingAs($picA)->post(route('pic.logbooks.review', $logbookForPicB), [
             'decision' => LogbookStatus::Approved->value,
         ])->assertForbidden();
 
-        // 3. Peserta yang tidak ditugaskan: ditolak 403
-        $this->actingAs($pic)->get(route('pic.logbooks.show', $logbookUnassignedIntern))->assertForbidden();
-        $this->actingAs($pic)->post(route('pic.logbooks.review', $logbookUnassignedIntern), [
+        // 3. Logbook Mandiri / Umum (target_pic_user_id = null): ditolak 403 bagi PIC mana pun
+        $this->actingAs($picA)->get(route('pic.logbooks.show', $mandiriLogbook))->assertForbidden();
+        $this->actingAs($picA)->post(route('pic.logbooks.review', $mandiriLogbook), [
             'decision' => LogbookStatus::Approved->value,
         ])->assertForbidden();
     }
 
-    public function test_pic_can_approve_pending_manual_logbook_and_locks_further_intern_edits_or_pic_reviews(): void
+    public function test_pic_can_approve_pending_manual_logbook_and_approved_kpi_card_filters_correctly(): void
     {
         $pic = User::factory()->create(['role' => 'pic', 'is_active' => true]);
+        $otherPic = User::factory()->create(['role' => 'pic', 'is_active' => true]);
         $intern = User::factory()->create(['role' => 'intern', 'is_active' => true]);
-        $this->assignInternToPic($pic, $intern);
 
         $logbook = Logbook::factory()->create([
             'intern_user_id' => $intern->id,
+            'target_pic_user_id' => $pic->id,
             'log_date' => '2026-11-20',
+            'title' => 'Integrasi Modul Disetujui PIC',
             'status' => LogbookStatus::Pending,
-            'activity_status' => LogbookActivityStatus::SedangDikerjakan,
+            'activity_status' => LogbookActivityStatus::Selesai,
+        ]);
+
+        // Logbook pending milik PIC ini (untuk memastikan filter ?status=approved mengecualikannya)
+        Logbook::factory()->create([
+            'intern_user_id' => $intern->id,
+            'target_pic_user_id' => $pic->id,
+            'log_date' => '2026-11-20',
+            'title' => 'Logbook Masih Pending',
+            'status' => LogbookStatus::Pending,
+        ]);
+
+        // Logbook approved milik PIC LAIN (tidak boleh masuk hitungan card Disetujui PIC ini)
+        Logbook::factory()->approved($otherPic)->create([
+            'intern_user_id' => $intern->id,
+            'target_pic_user_id' => $otherPic->id,
+            'log_date' => '2026-11-20',
+            'title' => 'Approved Milik PIC Lain',
         ]);
 
         $response = $this->actingAs($pic)->post(route('pic.logbooks.review', $logbook), [
@@ -116,25 +119,37 @@ class LogbookReviewTest extends TestCase
         $this->assertNotNull($logbook->reviewed_at);
         $this->assertSame('Aktivitas harian sudah jelas dan disetujui.', $logbook->review_note);
 
-        // Di halaman detail & daftar PIC, status disetujui hanya menampilkan 1 badge "Disetujui" (tanpa "Sedang Dikerjakan")
+        // Di halaman detail, status disetujui hanya menampilkan badge "Disetujui" (tanpa "Sedang Dikerjakan")
         $this->actingAs($intern)
             ->get(route('intern.logbooks.show', $logbook))
             ->assertOk()
             ->assertSee('Disetujui')
             ->assertDontSee('Sedang Dikerjakan');
 
-        $this->actingAs($pic)
-            ->get(route('pic.logbooks.index'))
-            ->assertOk()
-            ->assertSee('Disetujui')
-            ->assertDontSee('Sedang Dikerjakan');
+        // Card KPI Disetujui di halaman Logbook PIC menghitung akurat (1) & link ?status=approved memfilter datanya
+        $picIndex = $this->actingAs($pic)->get(route('pic.logbooks.index'));
+        $picIndex->assertOk();
+        $this->assertSame(1, $picIndex->viewData('summary')['approved']);
+        $picIndex->assertSee(route('pic.logbooks.index', ['status' => 'approved']), false);
+        $picIndex->assertDontSee('Catatan Penugasan');
+        $picIndex->assertDontSee('Approved Milik PIC Lain');
+
+        $approvedFilter = $this->actingAs($pic)->get(route('pic.logbooks.index', ['status' => 'approved']));
+        $approvedFilter->assertOk();
+        $this->assertSame(
+            ['Integrasi Modul Disetujui PIC'],
+            $approvedFilter->viewData('logbooks')->pluck('title')->all()
+        );
+        $approvedFilter->assertSee('Integrasi Modul Disetujui PIC');
+        $approvedFilter->assertDontSee('Approved Milik PIC Lain');
 
         // Setelah approved, peserta tidak bisa mengedit lagi (403 Forbidden)
         $this->actingAs($intern)->get(route('intern.logbooks.edit', $logbook))->assertForbidden();
         $this->actingAs($intern)->put(route('intern.logbooks.update', $logbook), [
             'log_date' => '2026-11-20',
+            'target_pic_user_id' => $pic->id,
             'title' => 'Coba ubah setelah approved',
-            'activity_description' => 'Percobaan mengedit logbook yang sudah disetujui PIC.',
+            'result' => 'Percobaan hasil.',
         ])->assertForbidden();
 
         // Setelah approved, PIC juga tidak bisa me-review ulang (403 Forbidden)
@@ -148,10 +163,10 @@ class LogbookReviewTest extends TestCase
     {
         $pic = User::factory()->create(['role' => 'pic', 'is_active' => true]);
         $intern = User::factory()->create(['role' => 'intern', 'is_active' => true]);
-        $this->assignInternToPic($pic, $intern);
 
         $logbook = Logbook::factory()->create([
             'intern_user_id' => $intern->id,
+            'target_pic_user_id' => $pic->id,
             'log_date' => '2026-11-20',
             'title' => 'Judul Awal Logbook',
             'activity_description' => 'Uraian aktivitas awal yang masih terlalu singkat.',
@@ -173,13 +188,12 @@ class LogbookReviewTest extends TestCase
 
         $logbook->refresh();
         $this->assertSame(LogbookStatus::RevisionRequested, $logbook->status);
-        $this->assertSame('Mohon lengkapi rincian endpoint API yang dikerjakan.', $logbook->review_note);
 
         // 3. Peserta mengedit logbook -> membuat snapshot di logbook_revisions & status kembali pending
         $this->actingAs($intern)->put(route('intern.logbooks.update', $logbook), [
             'log_date' => '2026-11-20',
+            'target_pic_user_id' => $pic->id,
             'title' => 'Judul Logbook Setelah Direvisi',
-            'activity_description' => 'Mengimplementasikan endpoint POST /pic/logbooks/{id}/review beserta unit test.',
             'result' => 'Endpoint lulus 5 skenario test.',
         ])->assertRedirect(route('intern.logbooks.show', $logbook));
 
@@ -189,6 +203,7 @@ class LogbookReviewTest extends TestCase
             'logbook_id' => $logbook->id,
             'revision_no' => 1,
             'title' => 'Judul Awal Logbook',
+            'target_pic_user_id' => $pic->id,
             'status_before' => LogbookStatus::RevisionRequested->value,
             'review_note_before' => 'Mohon lengkapi rincian endpoint API yang dikerjakan.',
             'revised_by' => $intern->id,
@@ -207,7 +222,6 @@ class LogbookReviewTest extends TestCase
     {
         $pic = User::factory()->create(['role' => 'pic', 'is_active' => true]);
         $intern = User::factory()->create(['role' => 'intern', 'is_active' => true]);
-        $this->assignInternToPic($pic, $intern);
 
         $task = Task::factory()->create([
             'pic_user_id' => $pic->id,
@@ -234,30 +248,25 @@ class LogbookReviewTest extends TestCase
         $internOwner = User::factory()->create(['role' => 'intern', 'is_active' => true]);
         $otherIntern = User::factory()->create(['role' => 'intern', 'is_active' => true]);
 
-        $this->assignInternToPic($picOwner, $internOwner);
-
         $logbook = Logbook::factory()->create([
             'intern_user_id' => $internOwner->id,
+            'target_pic_user_id' => $picOwner->id,
             'log_date' => '2026-11-20',
             'status' => LogbookStatus::Pending,
         ]);
 
-        // 1. Peserta pemilik logbook mencoba meng-approve miliknya sendiri -> 403 Forbidden
         $this->actingAs($internOwner)->post(route('pic.logbooks.review', $logbook), [
             'decision' => LogbookStatus::Approved->value,
         ])->assertForbidden();
 
-        // 2. Peserta lain -> 403 Forbidden
         $this->actingAs($otherIntern)->post(route('pic.logbooks.review', $logbook), [
             'decision' => LogbookStatus::Approved->value,
         ])->assertForbidden();
 
-        // 3. PIC lain (tidak ditugaskan ke peserta ini) -> 403 Forbidden
         $this->actingAs($otherPic)->post(route('pic.logbooks.review', $logbook), [
             'decision' => LogbookStatus::Approved->value,
         ])->assertForbidden();
 
-        // 4. Admin/HR (hanya monitoring read-only) -> 403 Forbidden
         $this->actingAs($admin)->post(route('pic.logbooks.review', $logbook), [
             'decision' => LogbookStatus::Approved->value,
         ])->assertForbidden();
@@ -265,95 +274,84 @@ class LogbookReviewTest extends TestCase
         $this->assertSame(LogbookStatus::Pending, $logbook->fresh()->status);
     }
 
-    public function test_multi_pic_related_task_logbook_is_isolated_to_task_owner_pic_while_independent_logbook_is_viewable_by_all_related_pics(): void
+    public function test_multi_pic_target_selection_and_mandiri_isolation_from_all_pics(): void
     {
+        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
         $picA = User::factory()->create(['role' => 'pic', 'is_active' => true]);
         $picB = User::factory()->create(['role' => 'pic', 'is_active' => true]);
+        $inactivePic = User::factory()->create(['role' => 'pic', 'is_active' => false]);
         $intern = User::factory()->create(['role' => 'intern', 'is_active' => true]);
-        $otherIntern = User::factory()->create(['role' => 'intern', 'is_active' => true]);
 
-        // PIC A adalah PIC pembimbing utama di pic_assignments, sedangkan PIC B hanya memberi tugas di tabel tasks
-        $this->assignInternToPic($picA, $intern, '2026-11-01', null);
-
-        $taskPicA = Task::factory()->create([
-            'pic_user_id' => $picA->id,
-            'intern_user_id' => $intern->id,
-            'title' => 'Tugas API dari PIC A',
-        ]);
-
-        $taskPicB = Task::factory()->create([
-            'pic_user_id' => $picB->id,
-            'intern_user_id' => $intern->id,
-            'title' => 'Tugas UI dari PIC B',
-        ]);
-
-        $taskOtherIntern = Task::factory()->create([
-            'pic_user_id' => $picA->id,
-            'intern_user_id' => $otherIntern->id,
-            'title' => 'Tugas Peserta Lain',
-        ]);
-
-        // 1. Peserta ditolak jika memilih related_task_id milik peserta lain
+        // 1. Peserta ditolak jika memilih PIC yang nonaktif atau bukan role PIC
         $this->actingAs($intern)->post(route('intern.logbooks.store'), [
             'log_date' => '2026-11-20',
-            'related_task_id' => $taskOtherIntern->id,
-            'title' => 'Coba Pakai Tugas Orang Lain',
-            'activity_description' => 'Mencoba menautkan logbook ke tugas milik peserta lain.',
-            'result' => 'Percobaan hasil.',
-        ])->assertSessionHasErrors('related_task_id');
+            'target_pic_user_id' => $inactivePic->id,
+            'title' => 'Coba Pilih PIC Nonaktif',
+            'result' => 'Hasil percobaan.',
+        ])->assertSessionHasErrors('target_pic_user_id');
 
-        // 2. Peserta membuat logbook terkait tugas PIC B (walaupun PIC B tidak ada di pic_assignments)
+        // 2. Peserta membuat logbook ditujukan ke PIC B -> awalnya Sedang Dikerjakan (status null), belum bisa direview PIC B
         $this->actingAs($intern)->post(route('intern.logbooks.store'), [
             'log_date' => '2026-11-20',
-            'related_task_id' => $taskPicB->id,
+            'target_pic_user_id' => $picB->id,
             'title' => 'Mengerjakan Slicing UI Tugas PIC B',
-            'activity_description' => 'Membuat komponen tabel untuk tugas yang diberikan PIC B.',
-            'result' => 'Komponen tabel tugas PIC B selesai.',
+            'result' => 'Komponen tabel tugas PIC B sedang dikerjakan.',
         ])->assertRedirect(route('intern.logbooks.index'));
 
         $logbookForPicB = Logbook::where('title', 'Mengerjakan Slicing UI Tugas PIC B')->firstOrFail();
-        $this->assertSame($taskPicB->id, $logbookForPicB->related_task_id);
+        $this->assertSame($picB->id, $logbookForPicB->target_pic_user_id);
+        $this->assertSame(LogbookActivityStatus::SedangDikerjakan, $logbookForPicB->activity_status);
+        $this->assertNull($logbookForPicB->status);
 
-        // Logbook terkait tugas PIC B HANYA bisa dilihat dan di-review oleh PIC B (PIC A ditolak 403 meskipun ada di pic_assignments)
-        $this->actingAs($picB)->get(route('pic.logbooks.show', $logbookForPicB))->assertOk();
-        $this->actingAs($picA)->get(route('pic.logbooks.show', $logbookForPicB))->assertForbidden();
-        $this->actingAs($picA)->post(route('pic.logbooks.review', $logbookForPicB), [
+        // Selama masih Sedang Dikerjakan: belum masuk hitungan Menunggu Review PIC B & aksi review ditolak 403
+        $picBIndexBeforeComplete = $this->actingAs($picB)->get(route('pic.logbooks.index'));
+        $picBIndexBeforeComplete->assertOk()->assertSee('Mengerjakan Slicing UI Tugas PIC B');
+        $this->assertSame(0, $picBIndexBeforeComplete->viewData('summary')['pending']);
+        $this->actingAs($picB)->post(route('pic.logbooks.review', $logbookForPicB), [
             'decision' => LogbookStatus::Approved->value,
         ])->assertForbidden();
 
-        // PIC B berhasil me-review logbook terkait tugasnya
-        $this->actingAs($picB)->post(route('pic.logbooks.review', $logbookForPicB), [
-            'decision' => LogbookStatus::Approved->value,
-            'review_note' => 'Slicing UI tugas PIC B sudah sesuai.',
-        ])->assertRedirect(route('pic.logbooks.show', $logbookForPicB));
-        $this->assertSame(LogbookStatus::Approved, $logbookForPicB->fresh()->status);
+        // Setelah peserta menekan Selesai -> otomatis menjadi Pending (Menunggu Review) khusus untuk PIC B
+        $this->actingAs($intern)->patch(route('intern.logbooks.complete', $logbookForPicB))->assertRedirect();
+        $logbookForPicB->refresh();
+        $this->assertSame(LogbookActivityStatus::Selesai, $logbookForPicB->activity_status);
+        $this->assertSame(LogbookStatus::Pending, $logbookForPicB->status);
 
-        // 3. Peserta membuat logbook mandiri (related_task_id = null)
+        $picBIndexAfterComplete = $this->actingAs($picB)->get(route('pic.logbooks.index'));
+        $picBIndexAfterComplete->assertOk();
+        $this->assertSame(1, $picBIndexAfterComplete->viewData('summary')['pending']);
+
+        $this->actingAs($picA)->get(route('pic.logbooks.index'))->assertOk()->assertDontSee('Mengerjakan Slicing UI Tugas PIC B');
+        $this->actingAs($picA)->get(route('pic.logbooks.show', $logbookForPicB))->assertForbidden();
+
+        // 3. Peserta membuat logbook Mandiri / Umum (tanpa PIC) -> status null (baik saat Sedang Dikerjakan maupun setelah Selesai)
         $this->actingAs($intern)->post(route('intern.logbooks.store'), [
             'log_date' => '2026-11-20',
-            'related_task_id' => null,
+            'target_pic_user_id' => '',
             'title' => 'Townhall & Belajar Mandiri',
-            'activity_description' => 'Mengikuti pertemuan mingguan perusahaan dan membaca dokumentasi.',
             'result' => 'Ringkasan catatan townhall selesai.',
         ])->assertRedirect(route('intern.logbooks.index'));
 
-        $independentLogbook = Logbook::where('title', 'Townhall & Belajar Mandiri')->firstOrFail();
-        $this->assertNull($independentLogbook->related_task_id);
+        $mandiriLogbook = Logbook::where('title', 'Townhall & Belajar Mandiri')->firstOrFail();
+        $this->assertNull($mandiriLogbook->target_pic_user_id);
+        $this->assertSame(LogbookActivityStatus::SedangDikerjakan, $mandiriLogbook->activity_status);
+        $this->assertNull($mandiriLogbook->status);
 
-        // Logbook mandiri BISA DILIHAT oleh PIC A (pic_assignments) maupun PIC B (pernah memberi tugas di tasks)
-        $this->actingAs($picA)->get(route('pic.logbooks.show', $independentLogbook))->assertOk();
-        $this->actingAs($picB)->get(route('pic.logbooks.show', $independentLogbook))->assertOk();
+        $this->actingAs($intern)->patch(route('intern.logbooks.complete', $mandiriLogbook))->assertRedirect();
+        $mandiriLogbook->refresh();
+        $this->assertSame(LogbookActivityStatus::Selesai, $mandiriLogbook->activity_status);
+        $this->assertNull($mandiriLogbook->status);
 
-        // Namun yang boleh ME-REVIEW logbook mandiri hanyalah PIC A (pembimbing utama di pic_assignments)
-        $this->actingAs($picB)->post(route('pic.logbooks.review', $independentLogbook), [
-            'decision' => LogbookStatus::Approved->value,
-        ])->assertForbidden();
+        $this->actingAs($intern)->get(route('intern.logbooks.index'))->assertOk()->assertSee('Townhall & Belajar Mandiri');
+        $this->actingAs($admin)->get(route('admin.logbooks.index'))->assertOk()->assertSee('Townhall & Belajar Mandiri');
+        $this->actingAs($admin)->get(route('admin.logbooks.show', $mandiriLogbook))->assertOk();
 
-        $this->actingAs($picA)->post(route('pic.logbooks.review', $independentLogbook), [
-            'decision' => LogbookStatus::Approved->value,
-            'review_note' => 'Kegiatan mandiri diverifikasi oleh PIC Pembimbing Utama.',
-        ])->assertRedirect(route('pic.logbooks.show', $independentLogbook));
+        $this->actingAs($picA)->get(route('pic.logbooks.index'))->assertOk()->assertDontSee('Townhall & Belajar Mandiri');
+        $this->actingAs($picB)->get(route('pic.logbooks.index'))->assertOk()->assertDontSee('Townhall & Belajar Mandiri');
+        $this->actingAs($picA)->get(route('pic.logbooks.show', $mandiriLogbook))->assertForbidden();
+        $this->actingAs($picB)->get(route('pic.logbooks.show', $mandiriLogbook))->assertForbidden();
 
-        $this->assertSame(LogbookStatus::Approved, $independentLogbook->fresh()->status);
+        // EWS logbook harian tetap menghitung keduanya (yang memilih PIC + Mandiri)
+        $this->assertSame(2, Logbook::query()->forEwsFulfillment($intern->id, '2026-11-20')->count());
     }
 }

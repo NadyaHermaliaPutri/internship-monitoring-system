@@ -4,12 +4,14 @@ use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\EwsController;
 use App\Http\Controllers\InternProfileController;
 use App\Http\Controllers\LeaveRequestController;
 use App\Http\Controllers\LogbookController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PicProfileController;
 use App\Http\Controllers\PrivateMediaController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\TaskReviewController;
 use App\Http\Controllers\TaskSubmissionController;
@@ -17,12 +19,51 @@ use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    if (auth()->check()) {
-        return redirect()->to(auth()->user()->getDashboardRoute());
+    if (! auth()->check()) {
+        return redirect()->route('login');
     }
 
-    return redirect()->route('login');
+    $user = auth()->user();
+
+    if (! $user->is_active) {
+        auth()->logout();
+        request()->session()->invalidate();
+        request()->session()->regenerateToken();
+
+        return redirect()->route('login')->withErrors([
+            'email' => 'Akun Anda dinonaktifkan. Silakan hubungi Administrator.',
+        ]);
+    }
+
+    $dashboardUrl = $user->getDashboardRoute();
+
+    if ($dashboardUrl === '/') {
+        abort(403, 'Peran pengguna tidak valid.');
+    }
+
+    return redirect()->to($dashboardUrl);
 });
+
+// ==============================================================
+// PWA ASSETS & SERVICE WORKER (AKSES PUBLIK)
+// ==============================================================
+Route::get('/manifest.webmanifest', function () {
+    return response()->file(public_path('manifest.webmanifest'), [
+        'Content-Type' => 'application/manifest+json',
+    ]);
+})->name('pwa.manifest');
+
+Route::get('/sw.js', function () {
+    return response()->file(public_path('sw.js'), [
+        'Content-Type' => 'application/javascript',
+    ]);
+})->name('pwa.sw');
+
+Route::get('/offline.html', function () {
+    return response()->file(public_path('offline.html'), [
+        'Content-Type' => 'text/html',
+    ]);
+})->name('pwa.offline');
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'create'])->name('login');
@@ -45,6 +86,17 @@ Route::middleware('auth')->group(function () {
     // ==============================================================
     Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'admin'])->name('dashboard');
+
+        // Early Warning System (EWS) - Modul 4
+        Route::get('/ews', [EwsController::class, 'adminIndex'])->name('ews.index');
+        Route::put('/ews/settings', [EwsController::class, 'adminUpdateSettings'])->name('ews.settings.update');
+
+        // Laporan & Rekapitulasi (PDF / Excel) - Modul 4
+        Route::prefix('laporan')->name('reports.')->group(function () {
+            Route::get('/', [ReportController::class, 'index'])->name('index');
+            Route::get('/export-pdf', [ReportController::class, 'exportPdf'])->name('export-pdf');
+            Route::get('/export-excel', [ReportController::class, 'exportExcel'])->name('export-excel');
+        });
 
         // Manajemen Akun Pengguna (CRUD)
         Route::resource('users', UserController::class)->except(['show', 'destroy']);

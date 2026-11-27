@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'activity_description',
     'result',
     'evidence_media_id',
+    'target_pic_user_id',
     'activity_status',
     'status_before',
     'review_note_before',
@@ -44,5 +45,10 @@ class LogbookRevision extends Model
     public function evidenceMedia(): BelongsTo
     {
         return $this->belongsTo(MediaFile::class, 'evidence_media_id');
+    }
+
+    public function targetPic(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'target_pic_user_id');
     }
 }

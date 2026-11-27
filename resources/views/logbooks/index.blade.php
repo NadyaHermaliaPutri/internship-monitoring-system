@@ -21,37 +21,46 @@
 
 <div class="space-y-6">
 
-    {{-- 5 Kartu Ringkasan KPI Logbook --}}
-    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-        <div class="bg-white rounded-2xl border border-slate-200/70 p-4 shadow-xs">
+    {{-- 4 Kartu Ringkasan KPI Logbook (Terhubung ke Filter Status) --}}
+    @php
+        $activeStatusFilter = request('status');
+    @endphp
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <a
+            href="{{ route($rolePrefix . '.logbooks.index') }}"
+            class="block bg-white rounded-2xl border {{ empty($activeStatusFilter) ? 'border-[#015987] ring-2 ring-[#015987]/10' : 'border-slate-200/70 hover:border-sky-300' }} p-4 shadow-xs transition"
+        >
             <p class="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Total Logbook Manual</p>
             <p class="text-2xl font-extrabold text-[#015987] mt-1.5">{{ $summary['total_manual'] }}</p>
             <p class="text-[11px] text-slate-400 mt-1">Diisi oleh peserta</p>
-        </div>
+        </a>
 
-        <div class="bg-white rounded-2xl border border-slate-200/70 p-4 shadow-xs">
+        <a
+            href="{{ route($rolePrefix . '.logbooks.index', ['status' => 'pending']) }}"
+            class="block bg-white rounded-2xl border {{ $activeStatusFilter === 'pending' ? 'border-amber-500 ring-2 ring-amber-500/15' : 'border-slate-200/70 hover:border-amber-300' }} p-4 shadow-xs transition"
+        >
             <p class="text-[11px] font-semibold text-amber-600 uppercase tracking-wider">Menunggu Review</p>
             <p class="text-2xl font-extrabold text-amber-600 mt-1.5">{{ $summary['pending'] }}</p>
-            <p class="text-[11px] text-slate-400 mt-1">Status Pending</p>
-        </div>
+            <p class="text-[11px] text-slate-400 mt-1">Klik untuk filter Pending</p>
+        </a>
 
-        <div class="bg-white rounded-2xl border border-slate-200/70 p-4 shadow-xs">
-            <p class="text-[11px] font-semibold text-emerald-600 uppercase tracking-wider">Disetujui PIC</p>
+        <a
+            href="{{ route($rolePrefix . '.logbooks.index', ['status' => 'approved']) }}"
+            class="block bg-white rounded-2xl border {{ $activeStatusFilter === 'approved' ? 'border-emerald-500 ring-2 ring-emerald-500/15' : 'border-slate-200/70 hover:border-emerald-300' }} p-4 shadow-xs transition"
+        >
+            <p class="text-[11px] font-semibold text-emerald-600 uppercase tracking-wider">Disetujui</p>
             <p class="text-2xl font-extrabold text-emerald-600 mt-1.5">{{ $summary['approved'] }}</p>
-            <p class="text-[11px] text-slate-400 mt-1">Terkunci & Terverifikasi</p>
-        </div>
+            <p class="text-[11px] text-slate-400 mt-1">Klik untuk filter Disetujui</p>
+        </a>
 
-        <div class="bg-white rounded-2xl border border-slate-200/70 p-4 shadow-xs">
+        <a
+            href="{{ route($rolePrefix . '.logbooks.index', ['status' => 'revision_requested']) }}"
+            class="block bg-white rounded-2xl border {{ $activeStatusFilter === 'revision_requested' ? 'border-rose-500 ring-2 ring-rose-500/15' : 'border-slate-200/70 hover:border-rose-300' }} p-4 shadow-xs transition"
+        >
             <p class="text-[11px] font-semibold text-rose-600 uppercase tracking-wider">Perlu Revisi</p>
             <p class="text-2xl font-extrabold text-rose-600 mt-1.5">{{ $summary['revision_requested'] }}</p>
-            <p class="text-[11px] text-slate-400 mt-1">Menunggu perbaikan</p>
-        </div>
-
-        <div class="bg-white rounded-2xl border border-slate-200/70 p-4 shadow-xs col-span-2 sm:col-span-1">
-            <p class="text-[11px] font-semibold text-sky-600 uppercase tracking-wider">Catatan Penugasan</p>
-            <p class="text-2xl font-extrabold text-sky-700 mt-1.5">{{ $summary['task_assignments'] }}</p>
-            <p class="text-[11px] text-slate-400 mt-1">Otomatis dari PIC</p>
-        </div>
+            <p class="text-[11px] text-slate-400 mt-1">Klik untuk filter Revisi</p>
+        </a>
     </div>
 
     {{-- Kontainer Full-Width: Header Aksi, Bar Filter, Tabel Desktop & Kartu Mobile --}}
@@ -225,12 +234,11 @@
                                 </span>
                             </div>
 
-                            {{-- Tabel Desktop Per Hari (tanpa pengulangan kolom Tanggal) --}}
+                            {{-- Tabel Desktop Per Hari (tanpa pengulangan kolom Tanggal & tanpa kolom Sumber terpisah) --}}
                             <div class="hidden md:block overflow-x-auto">
                                 <table class="w-full text-left border-collapse">
                                     <thead>
                                         <tr class="bg-slate-50/80 border-b border-slate-200/80 text-[11px] font-bold text-[#015987] uppercase tracking-wider text-center">
-                                            <th class="py-3 px-4 whitespace-nowrap text-center">Sumber</th>
                                             <th class="py-3 px-4 w-full text-center">Kegiatan &amp; Hasil/Bukti</th>
                                             <th class="py-3 px-4 whitespace-nowrap text-center">Status</th>
                                             <th class="py-3 px-4 whitespace-nowrap text-center">Aksi</th>
@@ -239,23 +247,23 @@
                                     <tbody class="divide-y divide-slate-100 text-xs">
                                         @foreach ($dailyLogs as $item)
                                             <tr class="hover:bg-slate-50/80 transition align-middle">
-                                                {{-- Sumber --}}
-                                                <td class="py-3.5 px-4 whitespace-nowrap text-center">
-                                                    @if ($item->isTaskAssignment())
-                                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-sky-50 text-sky-700 border border-sky-200">
-                                                            Otomatis Penugasan PIC
-                                                        </span>
-                                                    @else
-                                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-700 border border-slate-200/70">
-                                                            Kegiatan Mandiri / Umum
-                                                        </span>
-                                                    @endif
-                                                </td>
-
                                                 {{-- Kegiatan & Hasil/Bukti --}}
-                                                <td class="py-3.5 px-4 max-w-lg">
-                                                    <div class="flex items-center gap-2">
-                                                        <span class="font-bold text-slate-900 truncate">{{ $item->title }}</span>
+                                                <td class="py-3.5 px-4 max-w-xl">
+                                                    <div class="flex flex-wrap items-center gap-2">
+                                                        <span class="font-bold text-slate-900">{{ $item->title }}</span>
+                                                        @if ($item->isTaskAssignment())
+                                                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-sky-50 text-sky-700 border border-sky-200 shrink-0">
+                                                                Otomatis Tugas
+                                                            </span>
+                                                        @elseif ($item->targetPic)
+                                                            <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 shrink-0">
+                                                                PIC: {{ $item->targetPic->name }}
+                                                            </span>
+                                                        @else
+                                                            <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-600 border border-slate-200 shrink-0">
+                                                                Mandiri
+                                                            </span>
+                                                        @endif
                                                         @if ($item->revisions_count > 0)
                                                             <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 shrink-0">
                                                                 {{ $item->revisions_count }}x Revisi
@@ -288,47 +296,15 @@
                                                     @endif
                                                 </td>
 
-                                                {{-- Status --}}
+                                                {{-- Status (1 badge utama yang bersih) --}}
                                                 <td class="py-3.5 px-4 whitespace-nowrap text-center">
-                                                    @if ($item->isManual() && $item->status)
-                                                        @php
-                                                            $statusClasses = match ($item->status->value) {
-                                                                'approved' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
-                                                                'revision_requested' => 'bg-rose-50 text-rose-700 border-rose-200',
-                                                                default => 'bg-amber-50 text-amber-700 border-amber-200',
-                                                            };
-                                                        @endphp
-                                                        <div class="inline-flex flex-col items-center gap-1">
-                                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border {{ $statusClasses }}">
-                                                                {{ $item->status->label() }}
-                                                            </span>
-                                                            @if ($item->status->value !== 'approved' && $item->activity_status)
-                                                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border {{ $item->activity_status->badgeClasses() }}">
-                                                                    {{ $item->activity_status->label() }}
-                                                                </span>
-                                                            @endif
-                                                        </div>
-                                                    @elseif ($item->isTaskAssignment() && $item->task?->status)
-                                                        @php
-                                                            $taskStatusClasses = match ($item->task->status->value) {
-                                                                'accepted' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
-                                                                'revision_requested' => 'bg-rose-50 text-rose-700 border-rose-200',
-                                                                'submitted', 'resubmitted' => 'bg-amber-50 text-amber-700 border-amber-200',
-                                                                'in_progress' => 'bg-sky-50 text-sky-700 border-sky-200',
-                                                                default => 'bg-slate-100 text-slate-700 border-slate-200',
-                                                            };
-                                                        @endphp
-                                                        <span
-                                                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border {{ $taskStatusClasses }}"
-                                                            title="Status real-time dari menu Tugas Magang (read-only)"
-                                                        >
-                                                            {{ $item->task->status->label() }}
-                                                        </span>
-                                                    @else
-                                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-sky-50/70 text-sky-700 border border-sky-200/70">
-                                                            Tercatat Otomatis
-                                                        </span>
-                                                    @endif
+                                                    @php $statusBadge = $item->displayStatusBadge(); @endphp
+                                                    <span
+                                                        class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border {{ $statusBadge['classes'] }}"
+                                                        @if ($statusBadge['title']) title="{{ $statusBadge['title'] }}" @endif
+                                                    >
+                                                        {{ $statusBadge['label'] }}
+                                                    </span>
                                                 </td>
 
                                                 {{-- Aksi --}}
@@ -387,11 +363,15 @@
                                             <div class="flex flex-wrap items-center gap-1.5">
                                                 @if ($item->isTaskAssignment())
                                                     <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-sky-50 text-sky-700 border border-sky-200">
-                                                        Otomatis Penugasan PIC
+                                                        Otomatis Tugas
+                                                    </span>
+                                                @elseif ($item->targetPic)
+                                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                                                        PIC: {{ $item->targetPic->name }}
                                                     </span>
                                                 @else
-                                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-700">
-                                                        Aktivitas Mandiri
+                                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-600 border border-slate-200">
+                                                        Mandiri
                                                     </span>
                                                 @endif
 
@@ -402,38 +382,13 @@
                                                 @endif
                                             </div>
 
-                                            @if ($item->isManual() && $item->status)
-                                                @php
-                                                    $statusClasses = match ($item->status->value) {
-                                                        'approved' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
-                                                        'revision_requested' => 'bg-rose-50 text-rose-700 border-rose-200',
-                                                        default => 'bg-amber-50 text-amber-700 border-amber-200',
-                                                    };
-                                                @endphp
-                                                <div class="flex flex-wrap items-center gap-1">
-                                                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold border {{ $statusClasses }}">
-                                                        {{ $item->status->label() }}
-                                                    </span>
-                                                    @if ($item->status->value !== 'approved' && $item->activity_status)
-                                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold border {{ $item->activity_status->badgeClasses() }}">
-                                                            {{ $item->activity_status->label() }}
-                                                        </span>
-                                                    @endif
-                                                </div>
-                                            @elseif ($item->isTaskAssignment() && $item->task?->status)
-                                                @php
-                                                    $taskStatusClasses = match ($item->task->status->value) {
-                                                        'accepted' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
-                                                        'revision_requested' => 'bg-rose-50 text-rose-700 border-rose-200',
-                                                        'submitted', 'resubmitted' => 'bg-amber-50 text-amber-700 border-amber-200',
-                                                        'in_progress' => 'bg-sky-50 text-sky-700 border-sky-200',
-                                                        default => 'bg-slate-100 text-slate-700 border-slate-200',
-                                                    };
-                                                @endphp
-                                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold border {{ $taskStatusClasses }}">
-                                                    {{ $item->task->status->label() }}
-                                                </span>
-                                            @endif
+                                            @php $statusBadge = $item->displayStatusBadge(); @endphp
+                                            <span
+                                                class="px-2.5 py-0.5 rounded-full text-[10px] font-bold border {{ $statusBadge['classes'] }}"
+                                                @if ($statusBadge['title']) title="{{ $statusBadge['title'] }}" @endif
+                                            >
+                                                {{ $statusBadge['label'] }}
+                                            </span>
                                         </div>
 
                                         <h4 class="text-sm font-bold text-slate-900">{{ $item->title }}</h4>
@@ -552,7 +507,6 @@
                             @if (! $user->isIntern())
                                 <th class="py-3.5 px-4 whitespace-nowrap text-center">Peserta</th>
                             @endif
-                            <th class="py-3.5 px-4 whitespace-nowrap text-center">Sumber</th>
                             <th class="py-3.5 px-4 w-full text-center">Kegiatan</th>
                             <th class="py-3.5 px-4 whitespace-nowrap text-center">Status</th>
                             <th class="py-3.5 px-4 whitespace-nowrap text-center">Aksi</th>
@@ -576,27 +530,23 @@
                                     </td>
                                 @endif
 
-                                {{-- Sumber --}}
-                                <td class="py-3.5 px-4 whitespace-nowrap text-center">
-                                    @if ($item->isTaskAssignment())
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-sky-50 text-sky-700 border border-sky-200">
-                                            Otomatis Penugasan PIC
-                                        </span>
-                                    @elseif ($item->relatedTask)
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200" title="Terkait Tugas: {{ $item->relatedTask->title }}">
-                                            Terkait Tugas ({{ $item->relatedTask->pic?->name ?? 'PIC' }})
-                                        </span>
-                                    @else
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-700 border border-slate-200/70">
-                                            Kegiatan Mandiri / Umum
-                                        </span>
-                                    @endif
-                                </td>
-
                                 {{-- Kegiatan --}}
                                 <td class="py-3.5 px-4 max-w-md">
-                                    <div class="flex items-center gap-2">
-                                        <span class="font-bold text-slate-900 truncate">{{ $item->title }}</span>
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <span class="font-bold text-slate-900">{{ $item->title }}</span>
+                                        @if ($item->isTaskAssignment())
+                                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-sky-50 text-sky-700 border border-sky-200 shrink-0">
+                                                Otomatis Tugas
+                                            </span>
+                                        @elseif ($item->targetPic)
+                                            <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 shrink-0">
+                                                PIC: {{ $item->targetPic->name }}
+                                            </span>
+                                        @else
+                                            <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-600 border border-slate-200 shrink-0">
+                                                Mandiri
+                                            </span>
+                                        @endif
                                         @if ($item->revisions_count > 0)
                                             <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 shrink-0">
                                                 {{ $item->revisions_count }}x Revisi
@@ -629,47 +579,15 @@
                                     @endif
                                 </td>
 
-                                {{-- Status --}}
+                                {{-- Status (1 badge utama yang bersih) --}}
                                 <td class="py-3.5 px-4 whitespace-nowrap text-center">
-                                    @if ($item->isManual() && $item->status)
-                                        @php
-                                            $statusClasses = match ($item->status->value) {
-                                                'approved' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
-                                                'revision_requested' => 'bg-rose-50 text-rose-700 border-rose-200',
-                                                default => 'bg-amber-50 text-amber-700 border-amber-200',
-                                            };
-                                        @endphp
-                                        <div class="inline-flex flex-col items-center gap-1">
-                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border {{ $statusClasses }}">
-                                                {{ $item->status->label() }}
-                                            </span>
-                                            @if ($item->status->value !== 'approved' && $item->activity_status)
-                                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border {{ $item->activity_status->badgeClasses() }}">
-                                                    {{ $item->activity_status->label() }}
-                                                </span>
-                                            @endif
-                                        </div>
-                                    @elseif ($item->isTaskAssignment() && $item->task?->status)
-                                        @php
-                                            $taskStatusClasses = match ($item->task->status->value) {
-                                                'accepted' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
-                                                'revision_requested' => 'bg-rose-50 text-rose-700 border-rose-200',
-                                                'submitted', 'resubmitted' => 'bg-amber-50 text-amber-700 border-amber-200',
-                                                'in_progress' => 'bg-sky-50 text-sky-700 border-sky-200',
-                                                default => 'bg-slate-100 text-slate-700 border-slate-200',
-                                            };
-                                        @endphp
-                                        <span
-                                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border {{ $taskStatusClasses }}"
-                                            title="Status real-time dari menu Tugas Magang (read-only)"
-                                        >
-                                            {{ $item->task->status->label() }}
-                                        </span>
-                                    @else
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-sky-50/70 text-sky-700 border border-sky-200/70">
-                                            Tercatat Otomatis
-                                        </span>
-                                    @endif
+                                    @php $statusBadge = $item->displayStatusBadge(); @endphp
+                                    <span
+                                        class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border {{ $statusBadge['classes'] }}"
+                                        @if ($statusBadge['title']) title="{{ $statusBadge['title'] }}" @endif
+                                    >
+                                        {{ $statusBadge['label'] }}
+                                    </span>
                                 </td>
 
                                 {{-- Aksi --}}
@@ -726,45 +644,27 @@
                                 @endif
                             </span>
 
-                            @if ($item->isManual() && $item->status)
-                                @php
-                                    $statusClasses = match ($item->status->value) {
-                                        'approved' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
-                                        'revision_requested' => 'bg-rose-50 text-rose-700 border-rose-200',
-                                        default => 'bg-amber-50 text-amber-700 border-amber-200',
-                                    };
-                                @endphp
-                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold border {{ $statusClasses }}">
-                                    {{ $item->status->label() }}
-                                </span>
-                            @elseif ($item->isTaskAssignment() && $item->task?->status)
-                                @php
-                                    $taskStatusClasses = match ($item->task->status->value) {
-                                        'accepted' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
-                                        'revision_requested' => 'bg-rose-50 text-rose-700 border-rose-200',
-                                        'submitted', 'resubmitted' => 'bg-amber-50 text-amber-700 border-amber-200',
-                                        'in_progress' => 'bg-sky-50 text-sky-700 border-sky-200',
-                                        default => 'bg-slate-100 text-slate-700 border-slate-200',
-                                    };
-                                @endphp
-                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold border {{ $taskStatusClasses }}">
-                                    {{ $item->task->status->label() }}
-                                </span>
-                            @else
-                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-sky-50 text-sky-700 border border-sky-200">
-                                    Tercatat Otomatis
-                                </span>
-                            @endif
+                            @php $statusBadge = $item->displayStatusBadge(); @endphp
+                            <span
+                                class="px-2.5 py-0.5 rounded-full text-[10px] font-bold border {{ $statusBadge['classes'] }}"
+                                @if ($statusBadge['title']) title="{{ $statusBadge['title'] }}" @endif
+                            >
+                                {{ $statusBadge['label'] }}
+                            </span>
                         </div>
 
                         <div class="flex flex-wrap items-center gap-1.5">
                             @if ($item->isTaskAssignment())
                                 <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-sky-50 text-sky-700 border border-sky-200">
-                                    Otomatis Penugasan PIC
+                                    Otomatis Tugas
+                                </span>
+                            @elseif ($item->targetPic)
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                                    PIC: {{ $item->targetPic->name }}
                                 </span>
                             @else
-                                <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-700">
-                                    Aktivitas Mandiri
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-600 border border-slate-200">
+                                    Mandiri
                                 </span>
                             @endif
 

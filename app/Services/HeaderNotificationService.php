@@ -251,6 +251,7 @@ class HeaderNotificationService
         if (Schema::hasTable('tasks')) {
             $overdueTasks = Task::query()
                 ->with('intern:id,name')
+                ->whereHas('intern', fn ($q) => $q->where('is_active', true))
                 ->overdue()
                 ->orderBy('deadline_at')
                 ->limit(5)

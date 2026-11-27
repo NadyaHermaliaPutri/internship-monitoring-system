@@ -10,27 +10,27 @@
 @endsection
 
 @section('page-subtitle', 'PT WAN Teknologi Internasional — Pengawasan Teknis & Progres Pekerjaan Proyek')
-@section('search-placeholder', 'Cari tugas, subjek, atau intern...')
+@section('search-placeholder', 'Cari anak bimbingan...')
 
 @section('content')
 <div class="space-y-8">
 
     <!-- ============================================================== -->
-    <!-- 1. KARTU STATISTIK RINGKASAN PIC (TOP 4 STAT CARDS) -->
+    <!-- 1. KARTU STATISTIK RINGKASAN PIC (TOP 4 STAT CARDS 100% DINAMIS) -->
     <!-- ============================================================== -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
 
         <!-- Card 1: Tugas Aktif Anda -->
         <div class="bg-white p-6 rounded-2xl border border-slate-200/70 shadow-xs flex flex-col justify-between min-h-[148px]">
             <div class="flex items-start justify-between">
-                <span class="text-xs font-bold text-[#015987]">Tugas Aktif Anda</span>
+                <span class="text-xs font-bold text-slate-700">Tugas Aktif Anda</span>
                 <div class="w-8 h-8 rounded-xl bg-sky-50 text-sky-500 flex items-center justify-center">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
                     </svg>
                 </div>
             </div>
-            <div class="mt-5">
+            <div class="mt-4">
                 <div class="flex items-baseline gap-1.5">
                     <span class="text-2xl sm:text-3xl font-extrabold text-[#015987]">{{ $picDashboard['active_tasks_count'] }}</span>
                     <span class="text-xs text-slate-500 font-medium">Tugas</span>
@@ -49,17 +49,17 @@
             </div>
         </div>
 
-        <!-- Card 2: Mendekati Tenggat -->
+        <!-- Card 2: Mendekati Tenggat (< 24 Jam) -->
         <div class="bg-white p-6 rounded-2xl border border-slate-200/70 shadow-xs flex flex-col justify-between min-h-[148px]">
             <div class="flex items-start justify-between">
-                <span class="text-xs font-bold text-[#015987]">Mendekati Tenggat</span>
+                <span class="text-xs font-bold text-slate-700">Mendekati Tenggat</span>
                 <div class="w-8 h-8 rounded-xl bg-amber-50 text-amber-500 flex items-center justify-center">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                     </svg>
                 </div>
             </div>
-            <div class="mt-5">
+            <div class="mt-4">
                 <div class="flex items-baseline gap-1.5">
                     <span class="text-2xl sm:text-3xl font-extrabold text-[#015987]">{{ $picDashboard['approaching_tasks_count'] }}</span>
                     <span class="text-xs text-slate-500 font-medium">Tugas</span>
@@ -74,14 +74,14 @@
         <!-- Card 3: Butuh Review Anda -->
         <div class="bg-white p-6 rounded-2xl border border-slate-200/70 shadow-xs flex flex-col justify-between min-h-[148px]">
             <div class="flex items-start justify-between">
-                <span class="text-xs font-bold text-[#015987]">Butuh Review Anda</span>
+                <span class="text-xs font-bold text-slate-700">Butuh Review Anda</span>
                 <div class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-500 flex items-center justify-center">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                     </svg>
                 </div>
             </div>
-            <div class="mt-5">
+            <div class="mt-4">
                 <div class="flex items-baseline gap-1.5">
                     <span class="text-2xl sm:text-3xl font-extrabold text-[#015987]">{{ $picDashboard['awaiting_review_tasks_count'] }}</span>
                     <span class="text-xs text-slate-500 font-medium">Kiriman Tugas</span>
@@ -96,14 +96,14 @@
         <!-- Card 4: Dalam Proses Revisi -->
         <div class="bg-white p-6 rounded-2xl border border-slate-200/70 shadow-xs flex flex-col justify-between min-h-[148px]">
             <div class="flex items-start justify-between">
-                <span class="text-xs font-bold text-[#015987]">Dalam Proses Revisi</span>
+                <span class="text-xs font-bold text-slate-700">Dalam Proses Revisi</span>
                 <div class="w-8 h-8 rounded-xl bg-rose-50 text-rose-500 flex items-center justify-center">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
                     </svg>
                 </div>
             </div>
-            <div class="mt-5">
+            <div class="mt-4">
                 <div class="flex items-baseline gap-1.5">
                     <span class="text-2xl sm:text-3xl font-extrabold text-[#015987]">{{ $picDashboard['revision_tasks_count'] }}</span>
                     <span class="text-xs text-slate-500 font-medium">Tugas</span>
@@ -123,7 +123,7 @@
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         
         <!-- ========================================================== -->
-        <!-- KOLOM KIRI (LEBAR 7/12): SUBMISI & PESERTA DENGAN TUGAS -->
+        <!-- KOLOM KIRI (LEBAR 7/12): PRESENSI BIMBINGAN, SUBMISI, & TUGAS -->
         <!-- ========================================================== -->
         <div class="lg:col-span-7 space-y-8">
 
@@ -237,7 +237,7 @@
                 </div>
             </div>
 
-            <!-- KARTU 2: PESERTA DENGAN TUGAS DARI ANDA -->
+            <!-- KARTU 2: PESERTA DENGAN TUGAS DARI ANDA (POOL BERSAMA) -->
             <div class="bg-white rounded-2xl border border-slate-200/70 shadow-xs overflow-hidden">
                 <!-- Header Kartu -->
                 <div class="p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -344,13 +344,12 @@
         </div>
 
         <!-- ========================================================== -->
-        <!-- KOLOM KANAN (LEBAR 5/12): EWS & TENGGAT TUGAS -->
+        <!-- KOLOM KANAN (LEBAR 5/12): EWS & TENGGAT TUGAS PIC          -->
         <!-- ========================================================== -->
         <div class="lg:col-span-5 space-y-8">
 
             <!-- KARTU 1: SINYAL PERINGATAN (EWS) -->
             <div class="bg-white rounded-2xl border border-slate-200/70 shadow-xs p-6 space-y-5">
-                <!-- Header Kartu -->
                 <div class="flex items-center justify-between pb-4 border-b border-slate-100">
                     <div class="flex items-center gap-2.5">
                         <div class="w-8 h-8 rounded-xl bg-rose-50 text-rose-500 flex items-center justify-center flex-shrink-0">
@@ -405,7 +404,7 @@
                 @endif
             </div>
 
-            <!-- KARTU 2: TENGGAT TUGAS BUATAN ANDA -->
+            <!-- KARTU 2: TENGGAT TUGAS BUATAN ANDA (DINAMIS DARI DATABASE) -->
             <div class="bg-white rounded-2xl border border-slate-200/70 shadow-xs p-6 space-y-4">
                 <div class="flex items-center justify-between pb-3 border-b border-slate-100">
                     <h3 class="text-sm font-bold text-[#015987]">Tenggat Tugas Buatan Anda</h3>

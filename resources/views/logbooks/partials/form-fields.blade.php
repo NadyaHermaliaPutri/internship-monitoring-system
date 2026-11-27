@@ -11,7 +11,7 @@
     $inputClass = 'w-full px-3.5 py-2.5 text-sm sm:text-xs rounded-xl border text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-[#015987] transition';
     $okClass = 'border-slate-200 bg-slate-50/60';
     $errClass = 'border-rose-400 bg-rose-50/40';
-    $selectedActivityStatus = old('activity_status', $logbook?->activity_status?->value ?? 'sedang_dikerjakan');
+    $selectedTargetPic = (string) old('target_pic_user_id', $logbook?->target_pic_user_id);
 @endphp
 
 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -38,24 +38,29 @@
     </div>
 
     <div>
-        <label for="{{ $prefix }}activity_status" class="block text-xs font-bold text-slate-700 mb-1.5">
-            Status <span class="text-rose-500">*</span>
+        <label for="{{ $prefix }}target_pic_user_id" class="block text-xs font-bold text-slate-700 mb-1.5">
+            PIC Pemberi Tugas / Tujuan <span class="text-slate-400 font-normal">(Opsional)</span>
         </label>
         <select
-            id="{{ $prefix }}activity_status"
-            name="activity_status"
-            required
-            class="{{ $inputClass }} {{ $errors->has('activity_status') ? $errClass : $okClass }}"
+            id="{{ $prefix }}target_pic_user_id"
+            name="target_pic_user_id"
+            class="{{ $inputClass }} {{ $errors->has('target_pic_user_id') ? $errClass : $okClass }}"
         >
-            <option value="sedang_dikerjakan" @selected($selectedActivityStatus === 'sedang_dikerjakan')>Sedang Dikerjakan</option>
-            <option value="menunggu_review" @selected($selectedActivityStatus === 'menunggu_review')>Menunggu Review</option>
-            <option value="selesai" @selected($selectedActivityStatus === 'selesai')>Selesai</option>
-            <option value="baru_dikasih" @selected($selectedActivityStatus === 'baru_dikasih')>Baru Diberikan</option>
+            <option value="">Mandiri / Umum (Hanya Pantauan Admin)</option>
+            @foreach ($picOptions ?? [] as $picOption)
+                <option value="{{ $picOption->id }}" @selected($selectedTargetPic === (string) $picOption->id)>
+                    {{ $picOption->name }}
+                </option>
+            @endforeach
         </select>
         <p class="text-[11px] text-slate-400 mt-1">
-            "Baru Diberikan" otomatis terpasang untuk tugas baru dari PIC yang belum dikerjakan.
+            @if ($logbook)
+                Ubah tujuan PIC bila diperlukan. Logbook akan masuk antrian review PIC saat progres berstatus <strong>Selesai</strong>.
+            @else
+                Logbook baru otomatis berstatus <strong>Sedang Dikerjakan</strong>; klik <strong>Selesai</strong> nanti untuk mengirim ke review PIC.
+            @endif
         </p>
-        @error('activity_status')
+        @error('target_pic_user_id')
             <p class="text-[11px] text-rose-600 font-semibold mt-1">{{ $message }}</p>
         @enderror
     </div>

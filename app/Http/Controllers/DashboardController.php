@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
 use App\Services\AttendanceRecapService;
+use App\Services\DashboardService;
 use App\Services\InternDashboardService;
 use App\Services\PicDashboardService;
 use Illuminate\Contracts\View\View;
@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 class DashboardController extends Controller
 {
     public function __construct(
+        protected DashboardService $dashboardService,
         protected AttendanceRecapService $recapService,
         protected InternDashboardService $internDashboardService,
         protected PicDashboardService $picDashboardService
@@ -22,16 +23,24 @@ class DashboardController extends Controller
      */
     public function admin(Request $request): View
     {
-        $adminSummary = $this->recapService->getAdminDailyDashboard();
+        $search = $request->query('search');
+        $data = $this->dashboardService->getAdminDashboardData($search);
 
-        $stats = [
-            'total_active' => User::where('is_active', true)->count(),
-            'inactive_users' => User::where('is_active', false)->count(),
-            'pic_active' => User::where('role', 'pic')->where('is_active', true)->count(),
-            'intern_active' => User::where('role', 'intern')->where('is_active', true)->count(),
-        ];
+        $adminSummary = $data['adminSummary'];
+        $stats = $data['stats'];
+        $taskSummary = $data['taskSummary'];
+        $latestLogbooks = $data['latestLogbooks'];
+        $ewsSummary = $data['ewsSummary'];
 
-        return view('dashboard.admin', compact('adminSummary', 'stats'));
+        return view('dashboard.admin', compact(
+            'data',
+            'adminSummary',
+            'stats',
+            'taskSummary',
+            'latestLogbooks',
+            'ewsSummary',
+            'search'
+        ));
     }
 
     /**
