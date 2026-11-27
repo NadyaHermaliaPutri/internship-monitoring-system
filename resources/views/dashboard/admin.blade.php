@@ -315,8 +315,9 @@
 
 </div>
 
+@push('modals')
 <!-- Modal Tolak Permohonan Izin -->
-<div id="rejectModal" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+<div id="rejectModal" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto hidden">
     <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xl max-w-md w-full p-6 space-y-4">
         <div class="flex items-center justify-between pb-3 border-b border-slate-100">
             <h4 class="text-sm font-bold text-slate-900">Tolak Permohonan Izin</h4>
@@ -351,6 +352,7 @@
         </form>
     </div>
 </div>
+@endpush
 
 @push('scripts')
 <script>

@@ -483,10 +483,11 @@
 
 </div>
 
+@push('modals')
 <!-- ============================================================== -->
 <!-- MODAL 1: VERIFIKASI / KEPUTUSAN ADMIN                          -->
 <!-- ============================================================== -->
-<div id="reviewModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+<div id="reviewModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
     <div class="bg-white max-w-lg w-full rounded-2xl overflow-hidden shadow-2xl border border-slate-200 animate-in fade-in zoom-in duration-150">
         
         <div class="p-6 border-b border-slate-100 flex items-center justify-between">
@@ -576,7 +577,7 @@
 <!-- ============================================================== -->
 <!-- MODAL 2: DETAIL KEPUTUSAN HISTORIS (REDESIGN WANTRACE)          -->
 <!-- ============================================================== -->
-<div id="detailModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+<div id="detailModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
     <div class="bg-white max-w-lg w-full rounded-2xl overflow-hidden shadow-2xl border border-slate-200 animate-in fade-in zoom-in duration-150">
         
         <!-- Header Gradient WANTRACE -->
@@ -671,7 +672,7 @@
 <!-- ============================================================== -->
 <!-- MODAL 3: PREVIEW BUKTI PRIVAT (GAMBAR / PDF)                    -->
 <!-- ============================================================== -->
-<div id="evidencePreviewModal" class="fixed inset-0 z-50 hidden bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-4">
+<div id="evidencePreviewModal" class="fixed inset-0 z-50 hidden bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
     <div class="bg-white max-w-2xl w-full rounded-2xl overflow-hidden shadow-2xl border border-slate-200 flex flex-col max-h-[90vh]">
         
         <div class="p-4 border-b border-slate-100 flex items-center justify-between flex-shrink-0">
@@ -706,6 +707,7 @@
 
     </div>
 </div>
+@endpush
 
 @endsection
 

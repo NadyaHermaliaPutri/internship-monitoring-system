@@ -369,10 +369,11 @@
 
 </div>
 
+@push('modals')
 <!-- ============================================================== -->
 <!-- 4. MODAL KOREKSI / PENINJAUAN STATUS PRESENSI OLEH ADMIN/HR   -->
 <!-- ============================================================== -->
-<div id="correctionModal" class="fixed inset-0 z-50 hidden bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+<div id="correctionModal" class="fixed inset-0 z-50 hidden bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
     <div class="bg-white w-full max-w-md rounded-2xl border border-slate-200/80 shadow-xl overflow-hidden">
         
         <div class="px-6 py-4 bg-gradient-to-r from-sky-50 to-indigo-50 border-b border-slate-100 flex items-center justify-between">
@@ -431,7 +432,7 @@
 <!-- ============================================================== -->
 <!-- 5. MODAL PENOLAKAN PRESENSI OLEH ADMIN/HR                      -->
 <!-- ============================================================== -->
-<div id="rejectModal" class="fixed inset-0 z-50 hidden bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+<div id="rejectModal" class="fixed inset-0 z-50 hidden bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
     <div class="bg-white w-full max-w-md rounded-2xl border border-slate-200/80 shadow-xl overflow-hidden">
         
         <div class="px-6 py-4 bg-rose-50 border-b border-rose-100 flex items-center justify-between">
@@ -484,7 +485,7 @@
 </div>
 
 <!-- Modal Preview Foto Selfie Resolusi Penuh -->
-<div id="imagePreviewModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+<div id="imagePreviewModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
     <div class="bg-white max-w-md w-full rounded-2xl overflow-hidden shadow-2xl border border-slate-200">
         <div class="p-4 border-b border-slate-100 flex items-center justify-between">
             <h5 class="text-xs font-bold text-[#015987]" id="previewModalTitle">Bukti Foto Selfie</h5>
@@ -499,6 +500,7 @@
         </div>
     </div>
 </div>
+@endpush
 
 @endsection
 
