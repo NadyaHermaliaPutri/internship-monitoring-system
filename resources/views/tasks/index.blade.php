@@ -20,43 +20,76 @@
 
 <div class="space-y-6">
 
-    {{-- Ringkasan Metrik Tugas --}}
+    {{-- Ringkasan Metrik Tugas (6 Kartu KPI Klik-Filter) --}}
+    @php
+        $activeStatus = request('status');
+        $isOverdueFilter = request()->boolean('overdue');
+        $preservedQuery = array_filter([
+            'search' => request('search'),
+            'intern_id' => ! $user->isIntern() ? request('intern_id') : null,
+        ], fn ($v) => filled($v));
+
+        $isCardTotalActive = empty($activeStatus) && ! $isOverdueFilter;
+        $isCardActiveActive = $activeStatus === 'active' && ! $isOverdueFilter;
+        $isCardReviewActive = $activeStatus === 'awaiting_review' && ! $isOverdueFilter;
+        $isCardRevisionActive = $activeStatus === 'revision_requested' && ! $isOverdueFilter;
+        $isCardAcceptedActive = $activeStatus === 'accepted' && ! $isOverdueFilter;
+        $isCardOverdueActive = $isOverdueFilter && empty($activeStatus);
+    @endphp
     <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-        <div class="bg-white rounded-2xl border border-slate-200/70 p-4 shadow-xs">
+        <a
+            href="{{ route($rolePrefix . '.tasks.index') }}"
+            class="block bg-white rounded-2xl border {{ $isCardTotalActive ? 'border-[#015987] ring-2 ring-[#015987]/15' : 'border-slate-200/70 hover:border-[#015987]/50 hover:shadow-sm' }} p-4 shadow-xs transition cursor-pointer"
+        >
             <p class="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Total Tugas</p>
             <p class="text-2xl font-extrabold text-[#015987] mt-1.5">{{ $summary['total'] }}</p>
             <p class="text-[11px] text-slate-400 mt-1">Semua status</p>
-        </div>
+        </a>
 
-        <div class="bg-white rounded-2xl border border-slate-200/70 p-4 shadow-xs">
+        <a
+            href="{{ route($rolePrefix . '.tasks.index', array_merge($preservedQuery, ['status' => 'active'])) }}"
+            class="block bg-white rounded-2xl border {{ $isCardActiveActive ? 'border-sky-500 ring-2 ring-sky-500/15' : 'border-slate-200/70 hover:border-sky-300 hover:shadow-sm' }} p-4 shadow-xs transition cursor-pointer"
+        >
             <p class="text-[11px] font-semibold text-sky-600 uppercase tracking-wider">Aktif Dikerjakan</p>
             <p class="text-2xl font-extrabold text-sky-700 mt-1.5">{{ $summary['assigned'] }}</p>
             <p class="text-[11px] text-slate-400 mt-1">Ditugaskan / Progres</p>
-        </div>
+        </a>
 
-        <div class="bg-white rounded-2xl border border-slate-200/70 p-4 shadow-xs">
+        <a
+            href="{{ route($rolePrefix . '.tasks.index', array_merge($preservedQuery, ['status' => 'awaiting_review'])) }}"
+            class="block bg-white rounded-2xl border {{ $isCardReviewActive ? 'border-amber-500 ring-2 ring-amber-500/15' : 'border-slate-200/70 hover:border-amber-300 hover:shadow-sm' }} p-4 shadow-xs transition cursor-pointer"
+        >
             <p class="text-[11px] font-semibold text-amber-600 uppercase tracking-wider">Menunggu Review</p>
             <p class="text-2xl font-extrabold text-amber-600 mt-1.5">{{ $summary['awaiting_review'] }}</p>
             <p class="text-[11px] text-slate-400 mt-1">Dikumpulkan peserta</p>
-        </div>
+        </a>
 
-        <div class="bg-white rounded-2xl border border-slate-200/70 p-4 shadow-xs">
+        <a
+            href="{{ route($rolePrefix . '.tasks.index', array_merge($preservedQuery, ['status' => 'revision_requested'])) }}"
+            class="block bg-white rounded-2xl border {{ $isCardRevisionActive ? 'border-indigo-500 ring-2 ring-indigo-500/15' : 'border-slate-200/70 hover:border-indigo-300 hover:shadow-sm' }} p-4 shadow-xs transition cursor-pointer"
+        >
             <p class="text-[11px] font-semibold text-indigo-600 uppercase tracking-wider">Perlu Revisi</p>
             <p class="text-2xl font-extrabold text-indigo-600 mt-1.5">{{ $summary['revision_requested'] }}</p>
             <p class="text-[11px] text-slate-400 mt-1">Menunggu perbaikan</p>
-        </div>
+        </a>
 
-        <div class="bg-white rounded-2xl border border-slate-200/70 p-4 shadow-xs">
+        <a
+            href="{{ route($rolePrefix . '.tasks.index', array_merge($preservedQuery, ['status' => 'accepted'])) }}"
+            class="block bg-white rounded-2xl border {{ $isCardAcceptedActive ? 'border-emerald-500 ring-2 ring-emerald-500/15' : 'border-slate-200/70 hover:border-emerald-300 hover:shadow-sm' }} p-4 shadow-xs transition cursor-pointer"
+        >
             <p class="text-[11px] font-semibold text-emerald-600 uppercase tracking-wider">Diterima (Accepted)</p>
             <p class="text-2xl font-extrabold text-emerald-600 mt-1.5">{{ $summary['accepted'] }}</p>
             <p class="text-[11px] text-slate-400 mt-1">Tugas selesai</p>
-        </div>
+        </a>
 
-        <div class="bg-white rounded-2xl border border-rose-200/80 p-4 shadow-xs">
+        <a
+            href="{{ route($rolePrefix . '.tasks.index', array_merge($preservedQuery, ['overdue' => 1])) }}"
+            class="block bg-white rounded-2xl border {{ $isCardOverdueActive ? 'border-rose-500 ring-2 ring-rose-500/15' : 'border-rose-200/80 hover:border-rose-400 hover:shadow-sm' }} p-4 shadow-xs transition cursor-pointer"
+        >
             <p class="text-[11px] font-semibold text-rose-600 uppercase tracking-wider">Lewat Deadline</p>
             <p class="text-2xl font-extrabold text-rose-600 mt-1.5">{{ $summary['overdue'] }}</p>
             <p class="text-[11px] text-rose-400 mt-1">Indikator Overdue</p>
-        </div>
+        </a>
     </div>
 
     {{-- Kontainer Full-Width Daftar Tugas --}}
@@ -120,6 +153,8 @@
                 <label for="status" class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Status Tugas</label>
                 <select id="status" name="status" class="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 bg-white text-slate-700">
                     <option value="">Semua Status</option>
+                    <option value="active" @selected(request('status') === 'active')>Aktif Dikerjakan (Ditugaskan / Progres)</option>
+                    <option value="awaiting_review" @selected(request('status') === 'awaiting_review')>Menunggu Review (Submitted / Resubmitted)</option>
                     @foreach ($statusOptions as $statusCase)
                         <option value="{{ $statusCase->value }}" @selected(request('status') === $statusCase->value)>
                             {{ $statusCase->label() }}
