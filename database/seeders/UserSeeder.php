@@ -49,10 +49,7 @@ class UserSeeder extends Seeder
 
         $pic->picProfile()->updateOrCreate(
             ['user_id' => $pic->id],
-            [
-                'employee_code' => 'PIC-001',
-                'department'    => 'Divisi Web Development',
-            ]
+            []
         );
 
         // ----------------------------------------------------------------

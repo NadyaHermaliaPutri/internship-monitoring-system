@@ -19,7 +19,7 @@
             </a>
         </div>
 
-        <form method="POST" action="{{ route('pic.tasks.update', $task) }}" class="space-y-5">
+        <form method="POST" action="{{ route('pic.tasks.update', $task) }}" enctype="multipart/form-data" class="space-y-5">
             @csrf
             @method('PUT')
 
@@ -75,6 +75,41 @@
                 @error('description')
                     <p class="text-[11px] text-rose-600 font-semibold mt-1">{{ $message }}</p>
                 @enderror
+            </div>
+
+            <div>
+                <label for="attachment_file" class="block text-xs font-bold text-slate-700 mb-1.5">
+                    Lampiran Tugas / Brief <span class="text-slate-400 font-normal">(Opsional — Privat)</span>
+                </label>
+                <input
+                    type="file"
+                    id="attachment_file"
+                    name="attachment_file"
+                    accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.webp,.zip,.rar"
+                    class="w-full px-3 py-2 text-xs rounded-xl border @error('attachment_file') border-rose-400 bg-rose-50/40 @else border-slate-200 bg-slate-50/60 @enderror text-slate-700 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-[#015987] file:text-white hover:file:bg-[#014467] file:cursor-pointer transition"
+                >
+                <p class="text-[11px] text-slate-400 mt-1">
+                    Format: PDF, DOC/DOCX, XLS/XLSX, PPT/PPTX, JPG/PNG/WEBP, ZIP/RAR • Maksimal <strong>10 MB</strong>. Biarkan kosong jika tidak ingin mengganti lampiran.
+                </p>
+                @error('attachment_file')
+                    <p class="text-[11px] text-rose-600 font-semibold mt-1">{{ $message }}</p>
+                @enderror
+
+                @if ($task->attachmentMedia)
+                    <div class="mt-2.5 flex flex-wrap items-center justify-between gap-2 p-3 rounded-xl bg-sky-50/70 border border-sky-200/70 text-[11px]">
+                        <div class="text-slate-700 min-w-0">
+                            <span class="font-bold text-[#015987]">Lampiran saat ini:</span>
+                            <span class="break-all">{{ $task->attachmentMedia->original_name }}</span>
+                            <span class="text-slate-500">({{ $task->attachmentMedia->formatted_size }})</span>
+                        </div>
+                        <a
+                            href="{{ route('media.private.show', ['mediaFile' => $task->attachmentMedia->id, 'download' => 1]) }}"
+                            class="font-bold text-[#015987] hover:underline shrink-0"
+                        >
+                            Unduh Lampiran &rarr;
+                        </a>
+                    </div>
+                @endif
             </div>
 
             <div class="pt-3 flex items-center justify-end gap-3">

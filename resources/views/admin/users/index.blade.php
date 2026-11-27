@@ -44,10 +44,13 @@
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         
         <!-- Kartu 1: Total Akun Aktif -->
-        <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs flex flex-col justify-between min-h-[136px]">
+        <a 
+            href="{{ route('admin.users.index', ['tab' => 'active', 'search' => request('search')]) }}"
+            class="bg-white rounded-2xl p-5 flex flex-col justify-between min-h-[136px] transition-all duration-200 cursor-pointer group {{ $tab === 'active' ? 'border-2 border-sky-500 ring-4 ring-sky-500/10 shadow-md' : 'border border-slate-200/80 shadow-xs hover:border-sky-300 hover:shadow-md hover:-translate-y-0.5' }}"
+        >
             <div class="flex items-start justify-between">
-                <span class="text-xs font-semibold text-slate-700">Total Akun Aktif</span>
-                <div class="w-8 h-8 rounded-full bg-sky-50 text-sky-600 flex items-center justify-center">
+                <span class="text-xs font-semibold {{ $tab === 'active' ? 'text-sky-700' : 'text-slate-700 group-hover:text-sky-700' }} transition-colors">Total Akun Aktif</span>
+                <div class="w-8 h-8 rounded-full bg-sky-50 text-sky-600 flex items-center justify-center {{ $tab === 'active' ? 'ring-2 ring-sky-200' : '' }}">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
                     </svg>
@@ -63,13 +66,16 @@
                     <span>Dapat login ke sistem</span>
                 </div>
             </div>
-        </div>
+        </a>
 
         <!-- Kartu 2: Peserta Magang (Intern) -->
-        <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs flex flex-col justify-between min-h-[136px]">
+        <a 
+            href="{{ route('admin.users.index', ['tab' => 'intern', 'search' => request('search')]) }}"
+            class="bg-white rounded-2xl p-5 flex flex-col justify-between min-h-[136px] transition-all duration-200 cursor-pointer group {{ $tab === 'intern' ? 'border-2 border-teal-500 ring-4 ring-teal-500/10 shadow-md' : 'border border-slate-200/80 shadow-xs hover:border-teal-300 hover:shadow-md hover:-translate-y-0.5' }}"
+        >
             <div class="flex items-start justify-between">
-                <span class="text-xs font-semibold text-slate-700">Peserta Magang (Intern)</span>
-                <div class="w-8 h-8 rounded-full bg-teal-50 text-teal-600 flex items-center justify-center">
+                <span class="text-xs font-semibold {{ $tab === 'intern' ? 'text-teal-700' : 'text-slate-700 group-hover:text-teal-700' }} transition-colors">Peserta Magang (Intern)</span>
+                <div class="w-8 h-8 rounded-full bg-teal-50 text-teal-600 flex items-center justify-center {{ $tab === 'intern' ? 'ring-2 ring-teal-200' : '' }}">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z"/>
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/>
@@ -86,13 +92,16 @@
                     <span>{{ $stats['near_end_count'] }} mendekati akhir masa</span>
                 </div>
             </div>
-        </div>
+        </a>
 
         <!-- Kartu 3: PIC Mentor -->
-        <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs flex flex-col justify-between min-h-[136px]">
+        <a 
+            href="{{ route('admin.users.index', ['tab' => 'pic', 'search' => request('search')]) }}"
+            class="bg-white rounded-2xl p-5 flex flex-col justify-between min-h-[136px] transition-all duration-200 cursor-pointer group {{ $tab === 'pic' ? 'border-2 border-purple-500 ring-4 ring-purple-500/10 shadow-md' : 'border border-slate-200/80 shadow-xs hover:border-purple-300 hover:shadow-md hover:-translate-y-0.5' }}"
+        >
             <div class="flex items-start justify-between">
-                <span class="text-xs font-semibold text-slate-700">PIC Mentor</span>
-                <div class="w-8 h-8 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center">
+                <span class="text-xs font-semibold {{ $tab === 'pic' ? 'text-purple-700' : 'text-slate-700 group-hover:text-purple-700' }} transition-colors">PIC Mentor</span>
+                <div class="w-8 h-8 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center {{ $tab === 'pic' ? 'ring-2 ring-purple-200' : '' }}">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
                     </svg>
@@ -108,13 +117,16 @@
                     <span class="truncate">{{ $stats['pic_departments'] }}</span>
                 </div>
             </div>
-        </div>
+        </a>
 
         <!-- Kartu 4: Akun Dinonaktifkan -->
-        <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs flex flex-col justify-between min-h-[136px]">
+        <a 
+            href="{{ route('admin.users.index', ['tab' => 'nonactive', 'search' => request('search')]) }}"
+            class="bg-white rounded-2xl p-5 flex flex-col justify-between min-h-[136px] transition-all duration-200 cursor-pointer group {{ in_array($tab, ['inactive', 'nonactive'], true) ? 'border-2 border-rose-500 ring-4 ring-rose-500/10 shadow-md' : 'border border-slate-200/80 shadow-xs hover:border-rose-300 hover:shadow-md hover:-translate-y-0.5' }}"
+        >
             <div class="flex items-start justify-between">
-                <span class="text-xs font-semibold text-slate-700">Akun Dinonaktifkan</span>
-                <div class="w-8 h-8 rounded-full bg-rose-50 text-rose-500 flex items-center justify-center">
+                <span class="text-xs font-semibold {{ in_array($tab, ['inactive', 'nonactive'], true) ? 'text-rose-700' : 'text-slate-700 group-hover:text-rose-700' }} transition-colors">Akun Dinonaktifkan</span>
+                <div class="w-8 h-8 rounded-full bg-rose-50 text-rose-500 flex items-center justify-center {{ in_array($tab, ['inactive', 'nonactive'], true) ? 'ring-2 ring-rose-200' : '' }}">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7a4 4 0 11-8 0 4 4 0 018 0zM9 14a6 6 0 00-6 6v1h12v-1a6 6 0 00-6-6zM21 12h-6"/>
                     </svg>
@@ -130,7 +142,7 @@
                     <span>Histori data tetap utuh</span>
                 </div>
             </div>
-        </div>
+        </a>
 
     </div>
 
@@ -191,9 +203,9 @@
             <table class="w-full text-left border-collapse">
                 <thead>
                     <tr class="border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                        <th class="py-4 px-6">Pengguna</th>
+                        <th class="py-4 px-6">Nama</th>
+                        <th class="py-4 px-6">Email</th>
                         <th class="py-4 px-6">Role Sistem</th>
-                        <th class="py-4 px-6">Periode</th>
                         <th class="py-4 px-6">Status Akun</th>
                         <th class="py-4 px-6 text-right">Aksi Administrasi</th>
                     </tr>
@@ -203,25 +215,6 @@
                         @php
                             $avatarColors = ['bg-sky-100 text-sky-700', 'bg-rose-100 text-rose-600', 'bg-purple-100 text-purple-700', 'bg-slate-200 text-slate-500'];
                             $avatarClass = $avatarColors[$index % 4];
-
-                            // Periode berdasarkan role & profil secara dinamis
-                            if (!$user->is_active && $user->role === 'intern') {
-                                $periodeText = 'Masa magang berakhir';
-                            } elseif ($user->role === 'intern') {
-                                $start = $user->internProfile?->internship_start_date;
-                                $end   = $user->internProfile?->internship_end_date;
-                                if ($start && $end) {
-                                    $periodeText = $start->format('j M Y') . ' – ' . $end->format('j M Y');
-                                } elseif ($start) {
-                                    $periodeText = 'Mulai: ' . $start->format('j M Y');
-                                } else {
-                                    $periodeText = 'Belum diatur';
-                                }
-                            } elseif ($user->role === 'pic') {
-                                $periodeText = $user->picProfile?->department ?? 'Divisi Internal';
-                            } else {
-                                $periodeText = 'Administrator Sistem';
-                            }
 
                             // Badge role
                             if (!$user->is_active && $user->role === 'intern') {
@@ -240,17 +233,19 @@
                         @endphp
                         <tr class="hover:bg-slate-50/50 transition">
                             
-                            <!-- Pengguna -->
+                            <!-- Nama -->
                             <td class="py-4 px-6">
                                 <div class="flex items-center gap-3">
                                     <div class="w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center font-bold text-xs {{ $avatarClass }}">
                                         {{ strtoupper(substr(preg_replace('/\s+/', ' ', trim($user->name)), 0, 1)) }}{{ strtoupper(substr(strstr(preg_replace('/\s+/', ' ', trim($user->name)), ' ') ?: ' ', 1, 1)) }}
                                     </div>
-                                    <div>
-                                        <div class="font-semibold text-slate-900">{{ $user->name }}</div>
-                                        <div class="text-[11px] text-slate-400 mt-0.5">{{ $user->email }}</div>
-                                    </div>
+                                    <div class="font-semibold text-slate-900">{{ $user->name }}</div>
                                 </div>
+                            </td>
+
+                            <!-- Email -->
+                            <td class="py-4 px-6 text-slate-500">
+                                {{ $user->email }}
                             </td>
 
                             <!-- Role Sistem -->
@@ -258,11 +253,6 @@
                                 <span class="inline-block px-2.5 py-1 rounded-md text-[10px] font-extrabold tracking-wide uppercase border {{ $badgeClass }}">
                                     {{ $roleLabel }}
                                 </span>
-                            </td>
-
-                            <!-- Periode -->
-                            <td class="py-4 px-6 text-slate-500">
-                                {{ $periodeText }}
                             </td>
 
                             <!-- Status Akun -->
@@ -283,19 +273,43 @@
                             <!-- Aksi Administrasi -->
                             <td class="py-4 px-6 text-right">
                                 <div class="inline-flex items-center gap-2">
-                                    <!-- Shortcut Profil (Khusus Role Intern) -->
                                     @if($user->isIntern())
+                                        <!-- Tombol Lihat Detail (Role Intern -> Redirect ke Profil Peserta dengan filter nama) -->
                                         <a 
-                                            href="{{ route('admin.intern-profiles.index', ['edit' => $user->id]) }}" 
-                                            title="Kelola Profil Akademik & Magang"
-                                            class="px-3 py-1.5 rounded-lg border border-sky-200 bg-sky-50 text-xs font-semibold text-sky-700 hover:bg-sky-100 transition inline-flex items-center gap-1"
+                                            href="{{ route('admin.intern-profiles.index', ['search' => $user->name]) }}" 
+                                            title="Lihat Detail Profil Peserta"
+                                            class="px-3 py-1.5 rounded-lg border border-indigo-200 bg-indigo-50 text-xs font-semibold text-indigo-700 hover:bg-indigo-100 transition inline-flex items-center gap-1"
                                         >
                                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z"/>
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/>
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                                             </svg>
-                                            <span>Profil</span>
+                                            <span>Lihat Detail</span>
                                         </a>
+                                    @else
+                                        <!-- Tombol Lihat Detail (Role Admin & PIC -> Modal Pop-up) -->
+                                        <button 
+                                            type="button" 
+                                            @click="openDetailModal({
+                                                id: {{ $user->id }},
+                                                name: '{{ addslashes($user->name) }}',
+                                                email: '{{ addslashes($user->email) }}',
+                                                role: '{{ $user->role }}',
+                                                role_label: '{{ $user->role === "admin" ? "Admin / HR" : "PIC (Pembimbing)" }}',
+                                                is_active: {{ $user->is_active ? 'true' : 'false' }},
+                                                created_at: '{{ $user->created_at->translatedFormat("d F Y") }}',
+                                                assigned_interns_count: {{ $user->picAssignments->count() ?? 0 }},
+                                                is_self: {{ $user->id === auth()->id() ? 'true' : 'false' }}
+                                            })"
+                                            title="Lihat Detail Akun"
+                                            class="px-3 py-1.5 rounded-lg border border-indigo-200 bg-indigo-50 text-xs font-semibold text-indigo-700 hover:bg-indigo-100 transition inline-flex items-center gap-1 cursor-pointer"
+                                        >
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                            </svg>
+                                            <span>Lihat Detail</span>
+                                        </button>
                                     @endif
 
                                     <!-- Tombol Edit (Memicu Modal Pop-up) -->
@@ -822,6 +836,150 @@
         </div>
     </div>
 
+    <!-- ================================================================= -->
+    <!-- MODAL 4: LIHAT DETAIL AKUN (Intern, PIC & Admin)                  -->
+    <!-- ================================================================= -->
+    <div 
+        x-show="activeModal === 'detail'" 
+        x-transition:enter="ease-out duration-200"
+        x-transition:enter-start="opacity-0"
+        x-transition:enter-end="opacity-100"
+        x-transition:leave="ease-in duration-150"
+        x-transition:leave-start="opacity-100"
+        x-transition:leave-end="opacity-0"
+        class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6"
+        style="display: none;"
+    >
+        <!-- Overlay Background Blur -->
+        <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" @click="closeModal()"></div>
+
+        <!-- Panel Konten Detail -->
+        <div 
+            x-show="activeModal === 'detail'"
+            x-transition:enter="ease-out duration-200"
+            x-transition:enter-start="opacity-0 scale-95 translate-y-2"
+            x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+            x-transition:leave="ease-in duration-150"
+            x-transition:leave-start="opacity-100 scale-100 translate-y-0"
+            x-transition:leave-end="opacity-0 scale-95 translate-y-2"
+            class="relative w-full max-w-md bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden"
+        >
+            <!-- Header Gradient -->
+            <div class="bg-gradient-to-br from-[#015987] to-[#01435e] px-7 pt-7 pb-10 text-center relative">
+                <!-- Tombol Tutup -->
+                <button @click="closeModal()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/80 hover:text-white transition cursor-pointer">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+
+                <!-- Avatar -->
+                <div class="mx-auto w-20 h-20 rounded-full bg-white/20 backdrop-blur-sm border-2 border-white/30 flex items-center justify-center shadow-lg">
+                    <span class="text-2xl font-bold text-white" x-text="detailUser.name ? detailUser.name.charAt(0).toUpperCase() : '?'"></span>
+                </div>
+
+                <!-- Nama & Email -->
+                <h3 class="text-lg font-bold text-white mt-3" x-text="detailUser.name"></h3>
+                <p class="text-xs text-white/70 mt-0.5" x-text="detailUser.email"></p>
+
+                <!-- Badge Role -->
+                <div class="mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold"
+                    :class="detailUser.role === 'admin' ? 'bg-amber-400/20 text-amber-100 border border-amber-400/30' : 'bg-sky-400/20 text-sky-100 border border-sky-400/30'"
+                >
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <template x-if="detailUser.role === 'admin'">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                        </template>
+                        <template x-if="detailUser.role === 'pic'">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        </template>
+                        <template x-if="detailUser.role === 'intern'">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/>
+                        </template>
+                    </svg>
+                    <span x-text="detailUser.role_label"></span>
+                </div>
+            </div>
+
+            <!-- Body Info -->
+            <div class="px-7 py-5 -mt-4 bg-white rounded-t-2xl relative z-10 space-y-4">
+                <!-- Status Akun -->
+                <div class="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-100">
+                    <span class="text-xs font-medium text-slate-500">Status Akun</span>
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold"
+                        :class="detailUser.is_active ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-slate-100 text-slate-500 border border-slate-200'"
+                    >
+                        <span class="w-1.5 h-1.5 rounded-full" :class="detailUser.is_active ? 'bg-emerald-500' : 'bg-slate-400'"></span>
+                        <span x-text="detailUser.is_active ? 'AKTIF' : 'NONAKTIF'"></span>
+                    </span>
+                </div>
+
+                <!-- Tanggal Terdaftar -->
+                <div class="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-100">
+                    <span class="text-xs font-medium text-slate-500">Terdaftar Sejak</span>
+                    <span class="text-xs font-semibold text-slate-700" x-text="detailUser.created_at"></span>
+                </div>
+
+                <!-- Info Khusus Peserta (Intern) -->
+                <template x-if="detailUser.role === 'intern'">
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between p-3 rounded-xl bg-sky-50/50 border border-sky-100">
+                            <span class="text-xs font-medium text-slate-500">Kode Peserta</span>
+                            <span class="text-xs font-semibold text-slate-700" x-text="detailUser.intern_code"></span>
+                        </div>
+                        <div class="flex items-center justify-between p-3 rounded-xl bg-sky-50/50 border border-sky-100 gap-4">
+                            <span class="text-xs font-medium text-slate-500 shrink-0">Instansi / Kampus</span>
+                            <span class="text-xs font-semibold text-slate-700 text-right" x-text="detailUser.institution"></span>
+                        </div>
+                        <div class="flex items-center justify-between p-3 rounded-xl bg-sky-50/50 border border-sky-100 gap-4">
+                            <span class="text-xs font-medium text-slate-500 shrink-0">Program Studi</span>
+                            <span class="text-xs font-semibold text-slate-700 text-right" x-text="detailUser.study_program"></span>
+                        </div>
+                        <div class="flex items-center justify-between p-3 rounded-xl bg-sky-50/50 border border-sky-100 gap-4">
+                            <span class="text-xs font-medium text-slate-500 shrink-0">Periode Magang</span>
+                            <span class="text-xs font-bold text-[#015987] text-right" x-text="detailUser.period"></span>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- Info Khusus PIC -->
+                <template x-if="detailUser.role === 'pic'">
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between p-3 rounded-xl bg-sky-50/50 border border-sky-100">
+                            <span class="text-xs font-medium text-slate-500">Peserta Dibimbing</span>
+                            <span class="text-xs font-bold text-[#015987]" x-text="detailUser.assigned_interns_count + ' peserta'"></span>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- Info Khusus Admin -->
+                <template x-if="detailUser.role === 'admin'">
+                    <div class="p-3 rounded-xl bg-amber-50/50 border border-amber-100 flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
+                            <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="text-xs font-semibold text-slate-700">Administrator Sistem</p>
+                            <p class="text-[10px] text-slate-500 mt-0.5">Memiliki akses penuh terhadap seluruh fitur pengelolaan sistem.</p>
+                        </div>
+                    </div>
+                </template>
+            </div>
+
+            <!-- Footer -->
+            <div class="px-7 pb-6">
+                <button 
+                    @click="closeModal()" 
+                    class="w-full py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-sm transition cursor-pointer"
+                >
+                    Tutup
+                </button>
+            </div>
+        </div>
+    </div>
+
 </div>
 @endsection
 
@@ -836,6 +994,21 @@
                 name: '',
                 isActive: false
             },
+            detailUser: {
+                id: null,
+                name: '',
+                email: '',
+                role: '',
+                role_label: '',
+                is_active: false,
+                created_at: '',
+                assigned_interns_count: 0,
+                intern_code: '',
+                institution: '',
+                study_program: '',
+                period: '',
+                is_self: false
+            },
             editUser: {
                 id: '{{ old('_modal') === 'edit' ? old('user_id', '') : '' }}',
                 name: '{{ old('_modal') === 'edit' ? old('name', '') : '' }}',
@@ -849,6 +1022,25 @@
             openCreateModal() {
                 this.activeModal = 'create';
                 this.showPassword = false;
+            },
+
+            openDetailModal(data) {
+                this.detailUser = {
+                    id: data.id,
+                    name: data.name,
+                    email: data.email,
+                    role: data.role,
+                    role_label: data.role_label,
+                    is_active: data.is_active,
+                    created_at: data.created_at,
+                    assigned_interns_count: data.assigned_interns_count || 0,
+                    intern_code: data.intern_code || '-',
+                    institution: data.institution || 'Belum diisi',
+                    study_program: data.study_program || 'Belum diisi',
+                    period: data.period || 'Belum diatur',
+                    is_self: data.is_self
+                };
+                this.activeModal = 'detail';
             },
 
             openEditModal(user) {
@@ -878,6 +1070,7 @@
                 this.activeModal = '';
                 this.showPassword = false;
                 this.confirmToggle = { id: null, name: '', isActive: false };
+                this.detailUser = { id: null, name: '', email: '', role: '', role_label: '', is_active: false, created_at: '', assigned_interns_count: 0, intern_code: '', institution: '', study_program: '', period: '', is_self: false };
             },
 
             init() {

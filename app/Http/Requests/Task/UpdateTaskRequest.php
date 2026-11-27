@@ -25,9 +25,13 @@ class UpdateTaskRequest extends FormRequest
      */
     public function rules(TaskService $taskService): array
     {
+        $maxSizeKb = (int) config('wantrace.uploads.task_attachment.max_size_kb', 10240);
+        $allowedMimes = implode(',', config('wantrace.uploads.task_attachment.mimes', ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'jpg', 'jpeg', 'png', 'webp', 'zip', 'rar']));
+
         return [
             'title' => ['required', 'string', 'max:180'],
             'description' => ['required', 'string', 'min:10', 'max:5000'],
+            'attachment_file' => ['nullable', 'file', 'mimes:'.$allowedMimes, 'max:'.$maxSizeKb],
             'deadline_at' => [
                 'required',
                 'date',
@@ -51,6 +55,14 @@ class UpdateTaskRequest extends FormRequest
                     }
                 },
             ],
+            // Hardening anti-tampering: PIC tidak boleh memanipulasi status, pemilik peserta, media, atau metadata accepted lewat endpoint update
+            'attachment_media_id' => ['prohibited'],
+            'status' => ['prohibited'],
+            'accepted_at' => ['prohibited'],
+            'accepted_by' => ['prohibited'],
+            'pic_user_id' => ['prohibited'],
+            'intern_user_id' => ['prohibited'],
+            'assigned_at' => ['prohibited'],
         ];
     }
 

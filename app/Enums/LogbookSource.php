@@ -10,8 +10,8 @@ enum LogbookSource: string
     public function label(): string
     {
         return match ($this) {
-            self::Manual => 'Input Manual',
-            self::TaskAssignment => 'Penugasan PIC (Otomatis)',
+            self::Manual => 'Aktivitas Mandiri',
+            self::TaskAssignment => 'Penugasan PIC',
         };
     }
 

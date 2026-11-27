@@ -36,7 +36,7 @@ class MediaStorageService
 
         // Nama file acak dan aman (anti path traversal & collision)
         $uniqueFileName = sprintf('%s_%s.%s', date('Ymd_His'), Str::random(24), strtolower($extension));
-        $relativePath = $directory . '/' . $uniqueFileName;
+        $relativePath = $directory.'/'.$uniqueFileName;
 
         // Simpan file fisik ke storage/app/private via disk local_private
         Storage::disk($this->disk)->putFileAs($directory, $file, $uniqueFileName);
@@ -89,7 +89,7 @@ class MediaStorageService
 
         $directory = config("wantrace.uploads.{$category}.directory", 'presensi');
         $uniqueFileName = sprintf('%s_selfie_%s.%s', date('Ymd_His'), Str::random(24), $extension);
-        $relativePath = $directory . '/' . $uniqueFileName;
+        $relativePath = $directory.'/'.$uniqueFileName;
 
         Storage::disk($this->disk)->put($relativePath, $decodedBinary);
 
@@ -104,7 +104,7 @@ class MediaStorageService
             'category' => $category,
             'disk' => $this->disk,
             'file_path' => $relativePath,
-            'original_name' => "presensi_selfie_{$owner->id}_" . date('Ymd_His') . ".{$extension}",
+            'original_name' => "presensi_selfie_{$owner->id}_".date('Ymd_His').".{$extension}",
             'mime_type' => $mimeType,
             'file_size_bytes' => $sizeBytes,
             'uploaded_at' => Carbon::now(config('wantrace.timezone', 'Asia/Jakarta')),
@@ -128,9 +128,9 @@ class MediaStorageService
         ];
 
         if ($asDownload) {
-            $disposition = 'attachment; filename="' . addslashes($mediaFile->original_name) . '"';
+            $disposition = 'attachment; filename="'.addslashes($mediaFile->original_name).'"';
         } else {
-            $disposition = 'inline; filename="' . addslashes($mediaFile->original_name) . '"';
+            $disposition = 'inline; filename="'.addslashes($mediaFile->original_name).'"';
         }
 
         $headers['Content-Disposition'] = $disposition;
@@ -160,7 +160,7 @@ class MediaStorageService
 
     protected function validateCategory(string $category): void
     {
-        $allowed = ['attendance_photo', 'leave_evidence', 'task_evidence'];
+        $allowed = ['attendance_photo', 'leave_evidence', 'task_evidence', 'logbook_evidence', 'task_attachment'];
         if (! in_array($category, $allowed, true)) {
             throw new InvalidArgumentException("Kategori file '{$category}' tidak dikenali oleh sistem.");
         }
@@ -169,6 +169,7 @@ class MediaStorageService
     protected function sanitizeFileName(string $name): string
     {
         $name = preg_replace('/[^\w\s\.-]/', '_', $name);
+
         return Str::limit($name, 250, '');
     }
 }

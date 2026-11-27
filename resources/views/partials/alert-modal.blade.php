@@ -1,27 +1,11 @@
 @php
     $hasSuccess     = session()->has('success') || session()->has('status');
     $successMessage = session('success') ?? session('status');
-    $successTitle   = session('success_title') ?? 'Berhasil Ditambahkan';
-
-    // Penyesuaian judul otomatis berdasarkan kata kunci pesan flash jika success_title tidak ditentukan manual
-    if (session()->has('success') && !session()->has('success_title')) {
-        $msg = strtolower((string) session('success'));
-        if (str_contains($msg, 'perbarui') || str_contains($msg, 'update') || str_contains($msg, 'ubah')) {
-            $successTitle = 'Berhasil Diperbarui';
-        } elseif (str_contains($msg, 'tambah') || str_contains($msg, 'buat') || str_contains($msg, 'create')) {
-            $successTitle = 'Berhasil Ditambahkan';
-        } elseif (str_contains($msg, 'hapus') || str_contains($msg, 'delete')) {
-            $successTitle = 'Berhasil Dihapus';
-        } elseif (str_contains($msg, 'aktif') || str_contains($msg, 'nonaktif') || str_contains($msg, 'status')) {
-            $successTitle = 'Status Berhasil Diubah';
-        } elseif (str_contains($msg, 'simpan') || str_contains($msg, 'save')) {
-            $successTitle = 'Berhasil Disimpan';
-        }
-    }
+    $successTitle   = session('success_title', 'Berhasil');
 
     $hasError     = session()->has('error');
     $errorMessage = session('error');
-    $errorTitle   = session('error_title') ?? 'Terjadi Kesalahan';
+    $errorTitle   = session('error_title', 'Terjadi Kesalahan');
 @endphp
 
 <!-- Komponen Reusable Modal Pop-up Alert Sukses & Error Persis Sesuai Mockup Figma -->
@@ -123,7 +107,7 @@
 
             showSuccess(payload) {
                 this.type = 'success';
-                this.title = (payload && payload.title) ? payload.title : 'Berhasil Ditambahkan';
+                this.title = (payload && payload.title) ? payload.title : 'Berhasil';
                 this.message = (payload && payload.message) ? payload.message : (typeof payload === 'string' ? payload : '');
                 this.isOpen = true;
             },

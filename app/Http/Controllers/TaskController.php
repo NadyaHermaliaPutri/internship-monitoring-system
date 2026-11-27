@@ -123,10 +123,15 @@ class TaskController extends Controller
         /** @var User $pic */
         $pic = $request->user();
 
-        $task = $this->taskService->createTask($pic, $request->validated());
+        $task = $this->taskService->createTask(
+            $pic,
+            $request->validated(),
+            $request->file('attachment_file')
+        );
 
         return redirect()
             ->route('pic.tasks.show', $task)
+            ->with('success_title', 'Berhasil Ditambahkan')
             ->with('status', 'Tugas berhasil dibuat dengan status Ditugaskan dan otomatis tercatat pada Logbook peserta.');
     }
 
@@ -141,7 +146,11 @@ class TaskController extends Controller
             'pic:id,name,email',
             'intern:id,name,email',
             'acceptedByUser:id,name',
+            'attachmentMedia',
             'assignmentLogbook',
+            'submissions.evidenceMedia',
+            'submissions.submitter:id,name',
+            'submissions.reviews.reviewer:id,name',
         ]);
 
         return view('tasks.show', [
@@ -156,7 +165,7 @@ class TaskController extends Controller
     {
         Gate::authorize('update', $task);
 
-        $task->load('intern:id,name,email');
+        $task->load(['intern:id,name,email', 'attachmentMedia']);
 
         return view('tasks.edit', [
             'task' => $task,
@@ -164,14 +173,20 @@ class TaskController extends Controller
     }
 
     /**
-     * Memperbarui tugas / memperpanjang deadline (tanpa menduplikasi logbook otomatis).
+     * Memperbarui tugas / memperpanjang deadline / mengganti lampiran (tanpa menduplikasi logbook otomatis).
      */
     public function update(UpdateTaskRequest $request, Task $task): RedirectResponse
     {
-        $this->taskService->updateTask($task, $request->validated());
+        $this->taskService->updateTask(
+            $task,
+            $request->validated(),
+            $request->file('attachment_file'),
+            $request->user()
+        );
 
         return redirect()
             ->route('pic.tasks.show', $task)
+            ->with('success_title', 'Berhasil Diperbarui')
             ->with('status', 'Detail tugas dan batas waktu (deadline) berhasil diperbarui.');
     }
 
@@ -190,6 +205,7 @@ class TaskController extends Controller
 
         return redirect()
             ->route('intern.tasks.show', $task)
+            ->with('success_title', 'Berhasil Diperbarui')
             ->with('status', 'Status tugas berhasil diubah menjadi Sedang Dikerjakan (In Progress).');
     }
 }

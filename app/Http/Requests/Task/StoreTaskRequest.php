@@ -23,6 +23,8 @@ class StoreTaskRequest extends FormRequest
     public function rules(TaskService $taskService): array
     {
         $picId = (int) $this->user()?->id;
+        $maxSizeKb = (int) config('wantrace.uploads.task_attachment.max_size_kb', 10240);
+        $allowedMimes = implode(',', config('wantrace.uploads.task_attachment.mimes', ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'jpg', 'jpeg', 'png', 'webp', 'zip', 'rar']));
 
         return [
             'intern_user_id' => [
@@ -30,12 +32,13 @@ class StoreTaskRequest extends FormRequest
                 'integer',
                 function (string $attribute, mixed $value, Closure $fail) use ($taskService, $picId) {
                     if (! is_numeric($value) || ! $taskService->isInternAssignableByPic($picId, (int) $value)) {
-                        $fail('Peserta yang dipilih harus berstatus aktif dan berada dalam penugasan aktif Anda.');
+                        $fail('Peserta yang dipilih harus memiliki role peserta magang dan berstatus aktif.');
                     }
                 },
             ],
             'title' => ['required', 'string', 'max:180'],
             'description' => ['required', 'string', 'min:10', 'max:5000'],
+            'attachment_file' => ['nullable', 'file', 'mimes:'.$allowedMimes, 'max:'.$maxSizeKb],
             'deadline_at' => [
                 'required',
                 'date',
@@ -59,6 +62,13 @@ class StoreTaskRequest extends FormRequest
                     }
                 },
             ],
+            // Hardening anti-tampering: tolak eksplisit percobaan menyisipkan kolom status/audit/media lewat payload HTTP
+            'attachment_media_id' => ['prohibited'],
+            'status' => ['prohibited'],
+            'accepted_at' => ['prohibited'],
+            'accepted_by' => ['prohibited'],
+            'pic_user_id' => ['prohibited'],
+            'assigned_at' => ['prohibited'],
         ];
     }
 
@@ -75,6 +85,9 @@ class StoreTaskRequest extends FormRequest
             'description.required' => 'Deskripsi tugas wajib diisi.',
             'description.min' => 'Deskripsi tugas minimal 10 karakter agar instruksi jelas.',
             'description.max' => 'Deskripsi tugas maksimal 5000 karakter.',
+            'attachment_file.file' => 'Lampiran tugas harus berupa berkas yang valid.',
+            'attachment_file.mimes' => 'Format lampiran tugas harus berupa PDF, DOC/DOCX, XLS/XLSX, PPT/PPTX, gambar (JPG/PNG/WEBP), atau arsip (ZIP/RAR).',
+            'attachment_file.max' => 'Ukuran file lampiran tugas maksimal 10 MB.',
             'deadline_at.required' => 'Batas waktu pengumpulan (deadline) wajib diisi.',
             'deadline_at.date' => 'Format batas waktu pengumpulan tidak valid.',
         ];

@@ -49,10 +49,14 @@
     <!-- ================================================================= -->
     <!-- 1. KARTU STATISTIK RINGKASAN PROFIL MAGANG                        -->
     <!-- ================================================================= -->
+    @php $activeCard = request()->query('filter'); @endphp
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         
         <!-- Total Peserta Magang -->
-        <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs flex flex-col justify-between min-h-[136px]">
+        <a 
+            href="{{ route('admin.intern-profiles.index', ['filter' => 'all', 'search' => request('search')]) }}"
+            class="bg-white rounded-2xl p-5 flex flex-col justify-between min-h-[136px] transition cursor-pointer {{ $activeCard === 'all' ? 'border-2 border-sky-500 ring-2 ring-sky-500/20 shadow-md' : 'border border-slate-200/80 shadow-xs hover:border-slate-300 hover:shadow-sm' }}"
+        >
             <div class="flex items-start justify-between">
                 <span class="text-xs font-semibold text-slate-700">Total Peserta Magang</span>
                 <div class="w-8 h-8 rounded-full bg-sky-50 text-sky-600 flex items-center justify-center">
@@ -71,10 +75,13 @@
                     <span>Role intern terdaftar</span>
                 </div>
             </div>
-        </div>
+        </a>
 
         <!-- Profil Lengkap -->
-        <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs flex flex-col justify-between min-h-[136px]">
+        <a 
+            href="{{ route('admin.intern-profiles.index', ['filter' => 'completed', 'search' => request('search')]) }}"
+            class="bg-white rounded-2xl p-5 flex flex-col justify-between min-h-[136px] transition cursor-pointer {{ in_array($activeCard, ['complete', 'completed'], true) ? 'border-2 border-teal-500 ring-2 ring-teal-500/20 shadow-md' : 'border border-slate-200/80 shadow-xs hover:border-slate-300 hover:shadow-sm' }}"
+        >
             <div class="flex items-start justify-between">
                 <span class="text-xs font-semibold text-slate-700">Profil Lengkap</span>
                 <div class="w-8 h-8 rounded-full bg-teal-50 text-teal-600 flex items-center justify-center">
@@ -93,10 +100,13 @@
                     <span>Institusi & periode terisi</span>
                 </div>
             </div>
-        </div>
+        </a>
 
         <!-- Belum Lengkap -->
-        <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs flex flex-col justify-between min-h-[136px]">
+        <a 
+            href="{{ route('admin.intern-profiles.index', ['filter' => 'incomplete', 'search' => request('search')]) }}"
+            class="bg-white rounded-2xl p-5 flex flex-col justify-between min-h-[136px] transition cursor-pointer {{ $activeCard === 'incomplete' ? 'border-2 border-amber-500 ring-2 ring-amber-500/20 shadow-md' : 'border border-slate-200/80 shadow-xs hover:border-slate-300 hover:shadow-sm' }}"
+        >
             <div class="flex items-start justify-between">
                 <span class="text-xs font-semibold text-slate-700">Perlu Dilengkapi</span>
                 <div class="w-8 h-8 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center">
@@ -115,10 +125,13 @@
                     <span>Menunggu pengisian Admin</span>
                 </div>
             </div>
-        </div>
+        </a>
 
         <!-- Aktif Saat Ini -->
-        <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs flex flex-col justify-between min-h-[136px]">
+        <a 
+            href="{{ route('admin.intern-profiles.index', ['filter' => 'active', 'search' => request('search')]) }}"
+            class="bg-white rounded-2xl p-5 flex flex-col justify-between min-h-[136px] transition cursor-pointer {{ $activeCard === 'active' ? 'border-2 border-emerald-500 ring-2 ring-emerald-500/20 shadow-md' : 'border border-slate-200/80 shadow-xs hover:border-slate-300 hover:shadow-sm' }}"
+        >
             <div class="flex items-start justify-between">
                 <span class="text-xs font-semibold text-slate-700">Aktif Saat Ini</span>
                 <div class="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
@@ -137,7 +150,7 @@
                     <span>Akun aktif & sedang magang</span>
                 </div>
             </div>
-        </div>
+        </a>
 
     </div>
 

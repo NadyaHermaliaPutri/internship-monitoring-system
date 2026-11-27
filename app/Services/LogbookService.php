@@ -2,17 +2,23 @@
 
 namespace App\Services;
 
+use App\Enums\LogbookActivityStatus;
 use App\Enums\LogbookSource;
 use App\Enums\LogbookStatus;
 use App\Models\Logbook;
 use App\Models\LogbookRevision;
 use App\Models\User;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class LogbookService
 {
+    public function __construct(
+        private readonly MediaStorageService $mediaStorageService
+    ) {}
+
     /**
      * Mengambil tanggal hari ini sesuai standar waktu server Asia/Jakarta.
      */
@@ -51,33 +57,63 @@ class LogbookService
     }
 
     /**
+     * Kolom activity_description tetap NOT NULL di database; jika form tidak mengirim uraian
+     * (form ringkas hanya berisi "Kegiatan"), isinya disamakan dengan title.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    private function resolveActivityDescription(array $data): string
+    {
+        $description = isset($data['activity_description']) ? trim((string) $data['activity_description']) : '';
+
+        return $description !== '' ? $description : (string) $data['title'];
+    }
+
+    /**
      * Menyimpan entri logbook manual baru milik peserta.
      *
-     * @param  array{log_date: string, title: string, activity_description: string, result?: ?string}  $data
+     * @param  array{log_date: string, title: string, activity_description?: ?string, result?: ?string, related_task_id?: ?int}  $data
      */
-    public function createManualEntry(User $intern, array $data): Logbook
+    public function createManualEntry(User $intern, array $data, ?UploadedFile $evidenceFile = null): Logbook
     {
-        return Logbook::create([
-            'intern_user_id' => $intern->id,
-            'log_date' => $data['log_date'],
-            'title' => $data['title'],
-            'activity_description' => $data['activity_description'],
-            'result' => $data['result'] ?? null,
-            'source' => LogbookSource::Manual,
-            'task_id' => null,
-            'status' => LogbookStatus::Pending,
-        ]);
+        return DB::transaction(function () use ($intern, $data, $evidenceFile) {
+            $relatedTaskId = ! empty($data['related_task_id']) ? (int) $data['related_task_id'] : null;
+            $result = isset($data['result']) && trim((string) $data['result']) !== ''
+                ? trim((string) $data['result'])
+                : null;
+
+            $evidenceMediaId = null;
+            if ($evidenceFile !== null) {
+                $media = $this->mediaStorageService->storeUploadedFile($evidenceFile, $intern, 'logbook_evidence');
+                $evidenceMediaId = $media->id;
+            }
+
+            return Logbook::create([
+                'intern_user_id' => $intern->id,
+                'log_date' => $data['log_date'],
+                'title' => $data['title'],
+                'activity_description' => $this->resolveActivityDescription($data),
+                'result' => $result,
+                'evidence_media_id' => $evidenceMediaId,
+                'activity_status' => ! empty($data['activity_status']) ? $data['activity_status'] : null,
+                'source' => LogbookSource::Manual,
+                'task_id' => null,
+                'related_task_id' => $relatedTaskId,
+                'status' => LogbookStatus::Pending,
+            ]);
+        });
     }
 
     /**
      * Memperbarui logbook manual peserta sekaligus menyimpan snapshot ke logbook_revisions.
      * Jika status sebelumnya revision_requested, status dikembalikan menjadi pending.
+     * File bukti lama TIDAK pernah dihapus (append-only history).
      *
-     * @param  array{log_date: string, title: string, activity_description: string, result?: ?string}  $data
+     * @param  array{log_date: string, title: string, activity_description?: ?string, result?: ?string, related_task_id?: ?int}  $data
      */
-    public function updateManualEntry(Logbook $logbook, User $actor, array $data): Logbook
+    public function updateManualEntry(Logbook $logbook, User $actor, array $data, ?UploadedFile $evidenceFile = null): Logbook
     {
-        return DB::transaction(function () use ($logbook, $actor, $data) {
+        return DB::transaction(function () use ($logbook, $actor, $data, $evidenceFile) {
             /** @var Logbook $locked */
             $locked = Logbook::query()->whereKey($logbook->id)->lockForUpdate()->firstOrFail();
 
@@ -96,16 +132,39 @@ class LogbookService
                 'title' => $locked->title,
                 'activity_description' => $locked->activity_description,
                 'result' => $locked->result,
+                'evidence_media_id' => $locked->evidence_media_id,
+                'activity_status' => $locked->activity_status?->value,
                 'status_before' => $locked->status?->value,
                 'review_note_before' => $locked->review_note,
                 'revised_by' => $actor->id,
             ]);
 
+            $relatedTaskId = array_key_exists('related_task_id', $data)
+                ? (! empty($data['related_task_id']) ? (int) $data['related_task_id'] : null)
+                : $locked->related_task_id;
+
+            $result = isset($data['result']) && trim((string) $data['result']) !== ''
+                ? trim((string) $data['result'])
+                : null;
+
+            $evidenceMediaId = $locked->evidence_media_id;
+            if ($evidenceFile !== null) {
+                $media = $this->mediaStorageService->storeUploadedFile($evidenceFile, $actor, 'logbook_evidence');
+                $evidenceMediaId = $media->id;
+            }
+
+            $activityStatus = array_key_exists('activity_status', $data)
+                ? (! empty($data['activity_status']) ? $data['activity_status'] : null)
+                : $locked->activity_status?->value;
+
             $locked->update([
                 'log_date' => $data['log_date'],
                 'title' => $data['title'],
-                'activity_description' => $data['activity_description'],
-                'result' => $data['result'] ?? null,
+                'activity_description' => $this->resolveActivityDescription($data),
+                'result' => $result,
+                'evidence_media_id' => $evidenceMediaId,
+                'activity_status' => $activityStatus,
+                'related_task_id' => $relatedTaskId,
                 'status' => LogbookStatus::Pending,
             ]);
 
@@ -135,9 +194,99 @@ class LogbookService
                 'title' => $taskTitle,
                 'activity_description' => $activityDescription,
                 'result' => null,
+                'activity_status' => LogbookActivityStatus::BaruDikasih->value,
                 'source' => LogbookSource::TaskAssignment,
                 'status' => null,
             ]
         );
+    }
+
+    /**
+     * Meninjau logbook manual peserta oleh PIC yang berwenang (dalam DB::transaction + lockForUpdate):
+     * - Hanya logbook manual (source = manual) berstatus pending yang dapat direview
+     * - Keputusan approved: mengunci status menjadi approved
+     * - Keputusan revision_requested: wajib menyertakan review_note (min 5 karakter)
+     *
+     * @param  array{decision: string, review_note?: ?string}  $data
+     */
+    public function reviewLogbook(Logbook $logbook, User $pic, array $data): Logbook
+    {
+        return DB::transaction(function () use ($logbook, $pic, $data) {
+            /** @var Logbook $locked */
+            $locked = Logbook::query()->whereKey($logbook->id)->lockForUpdate()->firstOrFail();
+
+            if (! $locked->isManual()) {
+                throw ValidationException::withMessages([
+                    'source' => 'Logbook otomatis dari penugasan PIC tidak memerlukan dan tidak dapat melalui proses approval.',
+                ]);
+            }
+
+            if ($locked->status !== LogbookStatus::Pending) {
+                throw ValidationException::withMessages([
+                    'status' => 'Hanya logbook berstatus Menunggu Review (Pending) yang dapat ditinjau oleh PIC.',
+                ]);
+            }
+
+            if (! $pic->isPic() || ! $pic->is_active || ! $locked->isReviewableByPic($pic->id)) {
+                throw ValidationException::withMessages([
+                    'logbook' => 'Anda tidak berwenang meninjau logbook ini.',
+                ]);
+            }
+
+            $decision = LogbookStatus::from($data['decision']);
+            if (! in_array($decision, [LogbookStatus::Approved, LogbookStatus::RevisionRequested], true)) {
+                throw ValidationException::withMessages([
+                    'decision' => 'Keputusan review hanya boleh Disetujui (Approved) atau Perlu Revisi (Revision Requested).',
+                ]);
+            }
+
+            $note = isset($data['review_note']) && trim((string) $data['review_note']) !== ''
+                ? trim((string) $data['review_note'])
+                : null;
+
+            if ($decision === LogbookStatus::RevisionRequested && ($note === null || mb_strlen($note) < 5)) {
+                throw ValidationException::withMessages([
+                    'review_note' => 'Catatan revisi wajib diisi minimal 5 karakter ketika meminta revisi logbook.',
+                ]);
+            }
+
+            $updatePayload = [
+                'status' => $decision,
+                'reviewed_by' => $pic->id,
+                'reviewed_at' => Carbon::now(Logbook::TIMEZONE),
+                'review_note' => $note,
+            ];
+
+            if ($decision === LogbookStatus::Approved) {
+                $updatePayload['activity_status'] = LogbookActivityStatus::Selesai->value;
+            }
+
+            $locked->update($updatePayload);
+
+            return $locked->refresh();
+        });
+    }
+
+    /**
+     * Menandai progres kegiatan mandiri peserta menjadi "Selesai" tanpa mengubah status review PIC.
+     */
+    public function completeManualEntry(Logbook $logbook, User $actor): Logbook
+    {
+        return DB::transaction(function () use ($logbook, $actor) {
+            /** @var Logbook $locked */
+            $locked = Logbook::query()->whereKey($logbook->id)->lockForUpdate()->firstOrFail();
+
+            if (! $actor->isIntern() || $locked->intern_user_id !== $actor->id || ! $locked->canBeCompletedByIntern()) {
+                throw ValidationException::withMessages([
+                    'logbook' => 'Hanya logbook kegiatan mandiri milik Anda yang masih Sedang Dikerjakan dan belum disetujui yang dapat ditandai Selesai.',
+                ]);
+            }
+
+            $locked->update([
+                'activity_status' => LogbookActivityStatus::Selesai->value,
+            ]);
+
+            return $locked->refresh();
+        });
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\LogbookActivityStatus;
 use App\Enums\LogbookSource;
 use App\Enums\LogbookStatus;
 use Database\Factories\LogbookFactory;
@@ -19,8 +20,11 @@ use Illuminate\Support\Facades\DB;
     'title',
     'activity_description',
     'result',
+    'evidence_media_id',
+    'activity_status',
     'source',
     'task_id',
+    'related_task_id',
     'status',
     'reviewed_by',
     'reviewed_at',
@@ -39,6 +43,7 @@ class Logbook extends Model
     {
         return [
             'log_date' => 'date:Y-m-d',
+            'activity_status' => LogbookActivityStatus::class,
             'source' => LogbookSource::class,
             'status' => LogbookStatus::class,
             'reviewed_at' => 'datetime',
@@ -70,11 +75,27 @@ class Logbook extends Model
     }
 
     /**
-     * Tugas terkait apabila logbook ini berasal dari penugasan otomatis PIC.
+     * Bukti gambar / screenshot hasil kegiatan yang disimpan di storage privat.
+     */
+    public function evidenceMedia(): BelongsTo
+    {
+        return $this->belongsTo(MediaFile::class, 'evidence_media_id');
+    }
+
+    /**
+     * Tugas terkait apabila logbook ini berasal dari penugasan otomatis PIC (source = task_assignment).
      */
     public function task(): BelongsTo
     {
         return $this->belongsTo(Task::class, 'task_id');
+    }
+
+    /**
+     * Tugas terkait apabila logbook manual peserta ditautkan ke suatu tugas PIC (source = manual).
+     */
+    public function relatedTask(): BelongsTo
+    {
+        return $this->belongsTo(Task::class, 'related_task_id');
     }
 
     public function isManual(): bool
@@ -90,6 +111,18 @@ class Logbook extends Model
     public function canBeEditedByIntern(): bool
     {
         return $this->isManual() && ($this->status?->isEditableByIntern() ?? false);
+    }
+
+    public function canBeCompletedByIntern(): bool
+    {
+        return $this->isManual()
+            && ($this->status?->isEditableByIntern() ?? false)
+            && $this->activity_status === LogbookActivityStatus::SedangDikerjakan;
+    }
+
+    public function canBeReviewedByPic(): bool
+    {
+        return $this->isManual() && $this->status === LogbookStatus::Pending;
     }
 
     /**
@@ -127,20 +160,59 @@ class Logbook extends Model
     }
 
     /**
-     * Scope visibilitas logbook untuk PIC berdasarkan tabel pic_assignments
-     * dengan aturan periode: start_date <= log_date DAN (end_date IS NULL OR end_date >= log_date).
+     * Scope visibilitas logbook untuk PIC dengan dukungan Multi-PIC:
+     * 1) source = task_assignment -> hanya dilihat oleh PIC pembuat tugas pada task_id tersebut.
+     * 2) source = manual & related_task_id IS NOT NULL -> hanya dilihat oleh PIC pembuat tugas pada related_task_id tersebut.
+     * 3) source = manual & related_task_id IS NULL (Kegiatan Mandiri) -> dilihat oleh PIC yang memiliki pic_assignments
+     *    aktif pada log_date ATAU pernah memberi minimal 1 tugas di tabel tasks kepada peserta tersebut.
      */
     public function scopeForPic(Builder $query, int $picUserId): Builder
     {
-        return $query->whereExists(function ($sub) use ($picUserId) {
-            $sub->select(DB::raw(1))
-                ->from('pic_assignments')
-                ->whereColumn('pic_assignments.intern_user_id', 'logbooks.intern_user_id')
-                ->where('pic_assignments.pic_user_id', $picUserId)
-                ->whereColumn('pic_assignments.start_date', '<=', 'logbooks.log_date')
-                ->where(function ($q) {
-                    $q->whereNull('pic_assignments.end_date')
-                        ->orWhereColumn('pic_assignments.end_date', '>=', 'logbooks.log_date');
+        return $query->where(function (Builder $outer) use ($picUserId) {
+            // 1. Logbook otomatis dari penugasan tugas milik PIC ini
+            $outer->where(function (Builder $q) use ($picUserId) {
+                $q->where('logbooks.source', LogbookSource::TaskAssignment->value)
+                    ->whereNotNull('logbooks.task_id')
+                    ->whereExists(function ($sub) use ($picUserId) {
+                        $sub->select(DB::raw(1))
+                            ->from('tasks')
+                            ->whereColumn('tasks.id', 'logbooks.task_id')
+                            ->where('tasks.pic_user_id', $picUserId);
+                    });
+            })
+            // 2. Logbook manual yang terikat ke tugas milik PIC ini
+                ->orWhere(function (Builder $q) use ($picUserId) {
+                    $q->where('logbooks.source', LogbookSource::Manual->value)
+                        ->whereNotNull('logbooks.related_task_id')
+                        ->whereExists(function ($sub) use ($picUserId) {
+                            $sub->select(DB::raw(1))
+                                ->from('tasks')
+                                ->whereColumn('tasks.id', 'logbooks.related_task_id')
+                                ->where('tasks.pic_user_id', $picUserId);
+                        });
+                })
+            // 3. Logbook manual mandiri (related_task_id IS NULL) milik peserta bimbingan/penugasan PIC ini
+                ->orWhere(function (Builder $q) use ($picUserId) {
+                    $q->where('logbooks.source', LogbookSource::Manual->value)
+                        ->whereNull('logbooks.related_task_id')
+                        ->where(function (Builder $rel) use ($picUserId) {
+                            $rel->whereExists(function ($sub) use ($picUserId) {
+                                $sub->select(DB::raw(1))
+                                    ->from('pic_assignments')
+                                    ->whereColumn('pic_assignments.intern_user_id', 'logbooks.intern_user_id')
+                                    ->where('pic_assignments.pic_user_id', $picUserId)
+                                    ->whereColumn('pic_assignments.start_date', '<=', 'logbooks.log_date')
+                                    ->where(function ($dateQ) {
+                                        $dateQ->whereNull('pic_assignments.end_date')
+                                            ->orWhereColumn('pic_assignments.end_date', '>=', 'logbooks.log_date');
+                                    });
+                            })->orWhereExists(function ($sub) use ($picUserId) {
+                                $sub->select(DB::raw(1))
+                                    ->from('tasks')
+                                    ->whereColumn('tasks.intern_user_id', 'logbooks.intern_user_id')
+                                    ->where('tasks.pic_user_id', $picUserId);
+                            });
+                        });
                 });
         });
     }
@@ -162,9 +234,9 @@ class Logbook extends Model
     }
 
     /**
-     * Titik terpusat untuk memeriksa apakah seorang PIC berwenang atas peserta pada tanggal tertentu.
+     * Memeriksa apakah PIC adalah PIC pembimbing utama peserta pada tanggal tertentu menurut tabel pic_assignments.
      */
-    public static function isPicAuthorizedForInternOnDate(int $picUserId, int $internUserId, string $logDate): bool
+    public static function isPicAssignedToInternOnDate(int $picUserId, int $internUserId, string $logDate): bool
     {
         return DB::table('pic_assignments')
             ->where('pic_user_id', $picUserId)
@@ -175,5 +247,82 @@ class Logbook extends Model
                     ->orWhereDate('end_date', '>=', $logDate);
             })
             ->exists();
+    }
+
+    /**
+     * Alias kompatibilitas untuk pengecekan periode pic_assignments.
+     */
+    public static function isPicAuthorizedForInternOnDate(int $picUserId, int $internUserId, string $logDate): bool
+    {
+        return self::isPicAssignedToInternOnDate($picUserId, $internUserId, $logDate);
+    }
+
+    /**
+     * Memeriksa apakah PIC terkait dengan peserta (melalui pic_assignments aktif pada log_date ATAU pernah memberi tugas di tasks).
+     */
+    public static function isPicRelatedToIntern(int $picUserId, int $internUserId, string $logDate): bool
+    {
+        if (self::isPicAssignedToInternOnDate($picUserId, $internUserId, $logDate)) {
+            return true;
+        }
+
+        return DB::table('tasks')
+            ->where('pic_user_id', $picUserId)
+            ->where('intern_user_id', $internUserId)
+            ->exists();
+    }
+
+    /**
+     * Memeriksa apakah PIC diizinkan MELIHAT logbook ini.
+     */
+    public function isViewableByPic(int $picUserId): bool
+    {
+        if ($this->isTaskAssignment()) {
+            if ($this->task_id) {
+                $taskPicId = $this->relationLoaded('task') && $this->task
+                    ? $this->task->pic_user_id
+                    : DB::table('tasks')->where('id', $this->task_id)->value('pic_user_id');
+
+                if ($taskPicId !== null) {
+                    return (int) $taskPicId === $picUserId;
+                }
+            }
+
+            return self::isPicAssignedToInternOnDate($picUserId, $this->intern_user_id, $this->log_date->toDateString());
+        }
+
+        // Logbook manual yang terikat ke suatu tugas PIC: hanya boleh dilihat oleh PIC pembuat tugas tersebut
+        if ($this->related_task_id !== null) {
+            $relatedPicId = $this->relationLoaded('relatedTask') && $this->relatedTask
+                ? $this->relatedTask->pic_user_id
+                : DB::table('tasks')->where('id', $this->related_task_id)->value('pic_user_id');
+
+            return (int) $relatedPicId === $picUserId;
+        }
+
+        // Logbook manual mandiri (related_task_id = null): boleh dilihat oleh semua PIC yang terkait dengan peserta
+        return self::isPicRelatedToIntern($picUserId, $this->intern_user_id, $this->log_date->toDateString());
+    }
+
+    /**
+     * Memeriksa apakah PIC diizinkan ME-REVIEW (Approve / Minta Revisi) logbook ini.
+     */
+    public function isReviewableByPic(int $picUserId): bool
+    {
+        if (! $this->canBeReviewedByPic()) {
+            return false;
+        }
+
+        // Jika terkait tugas tertentu: HANYA PIC pembuat tugas tersebut yang boleh melakukan approval/revisi
+        if ($this->related_task_id !== null) {
+            $relatedPicId = $this->relationLoaded('relatedTask') && $this->relatedTask
+                ? $this->relatedTask->pic_user_id
+                : DB::table('tasks')->where('id', $this->related_task_id)->value('pic_user_id');
+
+            return (int) $relatedPicId === $picUserId;
+        }
+
+        // Jika kegiatan mandiri (related_task_id = null): hanya PIC pembimbing utama di pic_assignments aktif pada log_date
+        return self::isPicAssignedToInternOnDate($picUserId, $this->intern_user_id, $this->log_date->toDateString());
     }
 }
