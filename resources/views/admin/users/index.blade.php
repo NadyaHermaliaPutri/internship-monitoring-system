@@ -11,7 +11,7 @@
         <svg class="w-3.5 h-3.5 text-[#015987]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
         </svg>
-        <span>{{ \Carbon\Carbon::now()->translatedFormat('l, j F Y') }}</span>
+        <span>{{ \Carbon\Carbon::now('Asia/Jakarta')->locale('id')->translatedFormat('l, j F Y') }}</span>
     </div>
 
     <!-- Search Input Form -->
@@ -41,7 +41,7 @@
     <!-- ================================================================= -->
     <!-- 1. KARTU STATISTIK 4 KOLOM PERSIS SESUAI MOCKUP                   -->
     <!-- ================================================================= -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         
         <!-- Kartu 1: Total Akun Aktif -->
         <a 
@@ -200,7 +200,7 @@
 
         <!-- Tabel Data Sesuai Kolom Mockup -->
         <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse">
+            <table class="w-full min-w-[720px] text-left border-collapse">
                 <thead>
                     <tr class="border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                         <th class="py-4 px-6">Nama</th>
@@ -777,7 +777,7 @@
             x-transition:leave="ease-in duration-150"
             x-transition:leave-start="opacity-100 scale-100 translate-y-0"
             x-transition:leave-end="opacity-0 scale-95 translate-y-2"
-            class="relative w-full max-w-sm sm:max-w-md bg-white rounded-3xl shadow-2xl border border-slate-100 p-7 sm:p-8 text-center"
+            class="relative w-full max-w-sm sm:max-w-md bg-white rounded-3xl shadow-2xl border border-slate-100 p-6 sm:p-8 text-center max-h-[90vh] overflow-y-auto"
         >
             <!-- Ikon Status Peringatan (Nonaktifkan: Rose Alert, Aktifkan: Sky/Blue Check) -->
             <div x-show="confirmToggle.isActive" class="mx-auto mb-4 w-16 h-16 rounded-full bg-rose-50 flex items-center justify-center text-rose-600 shadow-xs">
@@ -862,7 +862,7 @@
             x-transition:leave="ease-in duration-150"
             x-transition:leave-start="opacity-100 scale-100 translate-y-0"
             x-transition:leave-end="opacity-0 scale-95 translate-y-2"
-            class="relative w-full max-w-md bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden"
+            class="relative w-full max-w-md bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden max-h-[90vh] overflow-y-auto"
         >
             <!-- Header Gradient -->
             <div class="bg-gradient-to-br from-[#015987] to-[#01435e] px-7 pt-7 pb-10 text-center relative">

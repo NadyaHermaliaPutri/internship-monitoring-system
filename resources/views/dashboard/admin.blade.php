@@ -11,13 +11,13 @@
     <!-- ============================================================== -->
     <!-- 1. KARTU STATISTIK RINGKASAN
     <!-- ============================================================== -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         
         <!-- Card 1: Total Peserta Aktif -->
-        <div class="bg-white p-6 rounded-2xl border border-slate-200/70 shadow-xs flex flex-col justify-between min-h-[148px]">
-            <div class="flex items-start justify-between">
+        <div class="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200/70 shadow-xs flex flex-col justify-between min-h-[148px]">
+            <div class="flex items-start justify-between gap-2">
                 <span class="text-xs font-bold text-slate-700">Total Peserta Aktif</span>
-                <div class="w-8 h-8 rounded-xl bg-sky-50 text-sky-500 flex items-center justify-center">
+                <div class="w-8 h-8 rounded-xl bg-sky-50 text-sky-500 flex items-center justify-center flex-shrink-0">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
                     </svg>
@@ -25,7 +25,7 @@
             </div>
             <div class="mt-4">
                 <div class="flex items-baseline gap-1.5">
-                    <span class="text-2xl sm:text-3xl font-extrabold text-[#015987]">{{ $adminSummary['total_active_interns'] }}</span>
+                    <span class="text-xl sm:text-2xl lg:text-3xl font-extrabold text-[#015987] truncate">{{ $adminSummary['total_active_interns'] }}</span>
                     <span class="text-xs text-slate-500 font-medium">Peserta</span>
                 </div>
                 <div class="flex items-center justify-between mt-1.5 text-[11px]">
@@ -41,10 +41,10 @@
         </div>
 
         <!-- Card 2: Kehadiran Hari Ini -->
-        <div class="bg-white p-6 rounded-2xl border border-slate-200/70 shadow-xs flex flex-col justify-between min-h-[148px]">
-            <div class="flex items-start justify-between">
+        <div class="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200/70 shadow-xs flex flex-col justify-between min-h-[148px]">
+            <div class="flex items-start justify-between gap-2">
                 <span class="text-xs font-bold text-slate-700">Kehadiran Hari Ini</span>
-                <div class="w-8 h-8 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center">
+                <div class="w-8 h-8 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center flex-shrink-0">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                     </svg>
@@ -52,7 +52,7 @@
             </div>
             <div class="mt-4">
                 <div class="flex items-baseline gap-1.5">
-                    <span class="text-2xl sm:text-3xl font-extrabold text-[#015987]">{{ $adminSummary['total_present'] }}</span>
+                    <span class="text-xl sm:text-2xl lg:text-3xl font-extrabold text-[#015987] truncate">{{ $adminSummary['total_present'] }}</span>
                     <span class="text-xs text-slate-500 font-medium">dari {{ $adminSummary['total_active_interns'] }} Peserta</span>
                 </div>
                 <p class="text-[11px] font-semibold text-teal-600 mt-1.5 flex items-center gap-1 truncate">
@@ -63,10 +63,10 @@
         </div>
 
         <!-- Card 3: Tugas Menunggu Review -->
-        <div class="bg-white p-6 rounded-2xl border border-slate-200/70 shadow-xs flex flex-col justify-between min-h-[148px]">
-            <div class="flex items-start justify-between">
+        <div class="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200/70 shadow-xs flex flex-col justify-between min-h-[148px]">
+            <div class="flex items-start justify-between gap-2">
                 <span class="text-xs font-bold text-slate-700">Tugas Menunggu Review</span>
-                <div class="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                <div class="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center flex-shrink-0">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
                     </svg>
@@ -74,7 +74,7 @@
             </div>
             <div class="mt-4">
                 <div class="flex items-baseline gap-1.5">
-                    <span class="text-2xl sm:text-3xl font-extrabold text-[#015987]">{{ $taskSummary['awaiting_review'] }}</span>
+                    <span class="text-xl sm:text-2xl lg:text-3xl font-extrabold text-[#015987] truncate">{{ $taskSummary['awaiting_review'] }}</span>
                     <span class="text-xs text-slate-500 font-medium">Tugas</span>
                 </div>
                 <div class="flex items-center justify-between mt-1.5 text-[11px]">
@@ -90,10 +90,10 @@
         </div>
 
         <!-- Card 4: Sinyal Peringatan (EWS) -->
-        <div class="bg-white p-6 rounded-2xl border border-slate-200/70 shadow-xs flex flex-col justify-between min-h-[148px]">
-            <div class="flex items-start justify-between">
+        <div class="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200/70 shadow-xs flex flex-col justify-between min-h-[148px]">
+            <div class="flex items-start justify-between gap-2">
                 <span class="text-xs font-bold text-slate-700">Sinyal Peringatan (EWS)</span>
-                <div class="w-8 h-8 rounded-xl bg-rose-50 text-rose-500 flex items-center justify-center">
+                <div class="w-8 h-8 rounded-xl bg-rose-50 text-rose-500 flex items-center justify-center flex-shrink-0">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
                     </svg>
@@ -101,7 +101,7 @@
             </div>
             <div class="mt-4">
                 <div class="flex items-baseline gap-1.5">
-                    <span class="text-2xl sm:text-3xl font-extrabold {{ $ewsSummary['total_warning_count'] > 0 ? 'text-rose-600' : 'text-[#015987]' }}">{{ $ewsSummary['total_warning_count'] }}</span>
+                    <span class="text-xl sm:text-2xl lg:text-3xl font-extrabold truncate {{ $ewsSummary['total_warning_count'] > 0 ? 'text-rose-600' : 'text-[#015987]' }}">{{ $ewsSummary['total_warning_count'] }}</span>
                     <span class="text-xs text-slate-500 font-medium">Sinyal</span>
                 </div>
                 <p class="text-[11px] font-semibold {{ $ewsSummary['total_warning_count'] > 0 ? 'text-rose-600' : 'text-emerald-600' }} mt-1.5 flex items-center gap-1">
@@ -196,7 +196,7 @@
 
                 <!-- Tabel Data -->
                 <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse">
+                    <table class="w-full min-w-[640px] text-left border-collapse">
                         <thead>
                             <tr class="border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                                 <th class="py-4 px-6">Nama Peserta</th>
@@ -488,8 +488,8 @@
 
 @push('modals')
 <!-- Modal Tolak Permohonan Izin -->
-<div id="rejectModal" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto hidden">
-    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xl max-w-md w-full p-6 space-y-4">
+<div id="rejectModal" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xl max-w-md w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
         <div class="flex items-center justify-between pb-3 border-b border-slate-100">
             <h4 class="text-sm font-bold text-slate-900">Tolak Permohonan Izin</h4>
             <button type="button" onclick="closeRejectModal()" class="text-slate-400 hover:text-slate-600">

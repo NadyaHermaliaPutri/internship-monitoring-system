@@ -11,13 +11,13 @@
     <!-- ============================================================== -->
     <!-- 1. KARTU STATISTIK RINGKASAN PESERTA MAGANG -->
     <!-- ============================================================== -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         
         <!-- Card 1: Presensi Hari Ini -->
-        <div class="bg-white p-6 rounded-2xl border border-slate-200/70 shadow-xs flex flex-col justify-between min-h-[148px]">
-            <div class="flex items-start justify-between">
+        <div class="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200/70 shadow-xs flex flex-col justify-between min-h-[148px]">
+            <div class="flex items-start justify-between gap-2">
                 <span class="text-xs font-bold text-[#015987]">Presensi Hari Ini</span>
-                <div class="w-8 h-8 rounded-xl bg-sky-50 text-sky-500 flex items-center justify-center">
+                <div class="w-8 h-8 rounded-xl bg-sky-50 text-sky-500 flex items-center justify-center flex-shrink-0">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
                     </svg>
@@ -26,7 +26,7 @@
             <div class="mt-5">
                 @if($dailySummary['attendance_today'] && $dailySummary['attendance_today']->isRejected())
                     <div class="flex items-baseline gap-2">
-                        <span class="text-2xl sm:text-3xl font-extrabold text-rose-600">Ditolak HR</span>
+                        <span class="text-xl sm:text-2xl lg:text-3xl font-extrabold text-rose-600 truncate">Ditolak HR</span>
                     </div>
                     <p class="text-[11px] font-semibold text-rose-600 mt-1.5 flex items-center gap-1">
                         <span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span>
@@ -34,7 +34,7 @@
                     </p>
                 @elseif($dailySummary['attendance_today'])
                     <div class="flex items-baseline gap-2">
-                        <span class="text-2xl sm:text-3xl font-extrabold text-[#015987]">Hadir</span>
+                        <span class="text-xl sm:text-2xl lg:text-3xl font-extrabold text-[#015987] truncate">Hadir</span>
                         <span class="text-xs text-slate-500 font-medium">{{ \Carbon\Carbon::parse($dailySummary['attendance_today']->checked_in_at)->timezone(config('wantrace.timezone', 'Asia/Jakarta'))->format('H:i') }} WIB</span>
                     </div>
                     @if($dailySummary['attendance_today']->isOnTime())
@@ -54,7 +54,7 @@
                     @endif
                 @elseif($dailySummary['approved_leave_today'])
                     <div class="flex items-baseline gap-2">
-                        <span class="text-2xl sm:text-3xl font-extrabold text-amber-600">{{ $dailySummary['approved_leave_today']->isSick() ? 'Sakit' : 'Izin' }}</span>
+                        <span class="text-xl sm:text-2xl lg:text-3xl font-extrabold text-amber-600 truncate">{{ $dailySummary['approved_leave_today']->isSick() ? 'Sakit' : 'Izin' }}</span>
                         <span class="text-xs text-slate-500 font-medium">Disetujui</span>
                     </div>
                     <p class="text-[11px] font-semibold text-amber-600 mt-1.5 flex items-center gap-1">
@@ -63,7 +63,7 @@
                     </p>
                 @elseif(! ($dailySummary['day_status']['is_working_day'] ?? true))
                     <div class="flex items-baseline gap-2">
-                        <span class="text-2xl sm:text-3xl font-extrabold text-slate-700">Libur</span>
+                        <span class="text-xl sm:text-2xl lg:text-3xl font-extrabold text-slate-700 truncate">Libur</span>
                         <span class="text-xs text-slate-500 font-medium">Operasional</span>
                     </div>
                     <p class="text-[11px] font-semibold text-slate-500 mt-1.5 truncate">
@@ -71,7 +71,7 @@
                     </p>
                 @else
                     <div class="flex items-baseline gap-2">
-                        <span class="text-2xl sm:text-3xl font-extrabold text-rose-600">Belum</span>
+                        <span class="text-xl sm:text-2xl lg:text-3xl font-extrabold text-rose-600 truncate">Belum</span>
                         <span class="text-xs text-slate-500 font-medium">Presensi</span>
                     </div>
                     <p class="text-[11px] font-semibold text-rose-500 mt-1.5 flex items-center gap-1">
@@ -83,10 +83,10 @@
         </div>
 
         <!-- Card 2: Pengajuan Izin / Sakit -->
-        <div class="bg-white p-6 rounded-2xl border border-slate-200/70 shadow-xs flex flex-col justify-between min-h-[148px]">
-            <div class="flex items-start justify-between">
+        <div class="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200/70 shadow-xs flex flex-col justify-between min-h-[148px]">
+            <div class="flex items-start justify-between gap-2">
                 <span class="text-xs font-bold text-[#015987]">Pengajuan Izin / Sakit</span>
-                <div class="w-8 h-8 rounded-xl bg-rose-50 text-rose-400 flex items-center justify-center">
+                <div class="w-8 h-8 rounded-xl bg-rose-50 text-rose-400 flex items-center justify-center flex-shrink-0">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                     </svg>
@@ -94,7 +94,7 @@
             </div>
             <div class="mt-5">
                 <div class="flex items-baseline gap-2">
-                    <span class="text-2xl sm:text-3xl font-extrabold text-[#015987]">{{ $dailySummary['pending_leaves_count'] }}</span>
+                    <span class="text-xl sm:text-2xl lg:text-3xl font-extrabold text-[#015987] truncate">{{ $dailySummary['pending_leaves_count'] }}</span>
                     <span class="text-xs text-slate-500 font-medium">Menunggu</span>
                 </div>
                 @if($dailySummary['pending_leaves_count'] > 0)
@@ -116,10 +116,10 @@
         </div>
 
         <!-- Card 3: Tugas Menunggu Selesai -->
-        <div class="bg-white p-6 rounded-2xl border border-slate-200/70 shadow-xs flex flex-col justify-between min-h-[148px]">
-            <div class="flex items-start justify-between">
+        <div class="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200/70 shadow-xs flex flex-col justify-between min-h-[148px]">
+            <div class="flex items-start justify-between gap-2">
                 <span class="text-xs font-bold text-[#015987]">Tugas Menunggu Selesai</span>
-                <div class="w-8 h-8 rounded-xl bg-sky-50 text-sky-500 flex items-center justify-center">
+                <div class="w-8 h-8 rounded-xl bg-sky-50 text-sky-500 flex items-center justify-center flex-shrink-0">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
                     </svg>
@@ -127,7 +127,7 @@
             </div>
             <div class="mt-5">
                 <div class="flex items-baseline gap-2">
-                    <span class="text-2xl sm:text-3xl font-extrabold text-[#015987]">{{ $internDashboard['active_tasks_count'] }}</span>
+                    <span class="text-xl sm:text-2xl lg:text-3xl font-extrabold text-[#015987] truncate">{{ $internDashboard['active_tasks_count'] }}</span>
                     <span class="text-xs text-slate-500 font-medium">Tugas Aktif</span>
                 </div>
                 @if ($internDashboard['overdue_tasks_count'] > 0)
@@ -157,10 +157,10 @@
         </div>
 
         <!-- Card 4: Logbook Harian -->
-        <div class="bg-white p-6 rounded-2xl border border-slate-200/70 shadow-xs flex flex-col justify-between min-h-[148px]">
-            <div class="flex items-start justify-between">
+        <div class="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200/70 shadow-xs flex flex-col justify-between min-h-[148px]">
+            <div class="flex items-start justify-between gap-2">
                 <span class="text-xs font-bold text-[#015987]">Logbook Harian</span>
-                <div class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-500 flex items-center justify-center">
+                <div class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-500 flex items-center justify-center flex-shrink-0">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/>
                     </svg>
@@ -168,7 +168,7 @@
             </div>
             <div class="mt-5">
                 <div class="flex items-baseline gap-2">
-                    <span class="text-2xl sm:text-3xl font-extrabold text-[#015987]">{{ $internDashboard['today_logbooks_count'] }}</span>
+                    <span class="text-xl sm:text-2xl lg:text-3xl font-extrabold text-[#015987] truncate">{{ $internDashboard['today_logbooks_count'] }}</span>
                     <span class="text-xs text-slate-500 font-medium">Catatan Hari Ini</span>
                 </div>
                 @if ($internDashboard['revision_logbooks_count'] > 0)
@@ -369,7 +369,7 @@
                         $soonCutoff = $nowJakarta->copy()->addHours(24);
                     @endphp
                     <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse">
+                        <table class="w-full min-w-[680px] text-left border-collapse">
                             <thead>
                                 <tr class="border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                                     <th class="py-4 px-6">Judul Tugas</th>

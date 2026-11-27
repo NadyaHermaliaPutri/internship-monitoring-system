@@ -11,7 +11,9 @@
     <meta name="apple-mobile-web-app-title" content="WANTRACE">
     <title>@yield('title', 'Dashboard') - WANTRACE | PT WAN Teknologi Internasional</title>
 
-    <!-- PWA Manifest & Icons -->
+    <!-- PWA Manifest, Favicon & Icons -->
+    <link rel="icon" type="image/png" href="{{ asset('images/wi-logo.png') }}">
+    <link rel="shortcut icon" type="image/png" href="{{ asset('images/wi-logo.png') }}">
     <link rel="manifest" href="{{ asset('manifest.webmanifest') }}">
     <link rel="apple-touch-icon" href="{{ asset('icons/icon-192x192.png') }}">
 
@@ -67,38 +69,69 @@
         ::-webkit-scrollbar-thumb:hover {
             background: #94a3b8;
         }
+        .sidebar-scroll::-webkit-scrollbar {
+            width: 4px;
+        }
+        .sidebar-scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .sidebar-scroll::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.22);
+            border-radius: 9999px;
+        }
+        .sidebar-scroll::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.4);
+        }
     </style>
     @stack('styles')
 </head>
-<body class="bg-[#eef4f8] text-slate-800 antialiased min-h-screen flex overflow-x-hidden">
+<body x-data="{ mobileSidebarOpen: false }" @keydown.escape.window="mobileSidebarOpen = false" class="bg-[#eef4f8] text-slate-800 antialiased h-screen flex overflow-hidden">
 
-    <!-- Backdrop Sidebar Mobile -->
-    <div id="mobile-sidebar-backdrop" class="fixed inset-0 bg-slate-900/50 z-30 hidden lg:hidden" aria-hidden="true"></div>
+    <!-- Backdrop Sidebar Mobile (Alpine.js) -->
+    <div
+        x-show="mobileSidebarOpen"
+        x-transition:enter="transition-opacity ease-out duration-200"
+        x-transition:enter-start="opacity-0"
+        x-transition:enter-end="opacity-100"
+        x-transition:leave="transition-opacity ease-in duration-150"
+        x-transition:leave-start="opacity-100"
+        x-transition:leave-end="opacity-0"
+        @click="mobileSidebarOpen = false"
+        x-cloak
+        class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-30 lg:hidden"
+        aria-hidden="true"
+    ></div>
 
     <!-- ============================================================== -->
-    <!-- SIDEBAR KIRI (RESPONSIF DRAWER DI MOBILE, STICKY DI DESKTOP) -->
+    <!-- SIDEBAR KIRI (OFF-CANVAS DRAWER DI MOBILE, STICKY DI DESKTOP)  -->
     <!-- ============================================================== -->
-    <aside id="app-sidebar" class="fixed inset-y-0 left-0 w-64 bg-[#015987] text-white flex flex-col flex-shrink-0 justify-between py-6 h-screen z-40 transform -translate-x-full transition-transform duration-200 ease-in-out lg:sticky lg:top-0 lg:translate-x-0 lg:z-30 overflow-y-auto">
-        
-        <div>
-            <!-- 1. Header Logo WANTRACE -->
-            <div class="flex items-center justify-between gap-3 px-6 pt-2 pb-6 border-b border-white/10">
-                <div class="flex items-center gap-3">
-                    <img src="{{ asset('images/wi-logo.png') }}" alt="Logo WANTRACE" class="w-9 h-auto object-contain drop-shadow">
-                    <div>
-                        <span class="font-quando text-lg font-bold tracking-wider text-white uppercase block leading-none">WANTRACE</span>
-                        <span class="font-quando text-[10px] text-sky-200 tracking-wide block mt-1">Internship System</span>
-                    </div>
+    <aside
+        id="app-sidebar"
+        :class="mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
+        class="fixed inset-y-0 left-0 w-64 bg-[#015987] text-white flex flex-col shrink-0 h-full z-40 transform -translate-x-full transition-transform duration-200 ease-in-out lg:static lg:translate-x-0 lg:z-30 overflow-hidden"
+    >
+
+        <!-- 1. Header Logo WANTRACE (Tetap di Atas) -->
+        <div class="flex-shrink-0 flex items-center justify-between gap-3 px-6 pt-6 pb-5 border-b border-white/10">
+            <div class="flex items-center gap-3">
+                <img src="{{ asset('images/wi-logo.png') }}" alt="Logo WANTRACE" class="w-9 h-9 object-contain flex-shrink-0 drop-shadow">
+                <div>
+                    <span class="font-quando text-lg font-bold tracking-wider text-white uppercase block leading-none">WANTRACE</span>
+                    <span class="font-quando text-[10px] text-sky-200 tracking-wide block mt-1">Internship System</span>
                 </div>
-                <button type="button" id="mobile-sidebar-close" class="lg:hidden p-1.5 rounded-lg text-sky-100 hover:bg-white/10" aria-label="Tutup menu">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                    </svg>
-                </button>
             </div>
+            <button type="button" @click="mobileSidebarOpen = false" class="lg:hidden p-1.5 rounded-lg text-sky-100 hover:bg-white/10 cursor-pointer" aria-label="Tutup menu">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Area Scroll Mandiri Sidebar (Profil + Menu Navigasi) -->
+        <div class="flex-1 overflow-y-auto sidebar-scroll py-5">
 
             <!-- 2. Profil Singkat Pengguna -->
-            <div class="px-6 my-7 flex flex-col items-center text-center">
+            <div class="px-6 mb-6 flex flex-col items-center text-center">
                 <div class="relative inline-block">
                     <div class="w-20 h-20 rounded-full ring-4 ring-white/20 shadow-lg overflow-hidden bg-gradient-to-tr from-sky-400 to-indigo-600 flex items-center justify-center text-white font-bold text-xl">
                         {{ strtoupper(substr(auth()->user()->name ?? 'SA', 0, 2)) }}
@@ -111,7 +144,7 @@
                     @endif
                 </div>
 
-                <h3 class="font-bold text-white text-base mt-3.5 tracking-tight leading-snug">
+                <h3 class="font-bold text-white text-base mt-3.5 tracking-tight leading-snug truncate max-w-[180px]" title="{{ auth()->user()->name ?? 'User' }}">
                     {{ auth()->user()->name ?? 'User' }}
                 </h3>
                 <p class="text-xs text-sky-200 font-medium mt-0.5">
@@ -132,379 +165,470 @@
                 @endif
             </div>
 
-            <!-- 3. Navigasi Sidebar -->
+            <!-- 3. Navigasi Sidebar Hierarkis -->
             @php
-                $rolePrefix = auth()->user()->role ?? 'admin';
+                $userRole = auth()->user()?->role ?? 'intern';
+
                 $isDashboardActive = request()->routeIs('*.dashboard');
-                $isEwsActive = request()->routeIs('*.ews.*');
                 $isLogbookActive = request()->routeIs('*.logbooks.*');
                 $isTaskActive = request()->routeIs('*.tasks.*');
-                $isAdminCalendarActive = request()->routeIs('admin.calendar.*');
+
+                // Status Aktif Admin
                 $isAdminAttendanceActive = request()->routeIs('admin.attendance.*');
                 $isAdminLeaveActive = request()->routeIs('admin.leave.*');
+                $isAdminCalendarActive = request()->routeIs('admin.calendar.*');
+                $isAdminAbsensiOpen = $isAdminAttendanceActive || $isAdminLeaveActive || $isAdminCalendarActive;
+                $isEwsActive = request()->routeIs('admin.ews.*');
+                $isInternProfileActive = request()->routeIs('admin.intern-profiles.*');
+                $isUserManagementActive = request()->routeIs('admin.users.*');
+                $isReportsActive = request()->routeIs('admin.reports.*');
+
+                // Status Aktif Intern
                 $isInternAttendanceActive = request()->routeIs('intern.attendance.*');
                 $isInternLeaveActive = request()->routeIs('intern.leave.*');
-                $isReportsActive = request()->routeIs('admin.reports.*');
+                $isInternAbsensiOpen = $isInternAttendanceActive || $isInternLeaveActive;
             @endphp
-            <nav class="mt-6 w-full space-y-1">
-                <!-- Menu Dashboard (Semua Role) -->
-                <div class="relative w-full pl-5 {{ $isDashboardActive ? 'z-10' : '' }}">
-                    <a href="{{ route($rolePrefix . '.dashboard') }}" class="relative flex items-center gap-3 py-3 pl-4 pr-6 {{ $isDashboardActive ? 'bg-[#eef4f8] text-[#015987] font-bold' : 'text-sky-100 hover:bg-white/10 font-medium' }} text-xs rounded-l-full w-full shadow-none transition">
-                        @if($isDashboardActive)
-                            <span class="hidden lg:block absolute -top-5 right-0 w-5 h-5 pointer-events-none">
-                                <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">
-                                    <path d="M20 0 L20 20 L0 20 A20 20 0 0 0 20 0 Z" fill="#eef4f8"/>
-                                </svg>
-                            </span>
-                        @endif
 
-                        <svg class="w-4 h-4 {{ $isDashboardActive ? 'text-[#015987]' : 'text-sky-200' }} flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <rect x="3" y="3" width="7" height="7" rx="1.5"></rect>
-                            <rect x="14" y="3" width="7" height="7" rx="1.5"></rect>
-                            <rect x="3" y="14" width="7" height="7" rx="1.5"></rect>
-                            <rect x="14" y="14" width="7" height="7" rx="1.5"></rect>
-                        </svg>
-                        <span>Dashboard</span>
+            <nav class="w-full space-y-1.5 pb-6" aria-label="Menu Utama">
 
-                        @if($isDashboardActive)
-                            <span class="hidden lg:block absolute -bottom-5 right-0 w-5 h-5 pointer-events-none">
-                                <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">
-                                    <path d="M20 20 L20 0 L0 0 A20 20 0 0 1 20 20 Z" fill="#eef4f8"/>
-                                </svg>
-                            </span>
-                        @endif
-                    </a>
-                </div>
-
-                {{-- Menu Early Warning (EWS) - Khusus Admin / HR --}}
-                @if(auth()->user()?->role === 'admin')
-                    <div class="relative w-full pl-5 {{ $isEwsActive ? 'z-10' : '' }}">
-                        <a href="{{ route('admin.ews.index') }}" class="relative flex items-center gap-3 py-3 pl-4 pr-6 {{ $isEwsActive ? 'bg-[#eef4f8] text-[#015987] font-bold' : 'text-sky-100 hover:bg-white/10 font-medium' }} text-xs rounded-l-full w-full shadow-none transition">
-                            @if($isEwsActive)
+                {{-- ====================================================== --}}
+                {{-- A. MENU ROLE ADMIN                                     --}}
+                {{-- ====================================================== --}}
+                @if($userRole === 'admin')
+                    <!-- 1. Beranda -->
+                    <div class="relative w-full pl-5 {{ $isDashboardActive ? 'z-10' : '' }}">
+                        <a href="{{ route('admin.dashboard') }}" class="relative flex items-center gap-3 py-3 pl-4 pr-6 {{ $isDashboardActive ? 'bg-[#eef4f8] text-[#015987] font-bold' : 'text-sky-100 hover:bg-white/10 font-medium' }} text-xs rounded-l-full w-full transition">
+                            @if($isDashboardActive)
                                 <span class="hidden lg:block absolute -top-5 right-0 w-5 h-5 pointer-events-none">
-                                    <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">
-                                        <path d="M20 0 L20 20 L0 20 A20 20 0 0 0 20 0 Z" fill="#eef4f8"/>
-                                    </svg>
+                                    <svg viewBox="0 0 20 20" fill="none" class="w-full h-full"><path d="M20 0 L20 20 L0 20 A20 20 0 0 0 20 0 Z" fill="#eef4f8"/></svg>
                                 </span>
                             @endif
+                            <svg class="w-4 h-4 {{ $isDashboardActive ? 'text-[#015987]' : 'text-sky-200' }} flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <rect x="3" y="3" width="7" height="7" rx="1.5"></rect>
+                                <rect x="14" y="3" width="7" height="7" rx="1.5"></rect>
+                                <rect x="3" y="14" width="7" height="7" rx="1.5"></rect>
+                                <rect x="14" y="14" width="7" height="7" rx="1.5"></rect>
+                            </svg>
+                            <span>Beranda</span>
+                            @if($isDashboardActive)
+                                <span class="hidden lg:block absolute -bottom-5 right-0 w-5 h-5 pointer-events-none">
+                                    <svg viewBox="0 0 20 20" fill="none" class="w-full h-full"><path d="M20 20 L20 0 L0 0 A20 20 0 0 1 20 20 Z" fill="#eef4f8"/></svg>
+                                </span>
+                            @endif
+                        </a>
+                    </div>
 
+                    <!-- 2. Absensi (Menu Beranak / Accordion Alpine.js) -->
+                    <div x-data="{ open: @json($isAdminAbsensiOpen) }" class="w-full">
+                        <div class="pl-5 pr-3">
+                            <button
+                                type="button"
+                                @click="open = !open"
+                                :aria-expanded="open.toString()"
+                                class="w-full flex items-center justify-between gap-3 py-3 pl-4 pr-3.5 rounded-xl text-xs transition cursor-pointer {{ $isAdminAbsensiOpen ? 'bg-white/15 text-white font-bold shadow-2xs' : 'text-sky-100 hover:bg-white/10 font-medium' }}"
+                            >
+                                <span class="flex items-center gap-3 min-w-0">
+                                    <svg class="w-4 h-4 {{ $isAdminAbsensiOpen ? 'text-white' : 'text-sky-200' }} flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                    <span class="truncate">Absensi</span>
+                                </span>
+                                <svg
+                                    class="w-3.5 h-3.5 text-sky-200 flex-shrink-0 transition-transform duration-200"
+                                    :class="{ 'rotate-180': open }"
+                                    fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"
+                                >
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+                                </svg>
+                            </button>
+                        </div>
+
+                        <div
+                            x-show="open"
+                            x-transition:enter="transition ease-out duration-150"
+                            x-transition:enter-start="opacity-0 -translate-y-1"
+                            x-transition:enter-end="opacity-100 translate-y-0"
+                            x-transition:leave="transition ease-in duration-100"
+                            x-transition:leave-start="opacity-100 translate-y-0"
+                            x-transition:leave-end="opacity-0 -translate-y-1"
+                            @if(! $isAdminAbsensiOpen) x-cloak @endif
+                            class="mt-1 space-y-1"
+                        >
+                            <!-- Sub-menu 2.1: Presensi Peserta -->
+                            <div class="relative w-full pl-5 {{ $isAdminAttendanceActive ? 'z-10' : '' }}">
+                                <a href="{{ route('admin.attendance.index') }}" class="relative flex items-center gap-2.5 py-2.5 pl-9 pr-6 {{ $isAdminAttendanceActive ? 'bg-[#eef4f8] text-[#015987] font-bold' : 'text-sky-100/85 hover:text-white hover:bg-white/10 font-medium' }} text-xs rounded-l-full w-full transition">
+                                    @if($isAdminAttendanceActive)
+                                        <span class="hidden lg:block absolute -top-5 right-0 w-5 h-5 pointer-events-none">
+                                            <svg viewBox="0 0 20 20" fill="none" class="w-full h-full"><path d="M20 0 L20 20 L0 20 A20 20 0 0 0 20 0 Z" fill="#eef4f8"/></svg>
+                                        </span>
+                                    @endif
+                                    <span class="w-1.5 h-1.5 rounded-full flex-shrink-0 {{ $isAdminAttendanceActive ? 'bg-[#015987]' : 'bg-sky-300/60' }}"></span>
+                                    <span>Presensi Peserta</span>
+                                    @if($isAdminAttendanceActive)
+                                        <span class="hidden lg:block absolute -bottom-5 right-0 w-5 h-5 pointer-events-none">
+                                            <svg viewBox="0 0 20 20" fill="none" class="w-full h-full"><path d="M20 20 L20 0 L0 0 A20 20 0 0 1 20 20 Z" fill="#eef4f8"/></svg>
+                                        </span>
+                                    @endif
+                                </a>
+                            </div>
+
+                            <!-- Sub-menu 2.2: Verifikasi Izin/Sakit -->
+                            <div class="relative w-full pl-5 {{ $isAdminLeaveActive ? 'z-10' : '' }}">
+                                <a href="{{ route('admin.leave.index') }}" class="relative flex items-center gap-2.5 py-2.5 pl-9 pr-6 {{ $isAdminLeaveActive ? 'bg-[#eef4f8] text-[#015987] font-bold' : 'text-sky-100/85 hover:text-white hover:bg-white/10 font-medium' }} text-xs rounded-l-full w-full transition">
+                                    @if($isAdminLeaveActive)
+                                        <span class="hidden lg:block absolute -top-5 right-0 w-5 h-5 pointer-events-none">
+                                            <svg viewBox="0 0 20 20" fill="none" class="w-full h-full"><path d="M20 0 L20 20 L0 20 A20 20 0 0 0 20 0 Z" fill="#eef4f8"/></svg>
+                                        </span>
+                                    @endif
+                                    <span class="w-1.5 h-1.5 rounded-full flex-shrink-0 {{ $isAdminLeaveActive ? 'bg-[#015987]' : 'bg-sky-300/60' }}"></span>
+                                    <span>Verifikasi Izin/Sakit</span>
+                                    @if($isAdminLeaveActive)
+                                        <span class="hidden lg:block absolute -bottom-5 right-0 w-5 h-5 pointer-events-none">
+                                            <svg viewBox="0 0 20 20" fill="none" class="w-full h-full"><path d="M20 20 L20 0 L0 0 A20 20 0 0 1 20 20 Z" fill="#eef4f8"/></svg>
+                                        </span>
+                                    @endif
+                                </a>
+                            </div>
+
+                            <!-- Sub-menu 2.3: Kalender Kerja -->
+                            <div class="relative w-full pl-5 {{ $isAdminCalendarActive ? 'z-10' : '' }}">
+                                <a href="{{ route('admin.calendar.index') }}" class="relative flex items-center gap-2.5 py-2.5 pl-9 pr-6 {{ $isAdminCalendarActive ? 'bg-[#eef4f8] text-[#015987] font-bold' : 'text-sky-100/85 hover:text-white hover:bg-white/10 font-medium' }} text-xs rounded-l-full w-full transition">
+                                    @if($isAdminCalendarActive)
+                                        <span class="hidden lg:block absolute -top-5 right-0 w-5 h-5 pointer-events-none">
+                                            <svg viewBox="0 0 20 20" fill="none" class="w-full h-full"><path d="M20 0 L20 20 L0 20 A20 20 0 0 0 20 0 Z" fill="#eef4f8"/></svg>
+                                        </span>
+                                    @endif
+                                    <span class="w-1.5 h-1.5 rounded-full flex-shrink-0 {{ $isAdminCalendarActive ? 'bg-[#015987]' : 'bg-sky-300/60' }}"></span>
+                                    <span>Kalender Kerja</span>
+                                    @if($isAdminCalendarActive)
+                                        <span class="hidden lg:block absolute -bottom-5 right-0 w-5 h-5 pointer-events-none">
+                                            <svg viewBox="0 0 20 20" fill="none" class="w-full h-full"><path d="M20 20 L20 0 L0 0 A20 20 0 0 1 20 20 Z" fill="#eef4f8"/></svg>
+                                        </span>
+                                    @endif
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3. Logbook Peserta -->
+                    <div class="relative w-full pl-5 {{ $isLogbookActive ? 'z-10' : '' }}">
+                        <a href="{{ route('admin.logbooks.index') }}" class="relative flex items-center gap-3 py-3 pl-4 pr-6 {{ $isLogbookActive ? 'bg-[#eef4f8] text-[#015987] font-bold' : 'text-sky-100 hover:bg-white/10 font-medium' }} text-xs rounded-l-full w-full transition">
+                            @if($isLogbookActive)
+                                <span class="hidden lg:block absolute -top-5 right-0 w-5 h-5 pointer-events-none">
+                                    <svg viewBox="0 0 20 20" fill="none" class="w-full h-full"><path d="M20 0 L20 20 L0 20 A20 20 0 0 0 20 0 Z" fill="#eef4f8"/></svg>
+                                </span>
+                            @endif
+                            <svg class="w-4 h-4 {{ $isLogbookActive ? 'text-[#015987]' : 'text-sky-200' }} flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                            <span>Logbook Peserta</span>
+                            @if($isLogbookActive)
+                                <span class="hidden lg:block absolute -bottom-5 right-0 w-5 h-5 pointer-events-none">
+                                    <svg viewBox="0 0 20 20" fill="none" class="w-full h-full"><path d="M20 20 L20 0 L0 0 A20 20 0 0 1 20 20 Z" fill="#eef4f8"/></svg>
+                                </span>
+                            @endif
+                        </a>
+                    </div>
+
+                    <!-- 4. Early Warning System (EWS) -->
+                    <div class="relative w-full pl-5 {{ $isEwsActive ? 'z-10' : '' }}">
+                        <a href="{{ \Illuminate\Support\Facades\Route::has('admin.ews.index') ? route('admin.ews.index') : '#' }}" class="relative flex items-center gap-3 py-3 pl-4 pr-6 {{ $isEwsActive ? 'bg-[#eef4f8] text-[#015987] font-bold' : 'text-sky-100 hover:bg-white/10 font-medium' }} text-xs rounded-l-full w-full transition">
+                            @if($isEwsActive)
+                                <span class="hidden lg:block absolute -top-5 right-0 w-5 h-5 pointer-events-none">
+                                    <svg viewBox="0 0 20 20" fill="none" class="w-full h-full"><path d="M20 0 L20 20 L0 20 A20 20 0 0 0 20 0 Z" fill="#eef4f8"/></svg>
+                                </span>
+                            @endif
                             <svg class="w-4 h-4 {{ $isEwsActive ? 'text-[#015987]' : 'text-sky-200' }} flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
                             </svg>
                             <span>Early Warning (EWS)</span>
-
                             @if($isEwsActive)
                                 <span class="hidden lg:block absolute -bottom-5 right-0 w-5 h-5 pointer-events-none">
-                                    <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">
-                                        <path d="M20 20 L20 0 L0 0 A20 20 0 0 1 20 20 Z" fill="#eef4f8"/>
+                                    <svg viewBox="0 0 20 20" fill="none" class="w-full h-full"><path d="M20 20 L20 0 L0 0 A20 20 0 0 1 20 20 Z" fill="#eef4f8"/></svg>
+                                </span>
+                            @endif
+                        </a>
+                    </div>
+
+                    <!-- 5. Profil Peserta -->
+                    <div class="relative w-full pl-5 {{ $isInternProfileActive ? 'z-10' : '' }}">
+                        <a href="{{ route('admin.intern-profiles.index') }}" class="relative flex items-center gap-3 py-3 pl-4 pr-6 {{ $isInternProfileActive ? 'bg-[#eef4f8] text-[#015987] font-bold' : 'text-sky-100 hover:bg-white/10 font-medium' }} text-xs rounded-l-full w-full transition">
+                            @if($isInternProfileActive)
+                                <span class="hidden lg:block absolute -top-5 right-0 w-5 h-5 pointer-events-none">
+                                    <svg viewBox="0 0 20 20" fill="none" class="w-full h-full"><path d="M20 0 L20 20 L0 20 A20 20 0 0 0 20 0 Z" fill="#eef4f8"/></svg>
+                                </span>
+                            @endif
+                            <svg class="w-4 h-4 {{ $isInternProfileActive ? 'text-[#015987]' : 'text-sky-200' }} flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l9-5-9-5-9 5 9 5z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/>
+                            </svg>
+                            <span>Profil Peserta</span>
+                            @if($isInternProfileActive)
+                                <span class="hidden lg:block absolute -bottom-5 right-0 w-5 h-5 pointer-events-none">
+                                    <svg viewBox="0 0 20 20" fill="none" class="w-full h-full"><path d="M20 20 L20 0 L0 0 A20 20 0 0 1 20 20 Z" fill="#eef4f8"/></svg>
+                                </span>
+                            @endif
+                        </a>
+                    </div>
+
+                    <!-- 6. Kelola Akun -->
+                    <div class="relative w-full pl-5 {{ $isUserManagementActive ? 'z-10' : '' }}">
+                        <a href="{{ route('admin.users.index') }}" class="relative flex items-center gap-3 py-3 pl-4 pr-6 {{ $isUserManagementActive ? 'bg-[#eef4f8] text-[#015987] font-bold' : 'text-sky-100 hover:bg-white/10 font-medium' }} text-xs rounded-l-full w-full transition">
+                            @if($isUserManagementActive)
+                                <span class="hidden lg:block absolute -top-5 right-0 w-5 h-5 pointer-events-none">
+                                    <svg viewBox="0 0 20 20" fill="none" class="w-full h-full"><path d="M20 0 L20 20 L0 20 A20 20 0 0 0 20 0 Z" fill="#eef4f8"/></svg>
+                                </span>
+                            @endif
+                            <svg class="w-4 h-4 {{ $isUserManagementActive ? 'text-[#015987]' : 'text-sky-200' }} flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                            </svg>
+                            <span>Kelola Akun</span>
+                            @if($isUserManagementActive)
+                                <span class="hidden lg:block absolute -bottom-5 right-0 w-5 h-5 pointer-events-none">
+                                    <svg viewBox="0 0 20 20" fill="none" class="w-full h-full"><path d="M20 20 L20 0 L0 0 A20 20 0 0 1 20 20 Z" fill="#eef4f8"/></svg>
+                                </span>
+                            @endif
+                        </a>
+                    </div>
+
+                    <!-- 7. Laporan & Rekap -->
+                    <div class="relative w-full pl-5 {{ $isReportsActive ? 'z-10' : '' }}">
+                        <a href="{{ \Illuminate\Support\Facades\Route::has('admin.reports.index') ? route('admin.reports.index') : '#' }}" class="relative flex items-center gap-3 py-3 pl-4 pr-6 {{ $isReportsActive ? 'bg-[#eef4f8] text-[#015987] font-bold' : 'text-sky-100 hover:bg-white/10 font-medium' }} text-xs rounded-l-full w-full transition">
+                            @if($isReportsActive)
+                                <span class="hidden lg:block absolute -top-5 right-0 w-5 h-5 pointer-events-none">
+                                    <svg viewBox="0 0 20 20" fill="none" class="w-full h-full"><path d="M20 0 L20 20 L0 20 A20 20 0 0 0 20 0 Z" fill="#eef4f8"/></svg>
+                                </span>
+                            @endif
+                            <svg class="w-4 h-4 {{ $isReportsActive ? 'text-[#015987]' : 'text-sky-200' }} flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                            <span>Laporan &amp; Rekap</span>
+                            @if($isReportsActive)
+                                <span class="hidden lg:block absolute -bottom-5 right-0 w-5 h-5 pointer-events-none">
+                                    <svg viewBox="0 0 20 20" fill="none" class="w-full h-full"><path d="M20 20 L20 0 L0 0 A20 20 0 0 1 20 20 Z" fill="#eef4f8"/></svg>
+                                </span>
+                            @endif
+                        </a>
+                    </div>
+
+                {{-- ====================================================== --}}
+                {{-- B. MENU ROLE PIC                                       --}}
+                {{-- ====================================================== --}}
+                @elseif($userRole === 'pic')
+                    <!-- 1. Beranda -->
+                    <div class="relative w-full pl-5 {{ $isDashboardActive ? 'z-10' : '' }}">
+                        <a href="{{ route('pic.dashboard') }}" class="relative flex items-center gap-3 py-3 pl-4 pr-6 {{ $isDashboardActive ? 'bg-[#eef4f8] text-[#015987] font-bold' : 'text-sky-100 hover:bg-white/10 font-medium' }} text-xs rounded-l-full w-full transition">
+                            @if($isDashboardActive)
+                                <span class="hidden lg:block absolute -top-5 right-0 w-5 h-5 pointer-events-none">
+                                    <svg viewBox="0 0 20 20" fill="none" class="w-full h-full"><path d="M20 0 L20 20 L0 20 A20 20 0 0 0 20 0 Z" fill="#eef4f8"/></svg>
+                                </span>
+                            @endif
+                            <svg class="w-4 h-4 {{ $isDashboardActive ? 'text-[#015987]' : 'text-sky-200' }} flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <rect x="3" y="3" width="7" height="7" rx="1.5"></rect>
+                                <rect x="14" y="3" width="7" height="7" rx="1.5"></rect>
+                                <rect x="3" y="14" width="7" height="7" rx="1.5"></rect>
+                                <rect x="14" y="14" width="7" height="7" rx="1.5"></rect>
+                            </svg>
+                            <span>Beranda</span>
+                            @if($isDashboardActive)
+                                <span class="hidden lg:block absolute -bottom-5 right-0 w-5 h-5 pointer-events-none">
+                                    <svg viewBox="0 0 20 20" fill="none" class="w-full h-full"><path d="M20 20 L20 0 L0 0 A20 20 0 0 1 20 20 Z" fill="#eef4f8"/></svg>
+                                </span>
+                            @endif
+                        </a>
+                    </div>
+
+                    <!-- 2. Logbook Peserta -->
+                    <div class="relative w-full pl-5 {{ $isLogbookActive ? 'z-10' : '' }}">
+                        <a href="{{ route('pic.logbooks.index') }}" class="relative flex items-center gap-3 py-3 pl-4 pr-6 {{ $isLogbookActive ? 'bg-[#eef4f8] text-[#015987] font-bold' : 'text-sky-100 hover:bg-white/10 font-medium' }} text-xs rounded-l-full w-full transition">
+                            @if($isLogbookActive)
+                                <span class="hidden lg:block absolute -top-5 right-0 w-5 h-5 pointer-events-none">
+                                    <svg viewBox="0 0 20 20" fill="none" class="w-full h-full"><path d="M20 0 L20 20 L0 20 A20 20 0 0 0 20 0 Z" fill="#eef4f8"/></svg>
+                                </span>
+                            @endif
+                            <svg class="w-4 h-4 {{ $isLogbookActive ? 'text-[#015987]' : 'text-sky-200' }} flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                            <span>Logbook Peserta</span>
+                            @if($isLogbookActive)
+                                <span class="hidden lg:block absolute -bottom-5 right-0 w-5 h-5 pointer-events-none">
+                                    <svg viewBox="0 0 20 20" fill="none" class="w-full h-full"><path d="M20 20 L20 0 L0 0 A20 20 0 0 1 20 20 Z" fill="#eef4f8"/></svg>
+                                </span>
+                            @endif
+                        </a>
+                    </div>
+
+                    <!-- 3. Kelola Penugasan -->
+                    <div class="relative w-full pl-5 {{ $isTaskActive ? 'z-10' : '' }}">
+                        <a href="{{ route('pic.tasks.index') }}" class="relative flex items-center gap-3 py-3 pl-4 pr-6 {{ $isTaskActive ? 'bg-[#eef4f8] text-[#015987] font-bold' : 'text-sky-100 hover:bg-white/10 font-medium' }} text-xs rounded-l-full w-full transition">
+                            @if($isTaskActive)
+                                <span class="hidden lg:block absolute -top-5 right-0 w-5 h-5 pointer-events-none">
+                                    <svg viewBox="0 0 20 20" fill="none" class="w-full h-full"><path d="M20 0 L20 20 L0 20 A20 20 0 0 0 20 0 Z" fill="#eef4f8"/></svg>
+                                </span>
+                            @endif
+                            <svg class="w-4 h-4 {{ $isTaskActive ? 'text-[#015987]' : 'text-sky-200' }} flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                            </svg>
+                            <span>Kelola Penugasan</span>
+                            @if($isTaskActive)
+                                <span class="hidden lg:block absolute -bottom-5 right-0 w-5 h-5 pointer-events-none">
+                                    <svg viewBox="0 0 20 20" fill="none" class="w-full h-full"><path d="M20 20 L20 0 L0 0 A20 20 0 0 1 20 20 Z" fill="#eef4f8"/></svg>
+                                </span>
+                            @endif
+                        </a>
+                    </div>
+
+                {{-- ====================================================== --}}
+                {{-- C. MENU ROLE PESERTA (INTERN)                          --}}
+                {{-- ====================================================== --}}
+                @else
+                    <!-- 1. Beranda -->
+                    <div class="relative w-full pl-5 {{ $isDashboardActive ? 'z-10' : '' }}">
+                        <a href="{{ route('intern.dashboard') }}" class="relative flex items-center gap-3 py-3 pl-4 pr-6 {{ $isDashboardActive ? 'bg-[#eef4f8] text-[#015987] font-bold' : 'text-sky-100 hover:bg-white/10 font-medium' }} text-xs rounded-l-full w-full transition">
+                            @if($isDashboardActive)
+                                <span class="hidden lg:block absolute -top-5 right-0 w-5 h-5 pointer-events-none">
+                                    <svg viewBox="0 0 20 20" fill="none" class="w-full h-full"><path d="M20 0 L20 20 L0 20 A20 20 0 0 0 20 0 Z" fill="#eef4f8"/></svg>
+                                </span>
+                            @endif
+                            <svg class="w-4 h-4 {{ $isDashboardActive ? 'text-[#015987]' : 'text-sky-200' }} flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <rect x="3" y="3" width="7" height="7" rx="1.5"></rect>
+                                <rect x="14" y="3" width="7" height="7" rx="1.5"></rect>
+                                <rect x="3" y="14" width="7" height="7" rx="1.5"></rect>
+                                <rect x="14" y="14" width="7" height="7" rx="1.5"></rect>
+                            </svg>
+                            <span>Beranda</span>
+                            @if($isDashboardActive)
+                                <span class="hidden lg:block absolute -bottom-5 right-0 w-5 h-5 pointer-events-none">
+                                    <svg viewBox="0 0 20 20" fill="none" class="w-full h-full"><path d="M20 20 L20 0 L0 0 A20 20 0 0 1 20 20 Z" fill="#eef4f8"/></svg>
+                                </span>
+                            @endif
+                        </a>
+                    </div>
+
+                    <!-- 2. Absensi (Menu Beranak / Accordion Alpine.js) -->
+                    <div x-data="{ open: @json($isInternAbsensiOpen) }" class="w-full">
+                        <div class="pl-5 pr-3">
+                            <button
+                                type="button"
+                                @click="open = !open"
+                                :aria-expanded="open.toString()"
+                                class="w-full flex items-center justify-between gap-3 py-3 pl-4 pr-3.5 rounded-xl text-xs transition cursor-pointer {{ $isInternAbsensiOpen ? 'bg-white/15 text-white font-bold shadow-2xs' : 'text-sky-100 hover:bg-white/10 font-medium' }}"
+                            >
+                                <span class="flex items-center gap-3 min-w-0">
+                                    <svg class="w-4 h-4 {{ $isInternAbsensiOpen ? 'text-white' : 'text-sky-200' }} flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
                                     </svg>
+                                    <span class="truncate">Absensi</span>
+                                </span>
+                                <svg
+                                    class="w-3.5 h-3.5 text-sky-200 flex-shrink-0 transition-transform duration-200"
+                                    :class="{ 'rotate-180': open }"
+                                    fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"
+                                >
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+                                </svg>
+                            </button>
+                        </div>
+
+                        <div
+                            x-show="open"
+                            x-transition:enter="transition ease-out duration-150"
+                            x-transition:enter-start="opacity-0 -translate-y-1"
+                            x-transition:enter-end="opacity-100 translate-y-0"
+                            x-transition:leave="transition ease-in duration-100"
+                            x-transition:leave-start="opacity-100 translate-y-0"
+                            x-transition:leave-end="opacity-0 -translate-y-1"
+                            @if(! $isInternAbsensiOpen) x-cloak @endif
+                            class="mt-1 space-y-1"
+                        >
+                            <!-- Sub-menu 2.1: Presensi Masuk -->
+                            <div class="relative w-full pl-5 {{ $isInternAttendanceActive ? 'z-10' : '' }}">
+                                <a href="{{ route('intern.attendance.index') }}" class="relative flex items-center gap-2.5 py-2.5 pl-9 pr-6 {{ $isInternAttendanceActive ? 'bg-[#eef4f8] text-[#015987] font-bold' : 'text-sky-100/85 hover:text-white hover:bg-white/10 font-medium' }} text-xs rounded-l-full w-full transition">
+                                    @if($isInternAttendanceActive)
+                                        <span class="hidden lg:block absolute -top-5 right-0 w-5 h-5 pointer-events-none">
+                                            <svg viewBox="0 0 20 20" fill="none" class="w-full h-full"><path d="M20 0 L20 20 L0 20 A20 20 0 0 0 20 0 Z" fill="#eef4f8"/></svg>
+                                        </span>
+                                    @endif
+                                    <span class="w-1.5 h-1.5 rounded-full flex-shrink-0 {{ $isInternAttendanceActive ? 'bg-[#015987]' : 'bg-sky-300/60' }}"></span>
+                                    <span>Presensi Masuk</span>
+                                    @if($isInternAttendanceActive)
+                                        <span class="hidden lg:block absolute -bottom-5 right-0 w-5 h-5 pointer-events-none">
+                                            <svg viewBox="0 0 20 20" fill="none" class="w-full h-full"><path d="M20 20 L20 0 L0 0 A20 20 0 0 1 20 20 Z" fill="#eef4f8"/></svg>
+                                        </span>
+                                    @endif
+                                </a>
+                            </div>
+
+                            <!-- Sub-menu 2.2: Pengajuan Izin -->
+                            <div class="relative w-full pl-5 {{ $isInternLeaveActive ? 'z-10' : '' }}">
+                                <a href="{{ route('intern.leave.index') }}" class="relative flex items-center gap-2.5 py-2.5 pl-9 pr-6 {{ $isInternLeaveActive ? 'bg-[#eef4f8] text-[#015987] font-bold' : 'text-sky-100/85 hover:text-white hover:bg-white/10 font-medium' }} text-xs rounded-l-full w-full transition">
+                                    @if($isInternLeaveActive)
+                                        <span class="hidden lg:block absolute -top-5 right-0 w-5 h-5 pointer-events-none">
+                                            <svg viewBox="0 0 20 20" fill="none" class="w-full h-full"><path d="M20 0 L20 20 L0 20 A20 20 0 0 0 20 0 Z" fill="#eef4f8"/></svg>
+                                        </span>
+                                    @endif
+                                    <span class="w-1.5 h-1.5 rounded-full flex-shrink-0 {{ $isInternLeaveActive ? 'bg-[#015987]' : 'bg-sky-300/60' }}"></span>
+                                    <span>Pengajuan Izin</span>
+                                    @if($isInternLeaveActive)
+                                        <span class="hidden lg:block absolute -bottom-5 right-0 w-5 h-5 pointer-events-none">
+                                            <svg viewBox="0 0 20 20" fill="none" class="w-full h-full"><path d="M20 20 L20 0 L0 0 A20 20 0 0 1 20 20 Z" fill="#eef4f8"/></svg>
+                                        </span>
+                                    @endif
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3. Logbook Harian -->
+                    <div class="relative w-full pl-5 {{ $isLogbookActive ? 'z-10' : '' }}">
+                        <a href="{{ route('intern.logbooks.index') }}" class="relative flex items-center gap-3 py-3 pl-4 pr-6 {{ $isLogbookActive ? 'bg-[#eef4f8] text-[#015987] font-bold' : 'text-sky-100 hover:bg-white/10 font-medium' }} text-xs rounded-l-full w-full transition">
+                            @if($isLogbookActive)
+                                <span class="hidden lg:block absolute -top-5 right-0 w-5 h-5 pointer-events-none">
+                                    <svg viewBox="0 0 20 20" fill="none" class="w-full h-full"><path d="M20 0 L20 20 L0 20 A20 20 0 0 0 20 0 Z" fill="#eef4f8"/></svg>
+                                </span>
+                            @endif
+                            <svg class="w-4 h-4 {{ $isLogbookActive ? 'text-[#015987]' : 'text-sky-200' }} flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                            <span>Logbook Harian</span>
+                            @if($isLogbookActive)
+                                <span class="hidden lg:block absolute -bottom-5 right-0 w-5 h-5 pointer-events-none">
+                                    <svg viewBox="0 0 20 20" fill="none" class="w-full h-full"><path d="M20 20 L20 0 L0 0 A20 20 0 0 1 20 20 Z" fill="#eef4f8"/></svg>
+                                </span>
+                            @endif
+                        </a>
+                    </div>
+
+                    <!-- 4. Penugasan Saya -->
+                    <div class="relative w-full pl-5 {{ $isTaskActive ? 'z-10' : '' }}">
+                        <a href="{{ route('intern.tasks.index') }}" class="relative flex items-center gap-3 py-3 pl-4 pr-6 {{ $isTaskActive ? 'bg-[#eef4f8] text-[#015987] font-bold' : 'text-sky-100 hover:bg-white/10 font-medium' }} text-xs rounded-l-full w-full transition">
+                            @if($isTaskActive)
+                                <span class="hidden lg:block absolute -top-5 right-0 w-5 h-5 pointer-events-none">
+                                    <svg viewBox="0 0 20 20" fill="none" class="w-full h-full"><path d="M20 0 L20 20 L0 20 A20 20 0 0 0 20 0 Z" fill="#eef4f8"/></svg>
+                                </span>
+                            @endif
+                            <svg class="w-4 h-4 {{ $isTaskActive ? 'text-[#015987]' : 'text-sky-200' }} flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                            </svg>
+                            <span>Penugasan Saya</span>
+                            @if($isTaskActive)
+                                <span class="hidden lg:block absolute -bottom-5 right-0 w-5 h-5 pointer-events-none">
+                                    <svg viewBox="0 0 20 20" fill="none" class="w-full h-full"><path d="M20 20 L20 0 L0 0 A20 20 0 0 1 20 20 Z" fill="#eef4f8"/></svg>
                                 </span>
                             @endif
                         </a>
                     </div>
                 @endif
 
-                <!-- Menu Logbook Harian (Semua Role) -->
-                <div class="relative w-full pl-5 {{ $isLogbookActive ? 'z-10' : '' }}">
-                    <a href="{{ route($rolePrefix . '.logbooks.index') }}" class="relative flex items-center gap-3 py-3 pl-4 pr-6 {{ $isLogbookActive ? 'bg-[#eef4f8] text-[#015987] font-bold' : 'text-sky-100 hover:bg-white/10 font-medium' }} text-xs rounded-l-full w-full shadow-none transition">
-                        @if($isLogbookActive)
-                            <span class="hidden lg:block absolute -top-5 right-0 w-5 h-5 pointer-events-none">
-                                <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">
-                                    <path d="M20 0 L20 20 L0 20 A20 20 0 0 0 20 0 Z" fill="#eef4f8"/>
-                                </svg>
-                            </span>
-                        @endif
-
-                        <svg class="w-4 h-4 {{ $isLogbookActive ? 'text-[#015987]' : 'text-sky-200' }} flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                        </svg>
-                        <span>Logbook Harian</span>
-
-                        @if($isLogbookActive)
-                            <span class="hidden lg:block absolute -bottom-5 right-0 w-5 h-5 pointer-events-none">
-                                <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">
-                                    <path d="M20 20 L20 0 L0 0 A20 20 0 0 1 20 20 Z" fill="#eef4f8"/>
-                                </svg>
-                            </span>
-                        @endif
-                    </a>
-                </div>
-
-                <!-- Menu Tugas Magang (Semua Role) -->
-                <div class="relative w-full pl-5 {{ $isTaskActive ? 'z-10' : '' }}">
-                    <a href="{{ route($rolePrefix . '.tasks.index') }}" class="relative flex items-center gap-3 py-3 pl-4 pr-6 {{ $isTaskActive ? 'bg-[#eef4f8] text-[#015987] font-bold' : 'text-sky-100 hover:bg-white/10 font-medium' }} text-xs rounded-l-full w-full shadow-none transition">
-                        @if($isTaskActive)
-                            <span class="hidden lg:block absolute -top-5 right-0 w-5 h-5 pointer-events-none">
-                                <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">
-                                    <path d="M20 0 L20 20 L0 20 A20 20 0 0 0 20 0 Z" fill="#eef4f8"/>
-                                </svg>
-                            </span>
-                        @endif
-
-                        <svg class="w-4 h-4 {{ $isTaskActive ? 'text-[#015987]' : 'text-sky-200' }} flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
-                        </svg>
-                        <span>Tugas Magang</span>
-
-                        @if($isTaskActive)
-                            <span class="hidden lg:block absolute -bottom-5 right-0 w-5 h-5 pointer-events-none">
-                                <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">
-                                    <path d="M20 20 L20 0 L0 0 A20 20 0 0 1 20 20 Z" fill="#eef4f8"/>
-                                </svg>
-                            </span>
-                        @endif
-                    </a>
-                </div>
-
-                @if(auth()->user()?->role === 'admin')
-                    <!-- Menu 1: Presensi Peserta (Admin/HR) -->
-                    <div class="relative w-full pl-5 {{ $isAdminAttendanceActive ? 'z-10' : '' }}">
-                        @if($isAdminAttendanceActive)
-                            <a href="{{ route('admin.attendance.index') }}" class="relative flex items-center gap-3 py-3 pl-4 pr-6 bg-[#eef4f8] text-[#015987] font-bold text-xs rounded-l-full w-full shadow-none block">
-                                <span class="hidden lg:block absolute -top-5 right-0 w-5 h-5 pointer-events-none">
-                                    <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">
-                                        <path d="M20 0 L20 20 L0 20 A20 20 0 0 0 20 0 Z" fill="#eef4f8"/>
-                                    </svg>
-                                </span>
-                                <svg class="w-4 h-4 text-[#015987] flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                </svg>
-                                <span>Presensi Peserta</span>
-                                <span class="hidden lg:block absolute -bottom-5 right-0 w-5 h-5 pointer-events-none">
-                                    <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">
-                                        <path d="M20 20 L20 0 L0 0 A20 20 0 0 1 20 20 Z" fill="#eef4f8"/>
-                                    </svg>
-                                </span>
-                            </a>
-                        @else
-                            <a href="{{ route('admin.attendance.index') }}" class="flex items-center gap-3 py-3 pl-4 pr-6 text-white/80 hover:text-white hover:bg-white/10 font-medium text-xs rounded-l-full w-full transition">
-                                <svg class="w-4 h-4 text-white/80 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                </svg>
-                                <span>Presensi Peserta</span>
-                            </a>
-                        @endif
-                    </div>
-
-                    <!-- Menu 2: Kalender Kerja (Admin/HR) -->
-                    <div class="relative w-full pl-5 {{ $isAdminCalendarActive ? 'z-10' : '' }}">
-                        @if($isAdminCalendarActive)
-                            <a href="{{ route('admin.calendar.index') }}" class="relative flex items-center gap-3 py-3 pl-4 pr-6 bg-[#eef4f8] text-[#015987] font-bold text-xs rounded-l-full w-full shadow-none block">
-                                <span class="hidden lg:block absolute -top-5 right-0 w-5 h-5 pointer-events-none">
-                                    <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">
-                                        <path d="M20 0 L20 20 L0 20 A20 20 0 0 0 20 0 Z" fill="#eef4f8"/>
-                                    </svg>
-                                </span>
-                                <svg class="w-4 h-4 text-[#015987] flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                                </svg>
-                                <span>Kalender Kerja</span>
-                                <span class="hidden lg:block absolute -bottom-5 right-0 w-5 h-5 pointer-events-none">
-                                    <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">
-                                        <path d="M20 20 L20 0 L0 0 A20 20 0 0 1 20 20 Z" fill="#eef4f8"/>
-                                    </svg>
-                                </span>
-                            </a>
-                        @else
-                            <a href="{{ route('admin.calendar.index') }}" class="flex items-center gap-3 py-3 pl-4 pr-6 text-white/80 hover:text-white hover:bg-white/10 font-medium text-xs rounded-l-full w-full transition">
-                                <svg class="w-4 h-4 text-white/80 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                                </svg>
-                                <span>Kalender Kerja</span>
-                            </a>
-                        @endif
-                    </div>
-
-                    <!-- Menu 3: Verifikasi Izin / Sakit (Admin/HR) -->
-                    <div class="relative w-full pl-5 {{ $isAdminLeaveActive ? 'z-10' : '' }}">
-                        @if($isAdminLeaveActive)
-                            <a href="{{ route('admin.leave.index') }}" class="relative flex items-center gap-3 py-3 pl-4 pr-6 bg-[#eef4f8] text-[#015987] font-bold text-xs rounded-l-full w-full shadow-none block">
-                                <span class="hidden lg:block absolute -top-5 right-0 w-5 h-5 pointer-events-none">
-                                    <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">
-                                        <path d="M20 0 L20 20 L0 20 A20 20 0 0 0 20 0 Z" fill="#eef4f8"/>
-                                    </svg>
-                                </span>
-                                <svg class="w-4 h-4 text-[#015987] flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                                </svg>
-                                <span>Verifikasi Izin/Sakit</span>
-                                <span class="hidden lg:block absolute -bottom-5 right-0 w-5 h-5 pointer-events-none">
-                                    <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">
-                                        <path d="M20 20 L20 0 L0 0 A20 20 0 0 1 20 20 Z" fill="#eef4f8"/>
-                                    </svg>
-                                </span>
-                            </a>
-                        @else
-                            <a href="{{ route('admin.leave.index') }}" class="flex items-center gap-3 py-3 pl-4 pr-6 text-white/80 hover:text-white hover:bg-white/10 font-medium text-xs rounded-l-full w-full transition">
-                                <svg class="w-4 h-4 text-white/80 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                                </svg>
-                                <span>Verifikasi Izin/Sakit</span>
-                            </a>
-                        @endif
-                    </div>
-
-                    <!-- Menu 4: Kelola Akun (Admin/HR) -->
-                    @php $isUserManagementActive = request()->routeIs('admin.users.*'); @endphp
-                    <div class="relative w-full pl-5 {{ $isUserManagementActive ? 'z-10' : '' }}">
-                        @if($isUserManagementActive)
-                            <a href="{{ route('admin.users.index') }}" class="relative flex items-center gap-3 py-3 pl-4 pr-6 bg-[#eef4f8] text-[#015987] font-bold text-xs rounded-l-full w-full shadow-none block">
-                                <span class="hidden lg:block absolute -top-5 right-0 w-5 h-5 pointer-events-none">
-                                    <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">
-                                        <path d="M20 0 L20 20 L0 20 A20 20 0 0 0 20 0 Z" fill="#eef4f8"/>
-                                    </svg>
-                                </span>
-                                <svg class="w-4 h-4 text-[#015987] flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
-                                </svg>
-                                <span>Kelola Akun</span>
-                                <span class="hidden lg:block absolute -bottom-5 right-0 w-5 h-5 pointer-events-none">
-                                    <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">
-                                        <path d="M20 20 L20 0 L0 0 A20 20 0 0 1 20 20 Z" fill="#eef4f8"/>
-                                    </svg>
-                                </span>
-                            </a>
-                        @else
-                            <a href="{{ route('admin.users.index') }}" class="flex items-center gap-3 py-3 pl-4 pr-6 text-white/80 hover:text-white hover:bg-white/10 font-medium text-xs rounded-l-full w-full transition">
-                                <svg class="w-4 h-4 text-white/80 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
-                                </svg>
-                                <span>Kelola Akun</span>
-                            </a>
-                        @endif
-                    </div>
-
-                    <!-- Menu 5: Profil Peserta (Admin/HR) -->
-                    @php $isInternProfileActive = request()->routeIs('admin.intern-profiles.*'); @endphp
-                    <div class="relative w-full pl-5 {{ $isInternProfileActive ? 'z-10' : '' }}">
-                        @if($isInternProfileActive)
-                            <a href="{{ route('admin.intern-profiles.index') }}" class="relative flex items-center gap-3 py-3 pl-4 pr-6 bg-[#eef4f8] text-[#015987] font-bold text-xs rounded-l-full w-full shadow-none block">
-                                <span class="hidden lg:block absolute -top-5 right-0 w-5 h-5 pointer-events-none">
-                                    <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">
-                                        <path d="M20 0 L20 20 L0 20 A20 20 0 0 0 20 0 Z" fill="#eef4f8"/>
-                                    </svg>
-                                </span>
-                                <svg class="w-4 h-4 text-[#015987] flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l9-5-9-5-9 5 9 5z"/>
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/>
-                                </svg>
-                                <span>Profil Peserta</span>
-                                <span class="hidden lg:block absolute -bottom-5 right-0 w-5 h-5 pointer-events-none">
-                                    <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">
-                                        <path d="M20 20 L20 0 L0 0 A20 20 0 0 1 20 20 Z" fill="#eef4f8"/>
-                                    </svg>
-                                </span>
-                            </a>
-                        @else
-                            <a href="{{ route('admin.intern-profiles.index') }}" class="flex items-center gap-3 py-3 pl-4 pr-6 text-white/80 hover:text-white hover:bg-white/10 font-medium text-xs rounded-l-full w-full transition">
-                                <svg class="w-4 h-4 text-white/80 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l9-5-9-5-9 5 9 5z"/>
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/>
-                                </svg>
-                                <span>Profil Peserta</span>
-                            </a>
-                        @endif
-                    </div>
-
-                    <!-- Menu 6: Laporan & Rekapitulasi (Admin/HR Only) -->
-                    <div class="relative w-full pl-5 {{ $isReportsActive ? 'z-10' : '' }}">
-                        @if($isReportsActive)
-                            <a href="{{ route('admin.reports.index') }}" class="relative flex items-center gap-3 py-3 pl-4 pr-6 bg-[#eef4f8] text-[#015987] font-bold text-xs rounded-l-full w-full shadow-none block">
-                                <span class="hidden lg:block absolute -top-5 right-0 w-5 h-5 pointer-events-none">
-                                    <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">
-                                        <path d="M20 0 L20 20 L0 20 A20 20 0 0 0 20 0 Z" fill="#eef4f8"/>
-                                    </svg>
-                                </span>
-                                <svg class="w-4 h-4 text-[#015987] flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                                </svg>
-                                <span>Laporan &amp; Rekap</span>
-                                <span class="hidden lg:block absolute -bottom-5 right-0 w-5 h-5 pointer-events-none">
-                                    <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">
-                                        <path d="M20 20 L20 0 L0 0 A20 20 0 0 1 20 20 Z" fill="#eef4f8"/>
-                                    </svg>
-                                </span>
-                            </a>
-                        @else
-                            <a href="{{ route('admin.reports.index') }}" class="flex items-center gap-3 py-3 pl-4 pr-6 text-white/80 hover:text-white hover:bg-white/10 font-medium text-xs rounded-l-full w-full transition">
-                                <svg class="w-4 h-4 text-white/80 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                                </svg>
-                                <span>Laporan &amp; Rekap</span>
-                            </a>
-                        @endif
-                    </div>
-                @endif
-
-                @if(auth()->user()?->role === 'intern')
-                    <!-- Menu: Presensi Masuk (Peserta Magang) -->
-                    <div class="relative w-full pl-5 {{ $isInternAttendanceActive ? 'z-10' : '' }}">
-                        @if($isInternAttendanceActive)
-                            <a href="{{ route('intern.attendance.index') }}" class="relative flex items-center gap-3 py-3 pl-4 pr-6 bg-[#eef4f8] text-[#015987] font-bold text-xs rounded-l-full w-full shadow-none block">
-                                <span class="hidden lg:block absolute -top-5 right-0 w-5 h-5 pointer-events-none">
-                                    <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">
-                                        <path d="M20 0 L20 20 L0 20 A20 20 0 0 0 20 0 Z" fill="#eef4f8"/>
-                                    </svg>
-                                </span>
-                                <svg class="w-4 h-4 text-[#015987] flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                </svg>
-                                <span>Presensi</span>
-                                <span class="hidden lg:block absolute -bottom-5 right-0 w-5 h-5 pointer-events-none">
-                                    <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">
-                                        <path d="M20 20 L20 0 L0 0 A20 20 0 0 1 20 20 Z" fill="#eef4f8"/>
-                                    </svg>
-                                </span>
-                            </a>
-                        @else
-                            <a href="{{ route('intern.attendance.index') }}" class="flex items-center gap-3 py-3 pl-4 pr-6 text-white/80 hover:text-white hover:bg-white/10 font-medium text-xs rounded-l-full w-full transition">
-                                <svg class="w-4 h-4 text-white/80 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                </svg>
-                                <span>Presensi</span>
-                            </a>
-                        @endif
-                    </div>
-
-                    <!-- Menu: Pengajuan Izin (Peserta Magang) -->
-                    <div class="relative w-full pl-5 {{ $isInternLeaveActive ? 'z-10' : '' }}">
-                        @if($isInternLeaveActive)
-                            <a href="{{ route('intern.leave.index') }}" class="relative flex items-center gap-3 py-3 pl-4 pr-6 bg-[#eef4f8] text-[#015987] font-bold text-xs rounded-l-full w-full shadow-none block">
-                                <span class="hidden lg:block absolute -top-5 right-0 w-5 h-5 pointer-events-none">
-                                    <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">
-                                        <path d="M20 0 L20 20 L0 20 A20 20 0 0 0 20 0 Z" fill="#eef4f8"/>
-                                    </svg>
-                                </span>
-                                <svg class="w-4 h-4 text-[#015987] flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                                </svg>
-                                <span>Pengajuan Izin</span>
-                                <span class="hidden lg:block absolute -bottom-5 right-0 w-5 h-5 pointer-events-none">
-                                    <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">
-                                        <path d="M20 20 L20 0 L0 0 A20 20 0 0 1 20 20 Z" fill="#eef4f8"/>
-                                    </svg>
-                                </span>
-                            </a>
-                        @else
-                            <a href="{{ route('intern.leave.index') }}" class="flex items-center gap-3 py-3 pl-4 pr-6 text-white/80 hover:text-white hover:bg-white/10 font-medium text-xs rounded-l-full w-full transition">
-                                <svg class="w-4 h-4 text-white/80 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                                </svg>
-                                <span>Pengajuan Izin</span>
-                            </a>
-                        @endif
-                    </div>
-                @endif
             </nav>
         </div>
 
-        <!-- 4. Tombol Keluar Sistem -->
-        <div class="px-6 pt-6 border-t border-white/10 mt-auto">
+        <!-- 4. Tombol Keluar Sistem (Tetap di Bawah) -->
+        <div class="flex-shrink-0 px-6 py-5 border-t border-white/10 bg-[#015987]">
             <form method="POST" action="{{ route('logout') }}">
                 @csrf
-                <button type="submit" class="flex items-center gap-2.5 text-xs font-semibold text-rose-300 hover:text-white transition group py-1">
+                <button type="submit" class="flex items-center gap-2.5 text-xs font-semibold text-rose-300 hover:text-white transition group py-1 cursor-pointer">
                     <svg class="w-4 h-4 text-rose-300 group-hover:text-white transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
                     </svg>
@@ -518,7 +642,7 @@
     <!-- ============================================================== -->
     <!-- AREA KANAN: TOP HEADER & KONTEN UTAMA -->
     <!-- ============================================================== -->
-    <div class="flex-1 flex flex-col min-w-0 h-screen overflow-hidden bg-[#eef4f8]">
+    <div class="flex-1 flex flex-col min-w-0 h-full overflow-hidden bg-[#eef4f8]">
         
         <!-- Banner Peringatan Offline (PWA Network Check) -->
         <div id="network-offline-banner" class="hidden bg-rose-600 text-white text-xs font-medium px-4 py-2.5 text-center flex-shrink-0">
@@ -529,7 +653,7 @@
         <header class="px-4 sm:px-6 lg:px-8 pt-5 lg:pt-7 pb-4 lg:pb-5 flex flex-col md:flex-row md:items-center justify-between gap-4 z-30 bg-[#eef4f8] border-b border-slate-200/60 shadow-2xs flex-shrink-0">
             <!-- Judul Halaman + Tombol Hamburger Mobile -->
             <div class="flex items-start gap-3 min-w-0 flex-1">
-                <button type="button" id="mobile-sidebar-open" class="lg:hidden p-2.5 rounded-xl bg-white border border-slate-200/80 text-[#015987] shadow-xs mt-0.5 flex-shrink-0" aria-label="Buka menu navigasi">
+                <button type="button" @click="mobileSidebarOpen = true" class="lg:hidden p-2.5 rounded-xl bg-white border border-slate-200/80 text-[#015987] shadow-xs mt-0.5 flex-shrink-0 cursor-pointer" aria-label="Buka menu navigasi">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
                     </svg>
@@ -566,7 +690,7 @@
                         <svg class="w-3.5 h-3.5 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                         </svg>
-                        <span>{{ \Carbon\Carbon::now('Asia/Jakarta')->translatedFormat('l, d F Y') }}</span>
+                        <span>{{ \Carbon\Carbon::now('Asia/Jakarta')->locale('id')->translatedFormat('l, d F Y') }}</span>
                     </div>
 
                     <!-- Search Input (Hanya untuk Admin & PIC — terhubung ke filter pencarian tugas) -->
@@ -739,27 +863,7 @@
 
     <script>
         (function () {
-            // 1. Mobile Sidebar Drawer
-            const sidebar = document.getElementById('app-sidebar');
-            const backdrop = document.getElementById('mobile-sidebar-backdrop');
-            const openBtn = document.getElementById('mobile-sidebar-open');
-            const closeBtn = document.getElementById('mobile-sidebar-close');
-
-            function openSidebar() {
-                sidebar?.classList.remove('-translate-x-full');
-                backdrop?.classList.remove('hidden');
-            }
-
-            function closeSidebar() {
-                sidebar?.classList.add('-translate-x-full');
-                backdrop?.classList.add('hidden');
-            }
-
-            openBtn?.addEventListener('click', openSidebar);
-            closeBtn?.addEventListener('click', closeSidebar);
-            backdrop?.addEventListener('click', closeSidebar);
-
-            // 2. Indikator Koneksi Offline
+            // 1. Indikator Koneksi Offline
             const offlineBanner = document.getElementById('network-offline-banner');
             function syncNetworkStatus() {
                 if (!navigator.onLine) {

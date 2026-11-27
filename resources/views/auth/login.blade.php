@@ -11,7 +11,9 @@
     <meta name="apple-mobile-web-app-title" content="WANTRACE">
     <title>Masuk - WANTRACE Internship System</title>
     
-    <!-- PWA Manifest & Icons -->
+    <!-- PWA Manifest, Favicon & Icons -->
+    <link rel="icon" type="image/png" href="{{ asset('images/wi-logo.png') }}">
+    <link rel="shortcut icon" type="image/png" href="{{ asset('images/wi-logo.png') }}">
     <link rel="manifest" href="{{ asset('manifest.webmanifest') }}">
     <link rel="apple-touch-icon" href="{{ asset('icons/icon-192x192.png') }}">
     
@@ -70,7 +72,7 @@
 
         .brand-logo-icon {
             width: 58px;
-            height: auto;
+            height: 58px;
             object-fit: contain;
             margin-bottom: 0.65rem;
             filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.15));
@@ -300,10 +302,10 @@
         <!-- Panel Kiri: Identitas WANTRACE & Ilustrasi HD -->
         <div class="left-panel">
             <div class="brand-section">
-                <!-- Logo Wi Kualitas Tinggi -->
+                <!-- Logo WANTRACE Resmi -->
                 <img 
                     src="{{ asset('images/wi-logo.png') }}" 
-                    alt="Logo Wi" 
+                    alt="Logo WANTRACE" 
                     class="brand-logo-icon"
                 >
                 <!-- Tipografi Elegan Vector: Tidak Pernah Blur -->

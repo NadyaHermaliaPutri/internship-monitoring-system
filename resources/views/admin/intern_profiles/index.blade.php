@@ -12,7 +12,7 @@
         <svg class="w-3.5 h-3.5 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
         </svg>
-        <span>{{ \Carbon\Carbon::now()->translatedFormat('l, d F Y') }}</span>
+        <span>{{ \Carbon\Carbon::now('Asia/Jakarta')->locale('id')->translatedFormat('l, d F Y') }}</span>
     </div>
 
     <!-- Search Form -->
@@ -50,7 +50,7 @@
     <!-- 1. KARTU STATISTIK RINGKASAN PROFIL MAGANG                        -->
     <!-- ================================================================= -->
     @php $activeCard = request()->query('filter'); @endphp
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         
         <!-- Total Peserta Magang -->
         <a 
@@ -166,7 +166,7 @@
                 <p class="text-xs text-slate-400 mt-0.5">Kelola data akademik dan periode magang setiap peserta.</p>
             </div>
             <!-- Filter Tab -->
-            <div class="flex items-center gap-1.5 p-1 bg-slate-100 rounded-xl text-xs font-semibold">
+            <div class="flex flex-wrap items-center gap-1.5 p-1 bg-slate-100 rounded-xl text-xs font-semibold">
                 <a href="{{ route('admin.intern-profiles.index', ['filter' => 'all', 'search' => request('search')]) }}"
                    class="px-3 py-1.5 rounded-lg transition {{ $filter === 'all' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-700' }}">
                     Semua
@@ -184,7 +184,7 @@
 
         <!-- Tabel -->
         <div class="overflow-x-auto">
-            <table class="w-full text-xs text-left">
+            <table class="w-full min-w-[760px] text-xs text-left">
                 <thead>
                     <tr class="bg-slate-50/70 border-b border-slate-100">
                         <th class="py-3 px-6 font-semibold text-slate-500 uppercase tracking-wider">Peserta Magang</th>

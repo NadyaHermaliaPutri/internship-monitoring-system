@@ -11,13 +11,13 @@
     <!-- ============================================================== -->
     <!-- 1. KARTU STATISTIK RINGKASAN PIC (TOP 4 STAT CARDS 100% DINAMIS) -->
     <!-- ============================================================== -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
 
         <!-- Card 1: Tugas Aktif Anda -->
-        <div class="bg-white p-6 rounded-2xl border border-slate-200/70 shadow-xs flex flex-col justify-between min-h-[148px]">
-            <div class="flex items-start justify-between">
+        <div class="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200/70 shadow-xs flex flex-col justify-between min-h-[148px]">
+            <div class="flex items-start justify-between gap-2">
                 <span class="text-xs font-bold text-slate-700">Tugas Aktif Anda</span>
-                <div class="w-8 h-8 rounded-xl bg-sky-50 text-sky-500 flex items-center justify-center">
+                <div class="w-8 h-8 rounded-xl bg-sky-50 text-sky-500 flex items-center justify-center flex-shrink-0">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
                     </svg>
@@ -25,7 +25,7 @@
             </div>
             <div class="mt-4">
                 <div class="flex items-baseline gap-1.5">
-                    <span class="text-2xl sm:text-3xl font-extrabold text-[#015987]">{{ $picDashboard['active_tasks_count'] }}</span>
+                    <span class="text-xl sm:text-2xl lg:text-3xl font-extrabold text-[#015987] truncate">{{ $picDashboard['active_tasks_count'] }}</span>
                     <span class="text-xs text-slate-500 font-medium">Tugas</span>
                 </div>
                 @if ($picDashboard['overdue_tasks_count'] > 0)
@@ -43,10 +43,10 @@
         </div>
 
         <!-- Card 2: Mendekati Tenggat (< 24 Jam) -->
-        <div class="bg-white p-6 rounded-2xl border border-slate-200/70 shadow-xs flex flex-col justify-between min-h-[148px]">
-            <div class="flex items-start justify-between">
+        <div class="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200/70 shadow-xs flex flex-col justify-between min-h-[148px]">
+            <div class="flex items-start justify-between gap-2">
                 <span class="text-xs font-bold text-slate-700">Mendekati Tenggat</span>
-                <div class="w-8 h-8 rounded-xl bg-amber-50 text-amber-500 flex items-center justify-center">
+                <div class="w-8 h-8 rounded-xl bg-amber-50 text-amber-500 flex items-center justify-center flex-shrink-0">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                     </svg>
@@ -54,7 +54,7 @@
             </div>
             <div class="mt-4">
                 <div class="flex items-baseline gap-1.5">
-                    <span class="text-2xl sm:text-3xl font-extrabold text-[#015987]">{{ $picDashboard['approaching_tasks_count'] }}</span>
+                    <span class="text-xl sm:text-2xl lg:text-3xl font-extrabold text-[#015987] truncate">{{ $picDashboard['approaching_tasks_count'] }}</span>
                     <span class="text-xs text-slate-500 font-medium">Tugas</span>
                 </div>
                 <p class="text-[11px] font-semibold text-amber-600 mt-1.5 flex items-center gap-1">
@@ -65,10 +65,10 @@
         </div>
 
         <!-- Card 3: Butuh Review Anda -->
-        <div class="bg-white p-6 rounded-2xl border border-slate-200/70 shadow-xs flex flex-col justify-between min-h-[148px]">
-            <div class="flex items-start justify-between">
+        <div class="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200/70 shadow-xs flex flex-col justify-between min-h-[148px]">
+            <div class="flex items-start justify-between gap-2">
                 <span class="text-xs font-bold text-slate-700">Butuh Review Anda</span>
-                <div class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-500 flex items-center justify-center">
+                <div class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-500 flex items-center justify-center flex-shrink-0">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                     </svg>
@@ -76,7 +76,7 @@
             </div>
             <div class="mt-4">
                 <div class="flex items-baseline gap-1.5">
-                    <span class="text-2xl sm:text-3xl font-extrabold text-[#015987]">{{ $picDashboard['awaiting_review_tasks_count'] }}</span>
+                    <span class="text-xl sm:text-2xl lg:text-3xl font-extrabold text-[#015987] truncate">{{ $picDashboard['awaiting_review_tasks_count'] }}</span>
                     <span class="text-xs text-slate-500 font-medium">Kiriman Tugas</span>
                 </div>
                 <a href="{{ route('pic.logbooks.index', ['status' => 'pending']) }}" class="text-[11px] font-semibold text-emerald-600 hover:underline mt-1.5 inline-flex items-center gap-1">
@@ -87,10 +87,10 @@
         </div>
 
         <!-- Card 4: Dalam Proses Revisi -->
-        <div class="bg-white p-6 rounded-2xl border border-slate-200/70 shadow-xs flex flex-col justify-between min-h-[148px]">
-            <div class="flex items-start justify-between">
+        <div class="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200/70 shadow-xs flex flex-col justify-between min-h-[148px]">
+            <div class="flex items-start justify-between gap-2">
                 <span class="text-xs font-bold text-slate-700">Dalam Proses Revisi</span>
-                <div class="w-8 h-8 rounded-xl bg-rose-50 text-rose-500 flex items-center justify-center">
+                <div class="w-8 h-8 rounded-xl bg-rose-50 text-rose-500 flex items-center justify-center flex-shrink-0">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
                     </svg>
@@ -98,7 +98,7 @@
             </div>
             <div class="mt-4">
                 <div class="flex items-baseline gap-1.5">
-                    <span class="text-2xl sm:text-3xl font-extrabold text-[#015987]">{{ $picDashboard['revision_tasks_count'] }}</span>
+                    <span class="text-xl sm:text-2xl lg:text-3xl font-extrabold text-[#015987] truncate">{{ $picDashboard['revision_tasks_count'] }}</span>
                     <span class="text-xs text-slate-500 font-medium">Tugas</span>
                 </div>
                 <p class="text-[11px] font-semibold text-rose-500 mt-1.5 flex items-center gap-1">
@@ -264,7 +264,7 @@
                 @else
                     <!-- Tabel Data Peserta & Tugas Asli -->
                     <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse">
+                        <table class="w-full min-w-[640px] text-left border-collapse">
                             <thead>
                                 <tr class="border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                                     <th class="py-4 px-6">Peserta Magang</th>

@@ -52,7 +52,7 @@
             x-transition:leave="transition ease-in duration-200"
             x-transition:leave-start="opacity-100 scale-100 translate-y-0"
             x-transition:leave-end="opacity-0 scale-90 translate-y-3"
-            class="relative w-full max-w-sm sm:max-w-[420px] bg-white rounded-3xl sm:rounded-[32px] shadow-2xl border border-slate-100/80 p-8 sm:p-10 text-center z-10"
+            class="relative w-full max-w-sm sm:max-w-[420px] bg-white rounded-3xl sm:rounded-[32px] shadow-2xl border border-slate-100/80 p-6 sm:p-10 text-center z-10 max-h-[90vh] overflow-y-auto"
         >
             <!-- 1. Ikon Centang (Checkmark) dalam Lingkaran Hijau/Teal Lembut Sesuai Figma -->
             <template x-if="type === 'success'">
