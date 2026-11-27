@@ -14,8 +14,6 @@ return new class extends Migration
         Schema::create('pic_profiles', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->unique()->constrained('users')->restrictOnDelete();
-            $table->string('employee_code', 50)->nullable()->unique();
-            $table->string('department', 150)->nullable();
             $table->timestamps();
         });
     }

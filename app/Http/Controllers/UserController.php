@@ -23,11 +23,17 @@ class UserController extends Controller
     public function index(Request $request): View
     {
         $this->authorize('viewAny', User::class);
-        $query = User::with(['internProfile', 'picProfile']);
+        $query = User::with(['internProfile', 'picProfile', 'picAssignments']);
 
-        // 1. Filter Tab (Semua, Intern, PIC, Nonaktif)
+        // 1. Filter Tab (Semua, Aktif, Intern, PIC, Nonaktif)
         $tab = $request->input('tab', 'all');
-        if ($tab === 'intern') {
+        if ($tab === 'nonactive') {
+            $tab = 'inactive';
+        }
+
+        if ($tab === 'active') {
+            $query->where('is_active', true);
+        } elseif ($tab === 'intern') {
             $query->where('role', 'intern')->where('is_active', true);
         } elseif ($tab === 'pic') {
             $query->where('role', 'pic')->where('is_active', true);
@@ -76,7 +82,7 @@ class UserController extends Controller
                                         $q->whereBetween('internship_end_date', [$now, $now->copy()->addDays(30)]);
                                     })
                                     ->count(),
-            'pic_departments'  => \App\Models\PicProfile::distinct()->pluck('department')->filter()->take(3)->implode(', ') ?: 'Divisi Internal',
+            'pic_departments'  => 'Pembimbing Magang',
         ];
 
         // Urutkan berdasarkan ID/terbaru dan paginasi
