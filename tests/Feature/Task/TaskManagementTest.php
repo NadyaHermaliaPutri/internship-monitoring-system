@@ -324,4 +324,144 @@ class TaskManagementTest extends TestCase
         $this->actingAs($intern)->get(route('intern.tasks.index'))->assertOk()->assertSee('Tugas Tanpa Deskripsi Tambahan');
         $this->actingAs($intern)->get(route('intern.tasks.show', $task))->assertOk()->assertSee('Tidak ada deskripsi tambahan.');
     }
+
+    public function test_admin_sidebar_hides_task_menu_while_pic_and_intern_keep_it(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $pic = User::factory()->create(['role' => 'pic', 'is_active' => true]);
+        $intern = User::factory()->create(['role' => 'intern', 'is_active' => true]);
+
+        // Admin tidak melihat link menu Tugas (admin.tasks.index) di sidebar
+        $this->actingAs($admin)
+            ->get(route('admin.logbooks.index'))
+            ->assertOk()
+            ->assertDontSee('href="'.route('admin.tasks.index').'"', false);
+
+        // PIC tetap melihat menu Tugas (pic.tasks.index) di sidebar
+        $this->actingAs($pic)
+            ->get(route('pic.logbooks.index'))
+            ->assertOk()
+            ->assertSee('href="'.route('pic.tasks.index').'"', false)
+            ->assertSee('Tugas Peserta');
+
+        // Peserta tetap melihat menu Tugas (intern.tasks.index) di sidebar
+        $this->actingAs($intern)
+            ->get(route('intern.logbooks.index'))
+            ->assertOk()
+            ->assertSee('href="'.route('intern.tasks.index').'"', false)
+            ->assertSee('Tugas Peserta');
+    }
+
+    public function test_intern_task_kpi_cards_filter_accurately_and_respect_intern_scoping(): void
+    {
+        $pic = User::factory()->create(['role' => 'pic', 'is_active' => true]);
+        $intern = User::factory()->create(['role' => 'intern', 'is_active' => true]);
+        $otherIntern = User::factory()->create(['role' => 'intern', 'is_active' => true]);
+
+        // Tugas milik intern yang login untuk semua 6 kategori KPI:
+        Task::factory()->create([
+            'pic_user_id' => $pic->id,
+            'intern_user_id' => $intern->id,
+            'title' => 'T1 Assigned Future',
+            'status' => TaskStatus::Assigned,
+            'deadline_at' => '2026-11-22 17:00:00',
+        ]);
+        Task::factory()->create([
+            'pic_user_id' => $pic->id,
+            'intern_user_id' => $intern->id,
+            'title' => 'T2 InProgress Overdue',
+            'status' => TaskStatus::InProgress,
+            'deadline_at' => '2026-11-17 17:00:00', // overdue (< 2026-11-18 10:00)
+        ]);
+        Task::factory()->create([
+            'pic_user_id' => $pic->id,
+            'intern_user_id' => $intern->id,
+            'title' => 'T3 Submitted',
+            'status' => TaskStatus::Submitted,
+            'deadline_at' => '2026-11-23 17:00:00',
+        ]);
+        Task::factory()->create([
+            'pic_user_id' => $pic->id,
+            'intern_user_id' => $intern->id,
+            'title' => 'T4 Resubmitted',
+            'status' => TaskStatus::Resubmitted,
+            'deadline_at' => '2026-11-24 17:00:00',
+        ]);
+        Task::factory()->create([
+            'pic_user_id' => $pic->id,
+            'intern_user_id' => $intern->id,
+            'title' => 'T5 Revision Overdue',
+            'status' => TaskStatus::RevisionRequested,
+            'deadline_at' => '2026-11-16 17:00:00', // overdue
+        ]);
+        Task::factory()->create([
+            'pic_user_id' => $pic->id,
+            'intern_user_id' => $intern->id,
+            'title' => 'T6 Accepted Past Deadline',
+            'status' => TaskStatus::Accepted,
+            'deadline_at' => '2026-11-15 17:00:00', // accepted TIDAK dihitung overdue
+        ]);
+
+        // Tugas milik intern lain (TIDAK BOLEH muncul di hitungan maupun tabel)
+        Task::factory()->create([
+            'pic_user_id' => $pic->id,
+            'intern_user_id' => $otherIntern->id,
+            'title' => 'T7 Other Intern Overdue',
+            'status' => TaskStatus::Assigned,
+            'deadline_at' => '2026-11-15 17:00:00',
+        ]);
+
+        // 1. Total Tugas (6) + semua link kartu KPI tersedia
+        $allResponse = $this->actingAs($intern)->get(route('intern.tasks.index'));
+        $allResponse->assertOk();
+        $summary = $allResponse->viewData('summary');
+        $this->assertSame(6, $summary['total']);
+        $this->assertSame(2, $summary['assigned']);
+        $this->assertSame(2, $summary['awaiting_review']);
+        $this->assertSame(1, $summary['revision_requested']);
+        $this->assertSame(1, $summary['accepted']);
+        $this->assertSame(2, $summary['overdue']);
+        $this->assertCount(6, $allResponse->viewData('tasks'));
+        $allResponse->assertDontSee('T7 Other Intern Overdue');
+
+        // 2. Kartu Aktif Dikerjakan (assigned + in_progress = 2)
+        $activeResponse = $this->actingAs($intern)->get(route('intern.tasks.index', ['status' => 'active']));
+        $activeResponse->assertOk();
+        $this->assertEqualsCanonicalizing(
+            ['T1 Assigned Future', 'T2 InProgress Overdue'],
+            $activeResponse->viewData('tasks')->pluck('title')->all()
+        );
+
+        // 3. Kartu Menunggu Review (submitted + resubmitted = 2)
+        $reviewResponse = $this->actingAs($intern)->get(route('intern.tasks.index', ['status' => 'awaiting_review']));
+        $reviewResponse->assertOk();
+        $this->assertEqualsCanonicalizing(
+            ['T3 Submitted', 'T4 Resubmitted'],
+            $reviewResponse->viewData('tasks')->pluck('title')->all()
+        );
+
+        // 4. Kartu Perlu Revisi (revision_requested = 1)
+        $revisionResponse = $this->actingAs($intern)->get(route('intern.tasks.index', ['status' => 'revision_requested']));
+        $revisionResponse->assertOk();
+        $this->assertSame(
+            ['T5 Revision Overdue'],
+            $revisionResponse->viewData('tasks')->pluck('title')->all()
+        );
+
+        // 5. Kartu Diterima (accepted = 1)
+        $acceptedResponse = $this->actingAs($intern)->get(route('intern.tasks.index', ['status' => 'accepted']));
+        $acceptedResponse->assertOk();
+        $this->assertSame(
+            ['T6 Accepted Past Deadline'],
+            $acceptedResponse->viewData('tasks')->pluck('title')->all()
+        );
+
+        // 6. Kartu Lewat Deadline (overdue = 2; accepted & milik intern lain dikecualikan)
+        $overdueResponse = $this->actingAs($intern)->get(route('intern.tasks.index', ['overdue' => 1]));
+        $overdueResponse->assertOk();
+        $this->assertEqualsCanonicalizing(
+            ['T2 InProgress Overdue', 'T5 Revision Overdue'],
+            $overdueResponse->viewData('tasks')->pluck('title')->all()
+        );
+    }
 }
