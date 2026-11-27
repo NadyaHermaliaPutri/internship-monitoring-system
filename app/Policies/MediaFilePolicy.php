@@ -2,8 +2,6 @@
 
 namespace App\Policies;
 
-use App\Models\Attendance;
-use App\Models\LeaveRequest;
 use App\Models\MediaFile;
 use App\Models\User;
 
@@ -14,8 +12,7 @@ class MediaFilePolicy
      * Sesuai aturan:
      * - Admin/HR: memiliki akses ke seluruh file bukti privat.
      * - Pemilik file: dapat mengakses berkas miliknya sendiri.
-     * - PIC: hanya dapat melihat bukti peserta magang yang sedang aktif dibimbingnya.
-     * - Peserta lain: dilarang keras (403 Forbidden).
+     * - PIC & peserta lain: dilarang mengakses kategori attendance_photo dan leave_evidence (403 Forbidden).
      */
     public function view(User $user, MediaFile $mediaFile): bool
     {
@@ -29,19 +26,9 @@ class MediaFilePolicy
             return true;
         }
 
-        // 3. Hak akses PIC untuk peserta bimbingan aktif
-        if ($user->isPic()) {
-            if ($mediaFile->category === 'attendance_photo') {
-                $attendance = Attendance::where('photo_media_id', $mediaFile->id)->first();
-                if ($attendance && $user->isCurrentlyAssignedTo($attendance->intern_user_id)) {
-                    return true;
-                }
-            } elseif ($mediaFile->category === 'leave_evidence') {
-                $leave = LeaveRequest::where('evidence_media_id', $mediaFile->id)->first();
-                if ($leave && $user->isCurrentlyAssignedTo($leave->intern_user_id)) {
-                    return true;
-                }
-            }
+        // 3. Kategori attendance_photo dan leave_evidence hanya untuk Admin dan pemilik file
+        if (in_array($mediaFile->category, ['attendance_photo', 'leave_evidence'], true)) {
+            return false;
         }
 
         return false;

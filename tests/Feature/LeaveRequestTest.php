@@ -442,13 +442,11 @@ class LeaveRequestTest extends TestCase
         $response->assertSee('Keperluan keluarga');
     }
 
-    public function test_pic_can_view_assigned_interns_leave_requests_with_data(): void
+    public function test_pic_cannot_access_leave_routes_or_policy(): void
     {
         $pic = User::factory()->create(['role' => 'pic', 'is_active' => true]);
         $assignedIntern = User::factory()->create(['name' => 'Peserta Bimbingan A', 'role' => 'intern', 'is_active' => true]);
-        $unassignedIntern = User::factory()->create(['name' => 'Peserta Lain B', 'role' => 'intern', 'is_active' => true]);
 
-        // Hubungkan assignedIntern ke PIC
         PicAssignment::create([
             'pic_user_id' => $pic->id,
             'intern_user_id' => $assignedIntern->id,
@@ -457,8 +455,7 @@ class LeaveRequestTest extends TestCase
             'assigned_by' => $pic->id,
         ]);
 
-        // Buat leave request untuk assigned intern
-        LeaveRequest::create([
+        $leave = LeaveRequest::create([
             'intern_user_id' => $assignedIntern->id,
             'leave_type' => 'sick',
             'start_date' => '2026-11-20',
@@ -467,23 +464,10 @@ class LeaveRequestTest extends TestCase
             'status' => 'pending',
         ]);
 
-        // Buat leave request untuk unassigned intern
-        LeaveRequest::create([
-            'intern_user_id' => $unassignedIntern->id,
-            'leave_type' => 'leave',
-            'start_date' => '2026-11-20',
-            'end_date' => '2026-11-20',
-            'reason' => 'Urusan luar kota',
-            'status' => 'pending',
-        ]);
-
-        $response = $this->actingAs($pic)->get('/pic/izin');
-
-        $response->assertOk();
-        $response->assertSee('Peserta Bimbingan A');
-        $response->assertSee('2 Hari');
-        $response->assertSee('Sakit typhus butuh bedrest');
-        $response->assertDontSee('Peserta Lain B');
+        $this->actingAs($pic)->get('/pic/izin')->assertStatus(404);
+        $this->actingAs($pic)->get('/admin/izin')->assertStatus(403);
+        $this->actingAs($pic)->get('/intern/izin')->assertStatus(403);
+        $this->assertFalse($pic->can('view', $leave));
     }
 
     public function test_intern_leave_index_shows_submission_time_and_hides_wib_badge(): void

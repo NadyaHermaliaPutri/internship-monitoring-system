@@ -71,12 +71,6 @@ Route::middleware('auth')->group(function () {
     // ==============================================================
     Route::middleware('role:pic')->prefix('pic')->name('pic.')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'pic'])->name('dashboard');
-        Route::prefix('presensi')->name('attendance.')->group(function () {
-            Route::get('/', [AttendanceController::class, 'picIndex'])->name('index');
-        });
-        Route::prefix('izin')->name('leave.')->group(function () {
-            Route::get('/', [LeaveRequestController::class, 'picIndex'])->name('index');
-        });
         Route::get('/logbooks', [LogbookController::class, 'index'])->name('logbooks.index');
         Route::get('/logbooks/{logbook}', [LogbookController::class, 'show'])->name('logbooks.show');
         Route::resource('tasks', TaskController::class);

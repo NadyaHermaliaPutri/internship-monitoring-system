@@ -275,29 +275,4 @@ class AttendanceController extends Controller
             ->back()
             ->with('success', $message);
     }
-
-    /*
-    |--------------------------------------------------------------------------
-    | SISI PEMBIMBING PIC (READ-ONLY)
-    |--------------------------------------------------------------------------
-    */
-
-    /**
-     * Menampilkan monitoring read-only presensi peserta yang aktif dibimbing oleh PIC.
-     */
-    public function picIndex(Request $request): View
-    {
-        $pic = $request->user();
-        $now = $this->calendarService->getNow();
-        $selectedDate = $request->input('date', $now->format('Y-m-d'));
-
-        // Ambil data presensi peserta yang saat ini aktif ditugaskan ke PIC ini (end_date IS NULL)
-        $summary = $this->recapService->getPicAssignedInternsDailySummary($pic->id, $selectedDate);
-
-        return view('pic.attendance.index', compact(
-            'selectedDate',
-            'summary',
-            'now'
-        ));
-    }
 }

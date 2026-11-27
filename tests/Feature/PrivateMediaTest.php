@@ -121,14 +121,31 @@ class PrivateMediaTest extends TestCase
             'status' => 'pending',
         ]);
 
-        // 1. PIC mengakses bukti peserta bimbingan aktifnya => 200 OK
+        // 1. PIC mengakses bukti izin peserta bimbingan aktifnya => 403 Forbidden (PIC tidak punya akses modul izin)
         $this->actingAs($pic)
             ->get("/media/private/{$mediaAssigned->id}")
-            ->assertStatus(200);
+            ->assertStatus(403);
 
         // 2. PIC mengakses bukti peserta yang BUKAN bimbingannya => 403 Forbidden
         $this->actingAs($pic)
             ->get("/media/private/{$mediaOther->id}")
+            ->assertStatus(403);
+
+        // 3. PIC mengakses foto presensi peserta bimbingan aktifnya => 403 Forbidden
+        Storage::disk('local_private')->put('presensi/assigned.jpg', 'img-content');
+        $attendanceMedia = MediaFile::create([
+            'disk' => 'local_private',
+            'file_path' => 'presensi/assigned.jpg',
+            'file_name' => 'assigned.jpg',
+            'original_name' => 'assigned.jpg',
+            'mime_type' => 'image/jpeg',
+            'file_size_bytes' => 1024,
+            'category' => 'attendance_photo',
+            'owner_user_id' => $internAssigned->id,
+        ]);
+
+        $this->actingAs($pic)
+            ->get("/media/private/{$attendanceMedia->id}")
             ->assertStatus(403);
     }
 

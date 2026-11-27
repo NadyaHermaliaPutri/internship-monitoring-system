@@ -215,39 +215,15 @@ class DashboardTest extends TestCase
         $response->assertSee('Pengajuan Izin &amp; Sakit', false);
     }
 
-    public function test_pic_dashboard_shows_only_assigned_interns(): void
+    public function test_pic_dashboard_does_not_show_attendance_or_leave_widget(): void
     {
         $pic = User::factory()->create(['role' => 'pic', 'is_active' => true]);
-        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
-
-        $assignedIntern = User::factory()->create(['role' => 'intern', 'name' => 'Bimbingan PIC', 'is_active' => true]);
-        $otherIntern = User::factory()->create(['role' => 'intern', 'name' => 'Intern Lain', 'is_active' => true]);
-        $media = $this->createMedia($assignedIntern);
-
-        PicAssignment::create([
-            'pic_user_id' => $pic->id,
-            'intern_user_id' => $assignedIntern->id,
-            'assigned_by' => $admin->id,
-            'start_date' => '2026-11-01',
-            'end_date' => null, // Aktif
-        ]);
-
-        Carbon::setTestNow(Carbon::parse('2026-11-18 08:00:00', 'Asia/Jakarta'));
-
-        Attendance::create([
-            'intern_user_id' => $assignedIntern->id,
-            'photo_media_id' => $media->id,
-            'attendance_date' => '2026-11-18',
-            'checked_in_at' => '2026-11-18 07:55:00',
-            'status' => 'on_time',
-            'device_type' => 'mobile',
-            'browser' => 'Safari',
-        ]);
 
         $response = $this->actingAs($pic)->get('/pic/dashboard');
         $response->assertOk();
-        $response->assertSee('Presensi &amp; Izin Anak Bimbingan Hari Ini', false);
-        $response->assertSee('Bimbingan PIC');
-        $response->assertDontSee('Intern Lain');
+        $response->assertSee('Dashboard Bimbingan PIC');
+        $response->assertDontSee('Presensi &amp; Izin Anak Bimbingan Hari Ini', false);
+        $response->assertDontSee('Presensi Bimbingan');
+        $response->assertDontSee('Izin Bimbingan');
     }
 }
