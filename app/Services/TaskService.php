@@ -62,12 +62,15 @@ class TaskService
      * Membuat tugas baru dengan status 'assigned' sekaligus menyimpan file lampiran (opsional)
      * dan mencatat 1 record otomatis di tabel logbooks dalam 1 DB Transaction yang sama.
      *
-     * @param  array{intern_user_id: int, title: string, description: string, deadline_at: string}  $data
+     * @param  array{intern_user_id: int, title: string, description?: ?string, deadline_at: string}  $data
      */
     public function createTask(User $pic, array $data, ?UploadedFile $attachmentFile = null): Task
     {
         $assignedAt = $this->now();
         $deadlineAt = Carbon::parse($data['deadline_at'], Task::TIMEZONE);
+        $description = isset($data['description']) && trim((string) $data['description']) !== ''
+            ? trim((string) $data['description'])
+            : null;
 
         if (! $this->isInternAssignableByPic($pic->id, (int) $data['intern_user_id'], $assignedAt->toDateString())) {
             throw ValidationException::withMessages([
@@ -75,12 +78,12 @@ class TaskService
             ]);
         }
 
-        return DB::transaction(function () use ($pic, $data, $assignedAt, $deadlineAt, $attachmentFile) {
+        return DB::transaction(function () use ($pic, $data, $description, $assignedAt, $deadlineAt, $attachmentFile) {
             $task = Task::create([
                 'pic_user_id' => $pic->id,
                 'intern_user_id' => (int) $data['intern_user_id'],
                 'title' => $data['title'],
-                'description' => $data['description'],
+                'description' => $description,
                 'assigned_at' => $assignedAt,
                 'deadline_at' => $deadlineAt,
                 'status' => TaskStatus::Assigned,
@@ -100,12 +103,15 @@ class TaskService
 
             $logbookTitle = Str::limit('Penugasan PIC: '.$task->title, 150, '');
             $logbookDescription = sprintf(
-                "PIC (%s) memberikan tugas baru: \"%s\" dengan batas waktu pengumpulan %s WIB.\n\nDeskripsi Tugas:\n%s",
+                'PIC (%s) memberikan tugas baru: "%s" dengan batas waktu pengumpulan %s WIB.',
                 $pic->name,
                 $task->title,
-                $deadlineAt->translatedFormat('d M Y H:i'),
-                $task->description
+                $deadlineAt->translatedFormat('d M Y H:i')
             );
+
+            if ($description !== null) {
+                $logbookDescription .= "\n\nDeskripsi Tugas:\n".$description;
+            }
 
             $this->logbookService->recordTaskAssignmentEntry(
                 internUserId: $task->intern_user_id,
@@ -123,7 +129,7 @@ class TaskService
      * Memperbarui detail tugas (judul, deskripsi, deadline_at, atau file lampiran baru) oleh PIC.
      * Tidak membuat baris logbook otomatis baru (anti-duplikasi).
      *
-     * @param  array{title: string, description: string, deadline_at: string}  $data
+     * @param  array{title: string, description?: ?string, deadline_at: string}  $data
      */
     public function updateTask(Task $task, array $data, ?UploadedFile $attachmentFile = null, ?User $actor = null): Task
     {
@@ -138,10 +144,13 @@ class TaskService
             }
 
             $deadlineAt = Carbon::parse($data['deadline_at'], Task::TIMEZONE);
+            $description = isset($data['description']) && trim((string) $data['description']) !== ''
+                ? trim((string) $data['description'])
+                : null;
 
             $locked->update([
                 'title' => $data['title'],
-                'description' => $data['description'],
+                'description' => $description,
                 'deadline_at' => $deadlineAt,
             ]);
 

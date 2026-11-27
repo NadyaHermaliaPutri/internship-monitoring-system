@@ -279,4 +279,49 @@ class TaskManagementTest extends TestCase
             ->patch(route('intern.tasks.start', $task))
             ->assertForbidden();
     }
+
+    public function test_pic_can_create_and_update_task_with_optional_null_description_and_views_render_cleanly(): void
+    {
+        $pic = User::factory()->create(['role' => 'pic', 'is_active' => true]);
+        $intern = User::factory()->create(['role' => 'intern', 'is_active' => true]);
+
+        // 1. PIC membuat tugas baru TANPA description
+        $createResponse = $this->actingAs($pic)->post(route('pic.tasks.store'), [
+            'intern_user_id' => $intern->id,
+            'title' => 'Tugas Tanpa Deskripsi Tambahan',
+            'description' => '',
+            'deadline_at' => '2026-11-25 17:00',
+        ]);
+
+        $task = Task::query()->where('title', 'Tugas Tanpa Deskripsi Tambahan')->firstOrFail();
+        $createResponse->assertRedirect(route('pic.tasks.show', $task));
+        $this->assertNull($task->description);
+        $this->assertSame(TaskStatus::Assigned, $task->status);
+
+        // Logbook otomatis tetap tercatat bersih tanpa label kosong "Deskripsi Tugas:"
+        $autoLogbook = Logbook::query()->where('task_id', $task->id)->firstOrFail();
+        $this->assertStringContainsString('memberikan tugas baru: "Tugas Tanpa Deskripsi Tambahan"', $autoLogbook->activity_description);
+        $this->assertStringNotContainsString('Deskripsi Tugas:', $autoLogbook->activity_description);
+
+        // 2. PIC mengedit tugas dan mengisi lalu mengosongkan kembali description
+        $this->actingAs($pic)->put(route('pic.tasks.update', $task), [
+            'title' => 'Tugas Tanpa Deskripsi Tambahan',
+            'description' => 'Catatan sementara untuk tugas ini.',
+            'deadline_at' => '2026-11-26 17:00',
+        ])->assertRedirect(route('pic.tasks.show', $task));
+        $this->assertSame('Catatan sementara untuk tugas ini.', $task->fresh()->description);
+
+        $this->actingAs($pic)->put(route('pic.tasks.update', $task), [
+            'title' => 'Tugas Tanpa Deskripsi Tambahan',
+            'description' => '',
+            'deadline_at' => '2026-11-26 17:00',
+        ])->assertRedirect(route('pic.tasks.show', $task));
+        $this->assertNull($task->fresh()->description);
+
+        // 3. Halaman daftar & detail tugas (PIC dan Peserta) tampil normal 200 OK saat description = null
+        $this->actingAs($pic)->get(route('pic.tasks.index'))->assertOk()->assertSee('Tugas Tanpa Deskripsi Tambahan');
+        $this->actingAs($pic)->get(route('pic.tasks.show', $task))->assertOk()->assertSee('Tidak ada deskripsi tambahan.');
+        $this->actingAs($intern)->get(route('intern.tasks.index'))->assertOk()->assertSee('Tugas Tanpa Deskripsi Tambahan');
+        $this->actingAs($intern)->get(route('intern.tasks.show', $task))->assertOk()->assertSee('Tidak ada deskripsi tambahan.');
+    }
 }

@@ -12,7 +12,7 @@ class AttendancePolicy
      */
     public function viewAny(User $user): bool
     {
-        return true;
+        return $user->isAdmin() || $user->isIntern();
     }
 
     /**
@@ -20,7 +20,7 @@ class AttendancePolicy
      * Aturan:
      * - Admin/HR: dapat melihat presensi semua peserta.
      * - Peserta: hanya dapat melihat presensi miliknya sendiri.
-     * - PIC: hanya dapat melihat presensi peserta yang aktif ditugaskan kepadanya di pic_assignments.
+     * - PIC: tidak memiliki akses ke modul presensi (403 Forbidden).
      */
     public function view(User $user, Attendance $attendance): bool
     {
@@ -30,10 +30,6 @@ class AttendancePolicy
 
         if ($user->isIntern()) {
             return $user->id === $attendance->intern_user_id;
-        }
-
-        if ($user->isPic()) {
-            return $user->isCurrentlyAssignedTo($attendance->intern_user_id);
         }
 
         return false;

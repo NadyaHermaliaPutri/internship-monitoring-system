@@ -45,6 +45,13 @@ class StoreLogbookRequest extends FormRequest
                 'integer',
                 Rule::exists('tasks', 'id')->where('intern_user_id', $internId),
             ],
+            'target_pic_user_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('users', 'id')->where(function ($query) {
+                    $query->where('role', 'pic')->where('is_active', true);
+                }),
+            ],
             'title' => ['required', 'string', 'max:150'],
             'activity_description' => ['nullable', 'string', 'max:5000'],
             'activity_status' => ['nullable', 'string', Rule::in(LogbookActivityStatus::values())],
@@ -72,6 +79,8 @@ class StoreLogbookRequest extends FormRequest
             'log_date.before_or_equal' => 'Tanggal logbook tidak boleh melebihi tanggal hari ini.',
             'related_task_id.integer' => 'Pilihan tugas terkait tidak valid.',
             'related_task_id.exists' => 'Tugas yang dipilih tidak ditemukan atau bukan milik Anda.',
+            'target_pic_user_id.integer' => 'Pilihan PIC pemberi tugas tidak valid.',
+            'target_pic_user_id.exists' => 'PIC yang dipilih tidak ditemukan atau tidak aktif.',
             'title.required' => 'Kegiatan wajib diisi.',
             'title.max' => 'Kegiatan maksimal 150 karakter.',
             'activity_status.in' => 'Pilihan status kegiatan tidak valid.',

@@ -72,6 +72,7 @@ class LogbookController extends Controller
         $relations = [
             'intern:id,name,email',
             'reviewer:id,name',
+            'targetPic:id,name',
             'task.pic:id,name',
             'relatedTask.pic:id,name',
             'evidenceMedia:id,owner_user_id,category,original_name,mime_type,file_size_bytes',
@@ -171,12 +172,17 @@ class LogbookController extends Controller
                 ->get(['id', 'name']);
         }
 
+        $picOptions = $user->isIntern()
+            ? User::query()->where('role', 'pic')->where('is_active', true)->orderBy('name')->get(['id', 'name'])
+            : collect();
+
         return view('logbooks.index', [
             'logbooks' => $logbooks,
             'dailyGroups' => $dailyGroups,
             'paginatedDates' => $paginatedDates,
             'summary' => $summary,
             'internOptions' => $internOptions,
+            'picOptions' => $picOptions,
             'todayDate' => $this->logbookService->todayDateString(),
             'earliestDate' => $this->logbookService->earliestAllowedDateString(),
             'maxBackdateDays' => Logbook::MAX_BACKDATE_DAYS,
@@ -190,7 +196,14 @@ class LogbookController extends Controller
     {
         Gate::authorize('create', Logbook::class);
 
+        $picOptions = User::query()
+            ->where('role', 'pic')
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
         return view('logbooks.create', [
+            'picOptions' => $picOptions,
             'todayDate' => $this->logbookService->todayDateString(),
             'earliestDate' => $this->logbookService->earliestAllowedDateString(),
             'maxBackdateDays' => Logbook::MAX_BACKDATE_DAYS,
@@ -205,16 +218,20 @@ class LogbookController extends Controller
         /** @var User $user */
         $user = $request->user();
 
-        $this->logbookService->createManualEntry(
+        $created = $this->logbookService->createManualEntry(
             $user,
             $request->validated(),
             $request->file('evidence_file')
         );
 
+        $message = $created->target_pic_user_id !== null
+            ? 'Logbook harian berhasil disimpan sebagai Sedang Dikerjakan. Klik Selesai bila kegiatan sudah rampung agar masuk antrian review PIC.'
+            : 'Logbook kegiatan mandiri berhasil disimpan sebagai Sedang Dikerjakan.';
+
         return redirect()
             ->route('intern.logbooks.index')
             ->with('success_title', 'Berhasil Ditambahkan')
-            ->with('status', 'Logbook harian berhasil disimpan dengan status Menunggu Review.');
+            ->with('status', $message);
     }
 
     /**
@@ -227,6 +244,7 @@ class LogbookController extends Controller
         $logbook->load([
             'intern:id,name,email',
             'reviewer:id,name',
+            'targetPic:id,name',
             'task.pic:id,name',
             'relatedTask.pic:id,name',
             'evidenceMedia',
@@ -240,7 +258,7 @@ class LogbookController extends Controller
     }
 
     /**
-     * Menampilkan form edit logbook (hanya pemilik & status pending/revision_requested & source manual).
+     * Menampilkan form edit logbook (hanya pemilik & belum approved & source manual).
      */
     public function edit(Request $request, Logbook $logbook): View
     {
@@ -248,8 +266,15 @@ class LogbookController extends Controller
 
         $logbook->load(['revisions', 'evidenceMedia']);
 
+        $picOptions = User::query()
+            ->where('role', 'pic')
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
         return view('logbooks.edit', [
             'logbook' => $logbook,
+            'picOptions' => $picOptions,
             'todayDate' => $this->logbookService->todayDateString(),
             'earliestDate' => $this->logbookService->earliestAllowedDateString(),
             'maxBackdateDays' => Logbook::MAX_BACKDATE_DAYS,
@@ -278,7 +303,9 @@ class LogbookController extends Controller
     }
 
     /**
-     * Menandai progres kegiatan mandiri peserta menjadi Selesai (tanpa mengubah status review PIC).
+     * Menandai progres kegiatan manual peserta menjadi Selesai:
+     * - Bila ditujukan ke PIC -> status berubah ke pending (Menunggu Review PIC).
+     * - Bila Mandiri -> status tetap null (Selesai).
      */
     public function complete(Request $request, Logbook $logbook): RedirectResponse
     {
@@ -287,12 +314,16 @@ class LogbookController extends Controller
         /** @var User $user */
         $user = $request->user();
 
-        $this->logbookService->completeManualEntry($logbook, $user);
+        $completed = $this->logbookService->completeManualEntry($logbook, $user);
+
+        $message = $completed->target_pic_user_id !== null
+            ? 'Kegiatan berhasil ditandai Selesai dan kini masuk antrian Menunggu Review PIC.'
+            : 'Kegiatan mandiri berhasil ditandai Selesai.';
 
         return redirect()
             ->back(fallback: route('intern.logbooks.index'))
             ->with('success_title', 'Kegiatan Selesai')
-            ->with('status', 'Progres kegiatan mandiri berhasil ditandai Selesai. Status verifikasi PIC tetap mengikuti proses review.');
+            ->with('status', $message);
     }
 
     /**

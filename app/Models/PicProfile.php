@@ -12,8 +12,6 @@ class PicProfile extends Model
 
     protected $fillable = [
         'user_id',
-        'employee_code',
-        'department',
     ];
 
     public function user(): BelongsTo

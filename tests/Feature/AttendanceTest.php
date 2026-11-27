@@ -681,11 +681,10 @@ class AttendanceTest extends TestCase
         $response->assertSee('Perlu Foto Ulang');
     }
 
-    public function test_pic_can_view_assigned_interns_attendance_with_data(): void
+    public function test_pic_cannot_access_attendance_routes_or_policy(): void
     {
         $pic = User::factory()->create(['role' => 'pic', 'is_active' => true]);
         $assignedIntern = User::factory()->create(['name' => 'Peserta Binaan A', 'role' => 'intern', 'is_active' => true]);
-        $unassignedIntern = User::factory()->create(['name' => 'Peserta Lain B', 'role' => 'intern', 'is_active' => true]);
 
         PicAssignment::create([
             'pic_user_id' => $pic->id,
@@ -706,9 +705,7 @@ class AttendanceTest extends TestCase
             'owner_user_id' => $assignedIntern->id,
         ]);
 
-        Carbon::setTestNow(Carbon::parse('2026-11-18 09:00:00', 'Asia/Jakarta'));
-
-        Attendance::create([
+        $attendance = Attendance::create([
             'intern_user_id' => $assignedIntern->id,
             'attendance_date' => '2026-11-18',
             'checked_in_at' => '2026-11-18 08:04:00',
@@ -718,13 +715,10 @@ class AttendanceTest extends TestCase
             'photo_media_id' => $media->id,
         ]);
 
-        $response = $this->actingAs($pic)->get('/pic/presensi?date=2026-11-18');
-
-        $response->assertOk();
-        $response->assertSee('Peserta Binaan A');
-        $response->assertSee('Tepat Waktu');
-        $response->assertSee('Lihat Foto');
-        $response->assertDontSee('Peserta Lain B');
+        $this->actingAs($pic)->get('/pic/presensi')->assertStatus(404);
+        $this->actingAs($pic)->get('/admin/presensi')->assertStatus(403);
+        $this->actingAs($pic)->get('/intern/presensi')->assertStatus(403);
+        $this->assertFalse($pic->can('view', $attendance));
     }
 
     public function test_intern_can_view_attendance_index_with_populated_history(): void

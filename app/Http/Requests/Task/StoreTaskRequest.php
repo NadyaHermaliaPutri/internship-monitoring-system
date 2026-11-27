@@ -23,7 +23,7 @@ class StoreTaskRequest extends FormRequest
     public function rules(TaskService $taskService): array
     {
         $picId = (int) $this->user()?->id;
-        $maxSizeKb = (int) config('wantrace.uploads.task_attachment.max_size_kb', 10240);
+        $maxSizeKb = (int) config('wantrace.uploads.task_attachment.max_size_kb', 2048);
         $allowedMimes = implode(',', config('wantrace.uploads.task_attachment.mimes', ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'jpg', 'jpeg', 'png', 'webp', 'zip', 'rar']));
 
         return [
@@ -37,7 +37,7 @@ class StoreTaskRequest extends FormRequest
                 },
             ],
             'title' => ['required', 'string', 'max:180'],
-            'description' => ['required', 'string', 'min:10', 'max:5000'],
+            'description' => ['nullable', 'string', 'max:5000'],
             'attachment_file' => ['nullable', 'file', 'mimes:'.$allowedMimes, 'max:'.$maxSizeKb],
             'deadline_at' => [
                 'required',
@@ -82,12 +82,10 @@ class StoreTaskRequest extends FormRequest
             'intern_user_id.integer' => 'Pilihan peserta magang tidak valid.',
             'title.required' => 'Judul tugas wajib diisi.',
             'title.max' => 'Judul tugas maksimal 180 karakter.',
-            'description.required' => 'Deskripsi tugas wajib diisi.',
-            'description.min' => 'Deskripsi tugas minimal 10 karakter agar instruksi jelas.',
             'description.max' => 'Deskripsi tugas maksimal 5000 karakter.',
             'attachment_file.file' => 'Lampiran tugas harus berupa berkas yang valid.',
             'attachment_file.mimes' => 'Format lampiran tugas harus berupa PDF, DOC/DOCX, XLS/XLSX, PPT/PPTX, gambar (JPG/PNG/WEBP), atau arsip (ZIP/RAR).',
-            'attachment_file.max' => 'Ukuran file lampiran tugas maksimal 10 MB.',
+            'attachment_file.max' => 'Ukuran file lampiran tugas maksimal 2 MB.',
             'deadline_at.required' => 'Batas waktu pengumpulan (deadline) wajib diisi.',
             'deadline_at.date' => 'Format batas waktu pengumpulan tidak valid.',
         ];

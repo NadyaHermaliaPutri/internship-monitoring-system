@@ -48,30 +48,9 @@ class DashboardController extends Controller
      */
     public function pic(Request $request): View
     {
-        $search = $request->query('search');
-        $data = $this->dashboardService->getPicDashboardData($request->user(), $search);
-
-        $mentoringSummary = $data['mentoringSummary'];
-        $taskStats = $data['taskStats'];
-        $awaitingReviewTasks = $data['awaitingReviewTasks'];
-        $internsWithTasks = $data['internsWithTasks'];
-        $ewsSummary = $data['ewsSummary'];
-        $upcomingDeadlines = $data['upcomingDeadlines'];
-
-        // Ambil juga data ringkasan spesifik dari PicDashboardService (Modul Anggota 3)
         $picDashboard = $this->picDashboardService->getSummary($request->user());
 
-        return view('dashboard.pic', compact(
-            'data',
-            'mentoringSummary',
-            'taskStats',
-            'awaitingReviewTasks',
-            'internsWithTasks',
-            'ewsSummary',
-            'upcomingDeadlines',
-            'picDashboard',
-            'search'
-        ));
+        return view('dashboard.pic', compact('picDashboard'));
     }
 
     /**

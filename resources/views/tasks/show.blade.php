@@ -153,7 +153,11 @@
         {{-- Deskripsi Tugas --}}
         <div>
             <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Deskripsi &amp; Instruksi Tugas</h3>
-            <div class="p-4 rounded-xl bg-slate-50/70 border border-slate-100 text-xs text-slate-800 whitespace-pre-line leading-relaxed">{{ $task->description }}</div>
+            @if (filled($task->description))
+                <div class="p-4 rounded-xl bg-slate-50/70 border border-slate-100 text-xs text-slate-800 whitespace-pre-line leading-relaxed">{{ $task->description }}</div>
+            @else
+                <div class="p-4 rounded-xl bg-slate-50/70 border border-slate-100 text-xs text-slate-400 italic">Tidak ada deskripsi tambahan.</div>
+            @endif
         </div>
 
         {{-- Lampiran Tugas dari PIC (Opsional) --}}

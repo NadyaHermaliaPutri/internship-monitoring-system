@@ -352,7 +352,7 @@
                                     @php $rolePrefix = auth()->user()->role ?? 'admin'; @endphp
                                     @if($warning['type'] === 'unsubmitted_attendance')
                                         <a 
-                                            href="{{ $isPicView ? route('pic.attendance.index') : route('admin.attendance.index') }}" 
+                                            href="{{ route('admin.attendance.index') }}" 
                                             class="inline-flex items-center gap-1 text-[11px] font-bold text-[#015987] hover:text-[#014467] hover:underline"
                                         >
                                             <span>Lihat Presensi</span>

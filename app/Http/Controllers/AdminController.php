@@ -27,7 +27,7 @@ class AdminController extends Controller
                                     ->whereMonth('created_at', $now->month)
                                     ->whereYear('created_at', $now->year)
                                     ->count(),
-            'pic_divisions'  => PicProfile::distinct()->pluck('department')->filter()->take(3)->implode(', ') ?: 'Divisi Internal',
+            'pic_divisions'  => 'Divisi Internal',
             'near_end_interns' => User::where('role', 'intern')
                                     ->where('is_active', true)
                                     ->whereHas('internProfile', function ($q) use ($now) {

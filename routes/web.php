@@ -8,6 +8,7 @@ use App\Http\Controllers\EwsController;
 use App\Http\Controllers\InternProfileController;
 use App\Http\Controllers\LeaveRequestController;
 use App\Http\Controllers\LogbookController;
+use App\Http\Controllers\PicProfileController;
 use App\Http\Controllers\PrivateMediaController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\TaskController;
@@ -33,12 +34,13 @@ Route::get('/', function () {
         ]);
     }
 
-    return match ($user->role) {
-        'admin' => redirect()->route('admin.dashboard'),
-        'pic' => redirect()->route('pic.dashboard'),
-        'intern' => redirect()->route('intern.dashboard'),
-        default => abort(403, 'Peran pengguna tidak valid.'),
-    };
+    $dashboardUrl = $user->getDashboardRoute();
+
+    if ($dashboardUrl === '/') {
+        abort(403, 'Peran pengguna tidak valid.');
+    }
+
+    return redirect()->to($dashboardUrl);
 });
 
 // ==============================================================
@@ -98,6 +100,10 @@ Route::middleware('auth')->group(function () {
         Route::get('intern-profiles/{user}/edit', [InternProfileController::class, 'edit'])->name('intern-profiles.edit');
         Route::put('intern-profiles/{user}', [InternProfileController::class, 'update'])->name('intern-profiles.update');
 
+        // Pengelolaan Profil Khusus PIC (Pembimbing)
+        Route::get('pic-profiles', [PicProfileController::class, 'index'])->name('pic-profiles.index');
+        Route::put('pic-profiles/{user}', [PicProfileController::class, 'update'])->name('pic-profiles.update');
+
         // Modul 2 & 3 (Admin)
         Route::prefix('kalender')->name('calendar.')->group(function () {
             Route::get('/', [CalendarController::class, 'index'])->name('index');
@@ -127,13 +133,6 @@ Route::middleware('auth')->group(function () {
     // ==============================================================
     Route::middleware('role:pic')->prefix('pic')->name('pic.')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'pic'])->name('dashboard');
-
-        Route::prefix('presensi')->name('attendance.')->group(function () {
-            Route::get('/', [AttendanceController::class, 'picIndex'])->name('index');
-        });
-        Route::prefix('izin')->name('leave.')->group(function () {
-            Route::get('/', [LeaveRequestController::class, 'picIndex'])->name('index');
-        });
 
         // Modul 3: Monitoring & Review Logbook Peserta Bimbingan (PIC)
         Route::get('/logbooks', [LogbookController::class, 'index'])->name('logbooks.index');

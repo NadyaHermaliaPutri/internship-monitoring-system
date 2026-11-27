@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Http\Requests\Leave\ReviewLeaveRequest;
 use App\Http\Requests\Leave\StoreLeaveRequest;
 use App\Models\LeaveRequest;
-use App\Models\PicAssignment;
 use App\Services\LeaveRequestService;
 use Exception;
 use Illuminate\Http\RedirectResponse;
@@ -180,60 +179,5 @@ class LeaveRequestController extends Controller
                 ->back()
                 ->with('error', $e->getMessage());
         }
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | SISI PEMBIMBING PIC (READ-ONLY)
-    |--------------------------------------------------------------------------
-    */
-
-    /**
-     * Menampilkan daftar permohonan izin/sakit peserta bimbingan aktif PIC (read-only).
-     */
-    public function picIndex(Request $request): View
-    {
-        $pic = $request->user();
-
-        // Ambil ID peserta yang saat ini aktif ditugaskan ke PIC ini (end_date IS NULL)
-        $assignedInternUserIds = PicAssignment::active()
-            ->where('pic_user_id', $pic->id)
-            ->pluck('intern_user_id')
-            ->unique()
-            ->toArray();
-
-        $statusFilter = $request->input('status');
-        $typeFilter = $request->input('type');
-
-        $query = LeaveRequest::with(['intern', 'evidence', 'reviewer'])
-            ->whereIn('intern_user_id', $assignedInternUserIds)
-            ->orderByDesc('created_at');
-
-        if ($statusFilter && in_array($statusFilter, ['pending', 'approved', 'rejected'], true)) {
-            $query->where('status', $statusFilter);
-        }
-
-        if ($typeFilter && in_array($typeFilter, ['leave', 'sick'], true)) {
-            $query->where('leave_type', $typeFilter);
-        }
-
-        $dateFrom = $request->input('date_from');
-        $dateTo   = $request->input('date_to');
-
-        if ($dateFrom) {
-            $query->where('end_date', '>=', $dateFrom);
-        }
-        if ($dateTo) {
-            $query->where('start_date', '<=', $dateTo);
-        }
-
-        $leaveRequests = $query->paginate(10)->withQueryString();
-
-        return view('pic.leave.index', compact(
-            'leaveRequests',
-            'statusFilter',
-            'typeFilter',
-            'assignedInternUserIds'
-        ));
     }
 }

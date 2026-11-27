@@ -131,8 +131,8 @@ class PwaAssetsTest extends TestCase
         $responseInactive->assertRedirect(route('login'));
         $this->assertGuest();
 
-        // F. Pengguna terotentikasi yang mengakses /login diarahkan oleh middleware guest ke /
-        // yang kemudian meneruskan ke dashboard role masing-masing (tidak terjadi infinite loop)
-        $this->actingAs($admin)->get('/login')->assertRedirect('/');
+        // F. Pengguna terotentikasi yang mengakses /login langsung diarahkan ke dashboard
+        // (AuthController::create() mengecek Auth::check() dan redirect ke getDashboardRoute())
+        $this->actingAs($admin)->get('/login')->assertRedirect(route('admin.dashboard'));
     }
 }
