@@ -317,28 +317,42 @@
                         </div>
                     @endif
                     
-                    <!-- Viewport Kamera Selfie Langsung WebRTC -->
-                    <div class="relative w-full h-[360px] sm:h-[400px] bg-slate-900 rounded-2xl overflow-hidden shadow-inner flex items-center justify-center">
+                    <!-- Viewport Kamera Selfie Langsung WebRTC (Click-to-Start & Bounded Container) -->
+                    <div class="relative w-full aspect-video max-h-[420px] bg-slate-900 rounded-2xl overflow-hidden shadow-inner">
                         
                         <!-- Video Stream dari WebRTC -->
-                        <video id="cameraVideo" autoplay playsinline class="w-full h-full object-cover transform scale-x-[-1]"></video>
+                        <video id="cameraVideo" autoplay playsinline class="hidden absolute inset-0 w-full h-full object-cover transform scale-x-[-1]"></video>
                         
                         <!-- Canvas Tersembunyi untuk Snapshot Frame -->
                         <canvas id="captureCanvas" class="hidden"></canvas>
 
                         <!-- Preview Foto yang Sudah Ditangkap Sebelum Submit -->
-                        <img id="snapshotPreview" alt="Snapshot" class="hidden w-full h-full object-cover z-20">
+                        <img id="snapshotPreview" alt="Snapshot" class="hidden absolute inset-0 w-full h-full object-cover z-10">
 
-                        <!-- Panduan Biometrik Wajah (dihapus sesuai revisi UX) -->
+                        <!-- Overlay Standby (Kamera Mati Hingga Diklik/Tap) -->
+                        <button
+                            type="button"
+                            id="cameraStandbyOverlay"
+                            onclick="startCamera()"
+                            class="absolute inset-0 z-10 w-full h-full bg-slate-900 hover:bg-slate-800/95 flex flex-col items-center justify-center p-6 text-center text-white transition cursor-pointer group focus:outline-none">
+                            <div class="w-16 h-16 rounded-2xl bg-[#015987]/30 border border-sky-400/30 text-sky-300 flex items-center justify-center mb-3.5 group-hover:scale-105 transition">
+                                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                </svg>
+                            </div>
+                            <p class="text-sm font-bold text-white">Klik layar ini untuk mengaktifkan kamera</p>
+                            <p class="text-[11px] text-slate-300 mt-1">Pastikan izin kamera browser diizinkan</p>
+                        </button>
 
                         <!-- HUD Badge Atas Kamera -->
-                        <div class="absolute top-4 left-4 z-10 flex items-center gap-2 bg-slate-900/80 text-sky-200 text-[10px] font-semibold px-3 py-1.5 rounded-xl border border-sky-400/20 backdrop-blur-xs">
-                            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-                            <span id="cameraHudText">Live Camera</span>
+                        <div class="absolute top-4 left-4 z-10 flex items-center gap-2 bg-slate-900/80 text-sky-200 text-[10px] font-semibold px-3 py-1.5 rounded-xl border border-sky-400/20 backdrop-blur-xs pointer-events-none">
+                            <span id="cameraHudDot" class="w-2 h-2 rounded-full bg-slate-400"></span>
+                            <span id="cameraHudText">Kamera Standby</span>
                         </div>
 
                         <!-- Fallback jika Akses Kamera Ditolak / Tidak Tersedia -->
-                        <div id="cameraFallback" class="hidden absolute inset-0 bg-slate-900 flex flex-col items-center justify-center p-6 text-center text-white z-30 space-y-3">
+                        <div id="cameraFallback" class="hidden absolute inset-0 bg-slate-900 flex flex-col items-center justify-center p-6 text-center text-white z-20 space-y-3">
                             <svg class="w-10 h-10 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
                             </svg>
@@ -366,13 +380,14 @@
                     <!-- Kontrol Shutter & Konfirmasi Pengiriman -->
                     <div class="space-y-3 pt-2">
                         
-                        <!-- Mode 1: Tombol Shutter Ambil Foto (Default) -->
+                        <!-- Mode 1: Tombol Shutter Ambil Foto (Default: Disabled sampai kamera aktif) -->
                         <div id="shutterControl">
                             <button 
                                 type="button" 
                                 id="btnShutter" 
                                 onclick="takeSnapshot()"
-                                class="w-full py-3.5 bg-[#015987] hover:bg-[#01486e] text-white text-xs font-bold rounded-xl shadow-xs transition flex items-center justify-center gap-2">
+                                disabled
+                                class="w-full py-3.5 bg-[#015987] hover:bg-[#01486e] disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl shadow-xs transition flex items-center justify-center gap-2">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
@@ -672,12 +687,15 @@
     window.addEventListener('offline', checkNetworkStatus);
     checkNetworkStatus();
 
-    // Membuka Aliran Kamera Webcam WebRTC
+    // Membuka Aliran Kamera Webcam WebRTC (hanya dipanggil saat layar diklik/tap)
     async function startCamera() {
         const video = document.getElementById('cameraVideo');
+        const standby = document.getElementById('cameraStandbyOverlay');
         const fallback = document.getElementById('cameraFallback');
-        const guide = document.getElementById('biometricGuide');
         const errorMsg = document.getElementById('cameraErrorMsg');
+        const btnShutter = document.getElementById('btnShutter');
+        const hudText = document.getElementById('cameraHudText');
+        const hudDot = document.getElementById('cameraHudDot');
 
         if (!video) return;
 
@@ -697,12 +715,18 @@
 
             video.srcObject = mediaStream;
             video.classList.remove('hidden');
+            if (standby) standby.classList.add('hidden');
             if (fallback) fallback.classList.add('hidden');
-            if (guide) guide.classList.remove('hidden');
+            if (btnShutter) btnShutter.disabled = false;
+            if (hudText) hudText.innerText = 'Live Camera';
+            if (hudDot) hudDot.className = 'w-2 h-2 rounded-full bg-emerald-400 animate-ping';
         } catch (err) {
             console.error('Kamera gagal diakses:', err);
             if (video) video.classList.add('hidden');
-            if (guide) guide.classList.add('hidden');
+            if (standby) standby.classList.add('hidden');
+            if (btnShutter) btnShutter.disabled = true;
+            if (hudText) hudText.innerText = 'Kamera Nonaktif';
+            if (hudDot) hudDot.className = 'w-2 h-2 rounded-full bg-rose-500';
             if (fallback) {
                 fallback.classList.remove('hidden');
                 errorMsg.innerText = 'Kamera tidak dapat diakses (' + err.message + '). Pastikan peramban mengizinkan akses kamera.';
@@ -830,12 +854,7 @@
         document.getElementById('imagePreviewModal').classList.add('hidden');
     }
 
-    // Inisialisasi Kamera saat Halaman Terbuka (jika form check-in aktif)
-    document.addEventListener('DOMContentLoaded', function() {
-        @if($canCheckIn)
-            startCamera();
-        @endif
-    });
+    // Kamera tidak langsung aktif saat halaman dibuka (Click-to-Start melalui overlay standby).
 
     // Matikan stream kamera saat berpindah halaman
     window.addEventListener('beforeunload', function() {

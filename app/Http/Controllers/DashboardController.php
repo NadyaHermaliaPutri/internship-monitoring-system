@@ -39,10 +39,9 @@ class DashboardController extends Controller
      */
     public function pic(Request $request): View
     {
-        $mentoringSummary = $this->recapService->getPicDailyDashboard($request->user());
         $picDashboard = $this->picDashboardService->getSummary($request->user());
 
-        return view('dashboard.pic', compact('mentoringSummary', 'picDashboard'));
+        return view('dashboard.pic', compact('picDashboard'));
     }
 
     /**

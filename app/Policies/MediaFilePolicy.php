@@ -2,8 +2,6 @@
 
 namespace App\Policies;
 
-use App\Models\Attendance;
-use App\Models\LeaveRequest;
 use App\Models\Logbook;
 use App\Models\LogbookRevision;
 use App\Models\MediaFile;
@@ -18,8 +16,7 @@ class MediaFilePolicy
      * Sesuai aturan:
      * - Admin/HR: memiliki akses ke seluruh file bukti privat.
      * - Pemilik file: dapat mengakses berkas miliknya sendiri.
-     * - PIC: hanya dapat melihat bukti peserta magang yang sedang aktif dibimbingnya.
-     * - Peserta lain: dilarang keras (403 Forbidden).
+     * - PIC & peserta lain: dilarang mengakses kategori attendance_photo dan leave_evidence (403 Forbidden).
      */
     public function view(User $user, MediaFile $mediaFile): bool
     {
@@ -33,19 +30,13 @@ class MediaFilePolicy
             return true;
         }
 
-        // 3. Hak akses PIC untuk peserta bimbingan aktif
+        // 3. Hak akses PIC: dilarang untuk attendance_photo & leave_evidence; diizinkan untuk task_evidence, logbook_evidence, task_attachment
         if ($user->isPic()) {
-            if ($mediaFile->category === 'attendance_photo') {
-                $attendance = Attendance::where('photo_media_id', $mediaFile->id)->first();
-                if ($attendance && $user->isCurrentlyAssignedTo($attendance->intern_user_id)) {
-                    return true;
-                }
-            } elseif ($mediaFile->category === 'leave_evidence') {
-                $leave = LeaveRequest::where('evidence_media_id', $mediaFile->id)->first();
-                if ($leave && $user->isCurrentlyAssignedTo($leave->intern_user_id)) {
-                    return true;
-                }
-            } elseif ($mediaFile->category === 'task_evidence') {
+            if (in_array($mediaFile->category, ['attendance_photo', 'leave_evidence'], true)) {
+                return false;
+            }
+
+            if ($mediaFile->category === 'task_evidence') {
                 return TaskSubmission::query()
                     ->where('evidence_media_id', $mediaFile->id)
                     ->whereHas('task', function ($q) use ($user) {

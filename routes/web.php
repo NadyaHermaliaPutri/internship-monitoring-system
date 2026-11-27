@@ -81,12 +81,6 @@ Route::middleware('auth')->group(function () {
     // ==============================================================
     Route::middleware('role:pic')->prefix('pic')->name('pic.')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'pic'])->name('dashboard');
-        Route::prefix('presensi')->name('attendance.')->group(function () {
-            Route::get('/', [AttendanceController::class, 'picIndex'])->name('index');
-        });
-        Route::prefix('izin')->name('leave.')->group(function () {
-            Route::get('/', [LeaveRequestController::class, 'picIndex'])->name('index');
-        });
 
         // Modul 3: Monitoring & Review Logbook Peserta Bimbingan (PIC)
         Route::get('/logbooks', [LogbookController::class, 'index'])->name('logbooks.index');

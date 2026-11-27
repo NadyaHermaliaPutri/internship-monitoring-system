@@ -12,7 +12,7 @@ class LeaveRequestPolicy
      */
     public function viewAny(User $user): bool
     {
-        return true;
+        return $user->isAdmin() || $user->isIntern();
     }
 
     /**
@@ -20,7 +20,7 @@ class LeaveRequestPolicy
      * Aturan:
      * - Admin/HR: dapat melihat seluruh pengajuan izin.
      * - Peserta Magang: hanya dapat melihat pengajuan miliknya sendiri.
-     * - PIC: hanya dapat melihat pengajuan peserta yang aktif ditugaskan kepadanya di pic_assignments.
+     * - PIC: tidak memiliki akses ke modul izin/sakit (403 Forbidden).
      */
     public function view(User $user, LeaveRequest $leaveRequest): bool
     {
@@ -30,10 +30,6 @@ class LeaveRequestPolicy
 
         if ($user->isIntern()) {
             return $user->id === $leaveRequest->intern_user_id;
-        }
-
-        if ($user->isPic()) {
-            return $user->isCurrentlyAssignedTo($leaveRequest->intern_user_id);
         }
 
         return false;
