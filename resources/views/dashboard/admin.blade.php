@@ -117,41 +117,6 @@
 
     </div>
 
-    <!-- Banner Ringkasan Akun & Operasional Sistem -->
-    <div class="bg-gradient-to-r from-sky-50 to-indigo-50/50 border border-sky-100 rounded-2xl p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-[#015987] text-white flex items-center justify-center flex-shrink-0">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
-                </svg>
-            </div>
-            <div>
-                <h4 class="text-xs sm:text-sm font-bold text-slate-900 leading-tight">
-                    Status Operasional Kantor: <span class="text-[#015987]">{{ $adminSummary['day_status']['label'] ?? 'Hari Kerja' }}</span>
-                </h4>
-                <p class="text-[11px] text-slate-500 mt-0.5">
-                    {{ $adminSummary['day_status']['reason'] ?? 'Operasional PT WAN Teknologi Internasional' }} &bull; Jam Kerja 08.00 - 17.00 WIB
-                </p>
-            </div>
-            </div>
-        </div>
-
-        <div class="flex flex-wrap items-center gap-2 sm:gap-3 text-xs">
-            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-700 font-semibold shadow-2xs">
-                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-                <span>{{ $stats['total_active'] ?? 0 }} Akun Aktif</span>
-            </span>
-            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-700 font-semibold shadow-2xs">
-                <span class="w-2 h-2 rounded-full bg-sky-500"></span>
-                <span>{{ $stats['pic_active'] ?? $stats['total_active_pics'] ?? 0 }} PIC Mentor Aktif</span>
-            </span>
-            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-700 font-semibold shadow-2xs">
-                <span class="w-2 h-2 rounded-full bg-slate-400"></span>
-                <span>{{ $stats['inactive_users'] ?? 0 }} Nonaktif/Alumni</span>
-            </span>
-        </div>
-    </div>
-
     <!-- ============================================================== -->
     <!-- 2. GRID 2 KOLOM (PRESENSI, IZIN SAKIT, TUGAS, & SINYAL EWS)    -->
     <!-- ============================================================== -->
