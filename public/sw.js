@@ -1,4 +1,4 @@
-const CACHE_NAME = 'wantrace-static-v1';
+const CACHE_NAME = 'wantrace-static-v2';
 
 // Hanya aset statis aman yang di-cache (tidak pernah cache HTML dinamis, data privat, atau API)
 const PRECACHE_URLS = [
@@ -36,6 +36,11 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
     const { request } = event;
 
+    // 0. Abaikan request only-if-cached lintas mode agar prefetch/history Chrome tidak memicu TypeError
+    if (request.cache === 'only-if-cached' && request.mode !== 'same-origin') {
+        return;
+    }
+
     // 1. Transaksi tulis (POST, PUT, PATCH, DELETE) wajib langsung ke server (tidak ada offline queue)
     if (request.method !== 'GET') {
         return;
@@ -53,10 +58,14 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // 4. Navigasi halaman HTML: selalu ambil dari server; jika offline tampilkan offline.html
+    // 4. Navigasi halaman HTML: selalu ambil dari server (network-first); jika gagal tampilkan offline.html
     if (request.mode === 'navigate') {
         event.respondWith(
-            fetch(request).catch(() => caches.match('/offline.html'))
+            fetch(request).catch(async (error) => {
+                console.error('[SW] Navigation fetch failed:', request.url, error);
+                const offlineResponse = await caches.match('/offline.html');
+                return offlineResponse || Response.error();
+            })
         );
         return;
     }
