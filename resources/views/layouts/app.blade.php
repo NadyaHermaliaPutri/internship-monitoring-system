@@ -459,7 +459,7 @@
     <div class="flex-1 flex flex-col min-w-0 min-h-screen bg-[#eef4f8]">
         
         <!-- Top Header Navbar (Menyatu dengan background #eef4f8) -->
-        <header class="px-8 pt-7 pb-5 flex flex-col md:flex-row md:items-center justify-between gap-4 sticky top-0 z-20 bg-[#eef4f8] border-b border-slate-200/60 shadow-2xs flex-shrink-0">
+        <header class="px-8 pt-7 pb-5 flex flex-col md:flex-row md:items-center justify-between gap-4 sticky top-0 z-30 bg-[#eef4f8] border-b border-slate-200/60 shadow-2xs flex-shrink-0">
             <!-- Judul Halaman -->
             <div class="min-w-0 flex-1">
                 <div class="flex flex-wrap items-center gap-2.5">
@@ -514,7 +514,7 @@
         </header>
 
         <!-- Konten Utama Halaman -->
-        <main class="flex-1 px-8 pb-12 pt-6 overflow-y-auto">
+        <main class="relative z-0 flex-1 px-8 pb-12 pt-6">
             @yield('content')
         </main>
 
