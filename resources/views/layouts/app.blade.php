@@ -600,11 +600,14 @@
         </header>
 
         <!-- Konten Utama Halaman -->
-        <main class="relative z-0 flex-1 px-8 pb-12 pt-6">
+        <main class="flex-1 px-8 pb-12 pt-6">
             @yield('content')
         </main>
 
     </div>
+
+    <!-- Stack Modal Root-Level (di atas sidebar & topbar) -->
+    @stack('modals')
 
     <!-- Modal Pop-up Alert Sukses & Error Sesuai Figma WANTRACE -->
     @include('partials.alert-modal')

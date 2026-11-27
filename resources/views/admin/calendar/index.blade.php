@@ -436,10 +436,11 @@
 
 </div>
 
+@push('modals')
 <!-- ============================================================== -->
 <!-- 3. MODAL POP-UP PENETAPAN PENGECUALIAN KALENDER                -->
 <!-- ============================================================== -->
-<div id="calendarModal" class="fixed inset-0 z-50 hidden bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+<div id="calendarModal" class="fixed inset-0 z-50 hidden bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
     <div class="bg-white w-full max-w-lg rounded-2xl border border-slate-200/80 shadow-xl overflow-hidden transition-all transform scale-100">
         
         <!-- Header Modal -->
@@ -569,6 +570,7 @@
 
     </div>
 </div>
+@endpush
 
 <!-- Form tersembunyi untuk menghapus pengecualian kalender dari dalam modal -->
 <form id="modalDeleteForm" method="POST" action="" class="hidden">
