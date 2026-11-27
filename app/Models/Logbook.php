@@ -25,6 +25,7 @@ use Illuminate\Support\Facades\DB;
     'source',
     'task_id',
     'related_task_id',
+    'target_pic_user_id',
     'status',
     'reviewed_by',
     'reviewed_at',
@@ -98,6 +99,14 @@ class Logbook extends Model
         return $this->belongsTo(Task::class, 'related_task_id');
     }
 
+    /**
+     * PIC tujuan / pemberi tugas yang dipilih peserta saat mengisi logbook manual (nullable = Mandiri / Umum).
+     */
+    public function targetPic(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'target_pic_user_id');
+    }
+
     public function isManual(): bool
     {
         return $this->source === LogbookSource::Manual;
@@ -110,19 +119,96 @@ class Logbook extends Model
 
     public function canBeEditedByIntern(): bool
     {
-        return $this->isManual() && ($this->status?->isEditableByIntern() ?? false);
+        return $this->isManual() && ($this->status === null || $this->status->isEditableByIntern());
     }
 
     public function canBeCompletedByIntern(): bool
     {
         return $this->isManual()
-            && ($this->status?->isEditableByIntern() ?? false)
+            && ($this->status === null || $this->status->isEditableByIntern())
             && $this->activity_status === LogbookActivityStatus::SedangDikerjakan;
     }
 
     public function canBeReviewedByPic(): bool
     {
-        return $this->isManual() && $this->status === LogbookStatus::Pending;
+        return $this->isManual()
+            && $this->target_pic_user_id !== null
+            && $this->activity_status === LogbookActivityStatus::Selesai
+            && $this->status === LogbookStatus::Pending;
+    }
+
+    /**
+     * Mengembalikan 1 badge status utama yang bersih dan tidak bertumpuk untuk kolom STATUS.
+     *
+     * @return array{label: string, classes: string, title: ?string}
+     */
+    public function displayStatusBadge(): array
+    {
+        if ($this->isManual()) {
+            if ($this->status === LogbookStatus::Approved) {
+                return [
+                    'label' => 'Disetujui',
+                    'classes' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
+                    'title' => null,
+                ];
+            }
+
+            if ($this->status === LogbookStatus::RevisionRequested) {
+                return [
+                    'label' => 'Perlu Revisi',
+                    'classes' => 'bg-rose-50 text-rose-700 border-rose-200',
+                    'title' => null,
+                ];
+            }
+
+            if (
+                $this->status === LogbookStatus::Pending
+                && $this->target_pic_user_id !== null
+                && $this->activity_status === LogbookActivityStatus::Selesai
+            ) {
+                return [
+                    'label' => 'Menunggu Review',
+                    'classes' => 'bg-amber-50 text-amber-700 border-amber-200',
+                    'title' => null,
+                ];
+            }
+
+            if ($this->activity_status === LogbookActivityStatus::Selesai) {
+                return [
+                    'label' => 'Selesai',
+                    'classes' => 'bg-teal-50 text-teal-700 border-teal-200',
+                    'title' => null,
+                ];
+            }
+
+            return [
+                'label' => 'Sedang Dikerjakan',
+                'classes' => 'bg-sky-50 text-sky-700 border-sky-200',
+                'title' => null,
+            ];
+        }
+
+        if ($this->isTaskAssignment() && $this->task?->status) {
+            $taskStatusClasses = match ($this->task->status->value) {
+                'accepted' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
+                'revision_requested' => 'bg-rose-50 text-rose-700 border-rose-200',
+                'submitted', 'resubmitted' => 'bg-amber-50 text-amber-700 border-amber-200',
+                'in_progress' => 'bg-sky-50 text-sky-700 border-sky-200',
+                default => 'bg-slate-100 text-slate-700 border-slate-200',
+            };
+
+            return [
+                'label' => $this->task->status->label(),
+                'classes' => $taskStatusClasses,
+                'title' => 'Status real-time dari menu Tugas Peserta (read-only)',
+            ];
+        }
+
+        return [
+            'label' => 'Tercatat Otomatis',
+            'classes' => 'bg-sky-50/70 text-sky-700 border-sky-200/70',
+            'title' => null,
+        ];
     }
 
     /**
@@ -160,11 +246,10 @@ class Logbook extends Model
     }
 
     /**
-     * Scope visibilitas logbook untuk PIC dengan dukungan Multi-PIC:
+     * Scope visibilitas logbook untuk PIC:
      * 1) source = task_assignment -> hanya dilihat oleh PIC pembuat tugas pada task_id tersebut.
-     * 2) source = manual & related_task_id IS NOT NULL -> hanya dilihat oleh PIC pembuat tugas pada related_task_id tersebut.
-     * 3) source = manual & related_task_id IS NULL (Kegiatan Mandiri) -> dilihat oleh PIC yang memiliki pic_assignments
-     *    aktif pada log_date ATAU pernah memberi minimal 1 tugas di tabel tasks kepada peserta tersebut.
+     * 2) source = manual -> HANYA logbook yang ditujukan langsung ke PIC ini (target_pic_user_id = $picUserId).
+     *    Logbook Mandiri / Umum (target_pic_user_id IS NULL) tidak tampil di halaman PIC mana pun (hanya Peserta & Admin).
      */
     public function scopeForPic(Builder $query, int $picUserId): Builder
     {
@@ -180,39 +265,10 @@ class Logbook extends Model
                             ->where('tasks.pic_user_id', $picUserId);
                     });
             })
-            // 2. Logbook manual yang terikat ke tugas milik PIC ini
+            // 2. Logbook manual yang ditujukan khusus ke PIC ini
                 ->orWhere(function (Builder $q) use ($picUserId) {
                     $q->where('logbooks.source', LogbookSource::Manual->value)
-                        ->whereNotNull('logbooks.related_task_id')
-                        ->whereExists(function ($sub) use ($picUserId) {
-                            $sub->select(DB::raw(1))
-                                ->from('tasks')
-                                ->whereColumn('tasks.id', 'logbooks.related_task_id')
-                                ->where('tasks.pic_user_id', $picUserId);
-                        });
-                })
-            // 3. Logbook manual mandiri (related_task_id IS NULL) milik peserta bimbingan/penugasan PIC ini
-                ->orWhere(function (Builder $q) use ($picUserId) {
-                    $q->where('logbooks.source', LogbookSource::Manual->value)
-                        ->whereNull('logbooks.related_task_id')
-                        ->where(function (Builder $rel) use ($picUserId) {
-                            $rel->whereExists(function ($sub) use ($picUserId) {
-                                $sub->select(DB::raw(1))
-                                    ->from('pic_assignments')
-                                    ->whereColumn('pic_assignments.intern_user_id', 'logbooks.intern_user_id')
-                                    ->where('pic_assignments.pic_user_id', $picUserId)
-                                    ->whereColumn('pic_assignments.start_date', '<=', 'logbooks.log_date')
-                                    ->where(function ($dateQ) {
-                                        $dateQ->whereNull('pic_assignments.end_date')
-                                            ->orWhereColumn('pic_assignments.end_date', '>=', 'logbooks.log_date');
-                                    });
-                            })->orWhereExists(function ($sub) use ($picUserId) {
-                                $sub->select(DB::raw(1))
-                                    ->from('tasks')
-                                    ->whereColumn('tasks.intern_user_id', 'logbooks.intern_user_id')
-                                    ->where('tasks.pic_user_id', $picUserId);
-                            });
-                        });
+                        ->where('logbooks.target_pic_user_id', $picUserId);
                 });
         });
     }
@@ -283,25 +339,14 @@ class Logbook extends Model
                     ? $this->task->pic_user_id
                     : DB::table('tasks')->where('id', $this->task_id)->value('pic_user_id');
 
-                if ($taskPicId !== null) {
-                    return (int) $taskPicId === $picUserId;
-                }
+                return $taskPicId !== null && (int) $taskPicId === $picUserId;
             }
 
-            return self::isPicAssignedToInternOnDate($picUserId, $this->intern_user_id, $this->log_date->toDateString());
+            return false;
         }
 
-        // Logbook manual yang terikat ke suatu tugas PIC: hanya boleh dilihat oleh PIC pembuat tugas tersebut
-        if ($this->related_task_id !== null) {
-            $relatedPicId = $this->relationLoaded('relatedTask') && $this->relatedTask
-                ? $this->relatedTask->pic_user_id
-                : DB::table('tasks')->where('id', $this->related_task_id)->value('pic_user_id');
-
-            return (int) $relatedPicId === $picUserId;
-        }
-
-        // Logbook manual mandiri (related_task_id = null): boleh dilihat oleh semua PIC yang terkait dengan peserta
-        return self::isPicRelatedToIntern($picUserId, $this->intern_user_id, $this->log_date->toDateString());
+        // Logbook manual hanya boleh dilihat oleh PIC yang dipilih (target_pic_user_id); Mandiri (null) ditolak untuk PIC
+        return $this->target_pic_user_id !== null && (int) $this->target_pic_user_id === $picUserId;
     }
 
     /**
@@ -313,16 +358,6 @@ class Logbook extends Model
             return false;
         }
 
-        // Jika terkait tugas tertentu: HANYA PIC pembuat tugas tersebut yang boleh melakukan approval/revisi
-        if ($this->related_task_id !== null) {
-            $relatedPicId = $this->relationLoaded('relatedTask') && $this->relatedTask
-                ? $this->relatedTask->pic_user_id
-                : DB::table('tasks')->where('id', $this->related_task_id)->value('pic_user_id');
-
-            return (int) $relatedPicId === $picUserId;
-        }
-
-        // Jika kegiatan mandiri (related_task_id = null): hanya PIC pembimbing utama di pic_assignments aktif pada log_date
-        return self::isPicAssignedToInternOnDate($picUserId, $this->intern_user_id, $this->log_date->toDateString());
+        return (int) $this->target_pic_user_id === $picUserId;
     }
 }

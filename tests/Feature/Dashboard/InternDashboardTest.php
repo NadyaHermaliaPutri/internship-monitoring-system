@@ -112,6 +112,7 @@ class InternDashboardTest extends TestCase
 
         Logbook::factory()->create([
             'intern_user_id' => $intern->id,
+            'target_pic_user_id' => $pic->id,
             'log_date' => '2026-11-26',
             'title' => 'Logbook Pending Untuk PIC',
             'status' => LogbookStatus::Pending,

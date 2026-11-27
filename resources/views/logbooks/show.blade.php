@@ -68,52 +68,25 @@
 
                     @if ($logbook->isTaskAssignment())
                         <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-sky-50 text-sky-700 border border-sky-200">
-                            Otomatis Penugasan PIC
+                            Otomatis Tugas
                         </span>
-                    @elseif ($logbook->relatedTask)
+                    @elseif ($logbook->targetPic)
                         <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
-                            Terkait Tugas PIC ({{ $logbook->relatedTask->pic?->name ?? 'PIC' }})
+                            PIC: {{ $logbook->targetPic->name }}
                         </span>
                     @else
                         <span class="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-700">
-                            Kegiatan Mandiri / Umum
+                            Mandiri / Umum
                         </span>
                     @endif
 
-                    @if ($logbook->isManual() && $logbook->status)
-                        @php
-                            $statusClasses = match ($logbook->status->value) {
-                                'approved' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
-                                'revision_requested' => 'bg-rose-50 text-rose-700 border-rose-200',
-                                default => 'bg-amber-50 text-amber-700 border-amber-200',
-                            };
-                        @endphp
-                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold border {{ $statusClasses }}">
-                            {{ $logbook->status->label() }}
-                        </span>
-                        @if ($logbook->status->value !== 'approved' && $logbook->activity_status)
-                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-semibold border {{ $logbook->activity_status->badgeClasses() }}">
-                                Progres: {{ $logbook->activity_status->label() }}
-                            </span>
-                        @endif
-                    @elseif ($logbook->isTaskAssignment() && $logbook->task?->status)
-                        @php
-                            $taskStatusClasses = match ($logbook->task->status->value) {
-                                'accepted' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
-                                'revision_requested' => 'bg-rose-50 text-rose-700 border-rose-200',
-                                'submitted', 'resubmitted' => 'bg-amber-50 text-amber-700 border-amber-200',
-                                'in_progress' => 'bg-sky-50 text-sky-700 border-sky-200',
-                                default => 'bg-slate-100 text-slate-700 border-slate-200',
-                            };
-                        @endphp
-                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold border {{ $taskStatusClasses }}">
-                            Status Tugas: {{ $logbook->task->status->label() }}
-                        </span>
-                    @else
-                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-sky-50 text-sky-700 border border-sky-200">
-                            Tercatat Otomatis
-                        </span>
-                    @endif
+                    @php $statusBadge = $logbook->displayStatusBadge(); @endphp
+                    <span
+                        class="px-2.5 py-0.5 rounded-full text-[10px] font-bold border {{ $statusBadge['classes'] }}"
+                        @if ($statusBadge['title']) title="{{ $statusBadge['title'] }}" @endif
+                    >
+                        {{ $statusBadge['label'] }}
+                    </span>
                 </div>
 
                 <h2 class="text-lg font-extrabold text-slate-900">{{ $logbook->title }}</h2>

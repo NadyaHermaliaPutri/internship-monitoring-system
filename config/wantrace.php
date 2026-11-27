@@ -58,9 +58,9 @@ return [
             'directory' => 'logbook',
         ],
 
-        // File lampiran / brief / referensi tugas dari PIC (opsional, maks 10 MB)
+        // File lampiran / brief / referensi tugas dari PIC (opsional, maks 2 MB)
         'task_attachment' => [
-            'max_size_kb' => 10240, // 10 MB
+            'max_size_kb' => 2048, // 2 MB
             'mimes' => ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'jpg', 'jpeg', 'png', 'webp', 'zip', 'rar'],
             'directory' => 'tugas-lampiran',
         ],

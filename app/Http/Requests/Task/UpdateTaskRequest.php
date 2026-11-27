@@ -25,12 +25,12 @@ class UpdateTaskRequest extends FormRequest
      */
     public function rules(TaskService $taskService): array
     {
-        $maxSizeKb = (int) config('wantrace.uploads.task_attachment.max_size_kb', 10240);
+        $maxSizeKb = (int) config('wantrace.uploads.task_attachment.max_size_kb', 2048);
         $allowedMimes = implode(',', config('wantrace.uploads.task_attachment.mimes', ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'jpg', 'jpeg', 'png', 'webp', 'zip', 'rar']));
 
         return [
             'title' => ['required', 'string', 'max:180'],
-            'description' => ['required', 'string', 'min:10', 'max:5000'],
+            'description' => ['nullable', 'string', 'max:5000'],
             'attachment_file' => ['nullable', 'file', 'mimes:'.$allowedMimes, 'max:'.$maxSizeKb],
             'deadline_at' => [
                 'required',

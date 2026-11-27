@@ -96,14 +96,14 @@ class TaskAttachmentTest extends TestCase
             ->assertStatus(422)
             ->assertJsonValidationErrors('attachment_file');
 
-        // 2. Ukuran melebihi batas maksimal 10 MB (10240 KB)
+        // 2. Ukuran melebihi batas maksimal 2 MB (2048 KB), misal 2.5 MB (2560 KB)
         $this->actingAs($pic)
             ->postJson(route('pic.tasks.store'), [
                 'intern_user_id' => $intern->id,
                 'title' => 'Tugas Dengan File Terlalu Besar',
-                'description' => 'Mencoba mengunggah lampiran melebihi batas ukuran 10 MB.',
+                'description' => 'Mencoba mengunggah lampiran melebihi batas ukuran 2 MB.',
                 'deadline_at' => '2026-11-29 17:00',
-                'attachment_file' => UploadedFile::fake()->create('oversized.pdf', 11000, 'application/pdf'),
+                'attachment_file' => UploadedFile::fake()->create('oversized.pdf', 2560, 'application/pdf'),
             ])
             ->assertStatus(422)
             ->assertJsonValidationErrors('attachment_file');

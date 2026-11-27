@@ -63,13 +63,13 @@
 
             <div>
                 <label for="description" class="block text-xs font-bold text-slate-700 mb-1.5">
-                    Deskripsi & Spesifikasi Tugas <span class="text-rose-500">*</span>
+                    Deskripsi &amp; Spesifikasi Tugas <span class="text-slate-400 font-normal">(Opsional)</span>
                 </label>
                 <textarea
                     id="description"
                     name="description"
                     rows="5"
-                    required
+                    placeholder="Uraikan spesifikasi pekerjaan dan hasil yang perlu dikumpulkan peserta (opsional)..."
                     class="w-full px-3.5 py-2.5 text-xs rounded-xl border @error('description') border-rose-400 bg-rose-50/40 @else border-slate-200 bg-slate-50/60 @enderror text-slate-800"
                 >{{ old('description', $task->description) }}</textarea>
                 @error('description')
@@ -89,7 +89,7 @@
                     class="w-full px-3 py-2 text-xs rounded-xl border @error('attachment_file') border-rose-400 bg-rose-50/40 @else border-slate-200 bg-slate-50/60 @enderror text-slate-700 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-[#015987] file:text-white hover:file:bg-[#014467] file:cursor-pointer transition"
                 >
                 <p class="text-[11px] text-slate-400 mt-1">
-                    Format: PDF, DOC/DOCX, XLS/XLSX, PPT/PPTX, JPG/PNG/WEBP, ZIP/RAR • Maksimal <strong>10 MB</strong>. Biarkan kosong jika tidak ingin mengganti lampiran.
+                    Format: PDF, DOC/DOCX, XLS/XLSX, PPT/PPTX, JPG/PNG/WEBP, ZIP/RAR • Maksimal <strong>2 MB</strong>. Biarkan kosong jika tidak ingin mengganti lampiran.
                 </p>
                 @error('attachment_file')
                     <p class="text-[11px] text-rose-600 font-semibold mt-1">{{ $message }}</p>
