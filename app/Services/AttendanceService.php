@@ -5,10 +5,14 @@ namespace App\Services;
 use App\Models\Attendance;
 use App\Models\LeaveRequest;
 use App\Models\User;
+use App\Notifications\AttendanceCorrectedNotification;
+use App\Notifications\AttendanceRejectedNotification;
+use App\Notifications\AttendanceSubmittedNotification;
 use Carbon\Carbon;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
 use InvalidArgumentException;
 
 class AttendanceService
@@ -110,7 +114,16 @@ class AttendanceService
                     actor: $intern
                 );
 
-                return $existing->fresh();
+                $updated = $existing->fresh();
+
+                DB::afterCommit(function () use ($updated, $intern) {
+                    $admins = User::where('role', 'admin')->where('is_active', true)->get();
+                    if ($admins->isNotEmpty()) {
+                        Notification::send($admins, new AttendanceSubmittedNotification($updated, $intern, true));
+                    }
+                });
+
+                return $updated;
             });
         }
 
@@ -127,7 +140,7 @@ class AttendanceService
                     $media = $this->mediaStorageService->storeBase64Image($photoData, $intern, 'attendance_photo');
                 }
 
-                return Attendance::create([
+                $attendance = Attendance::create([
                     'intern_user_id' => $intern->id,
                     'attendance_date' => $todayDate,
                     'checked_in_at' => $now,
@@ -137,6 +150,15 @@ class AttendanceService
                     'reviewed_by' => null,
                     'notes' => $notes,
                 ]);
+
+                DB::afterCommit(function () use ($attendance, $intern) {
+                    $admins = User::where('role', 'admin')->where('is_active', true)->get();
+                    if ($admins->isNotEmpty()) {
+                        Notification::send($admins, new AttendanceSubmittedNotification($attendance, $intern, false));
+                    }
+                });
+
+                return $attendance;
             });
         } catch (QueryException $e) {
             // Error code 23000 adalah integrity constraint violation (duplicate key)
@@ -179,35 +201,45 @@ class AttendanceService
             throw new InvalidArgumentException("Status '{$newStatus}' tidak valid. Harus on_time atau late.");
         }
 
-        $oldValues = [
-            'status' => $attendance->status,
-            'notes' => $attendance->notes,
-            'reviewed_by' => $attendance->reviewed_by,
-        ];
+        return DB::transaction(function () use ($attendance, $admin, $newStatus, $reviewNotes) {
+            $oldValues = [
+                'status' => $attendance->status,
+                'notes' => $attendance->notes,
+                'reviewed_by' => $attendance->reviewed_by,
+            ];
 
-        $attendance->update([
-            'status' => $newStatus,
-            'reviewed_by' => $admin->id,
-            'notes' => $reviewNotes ?: $attendance->notes,
-        ]);
+            $attendance->update([
+                'status' => $newStatus,
+                'reviewed_by' => $admin->id,
+                'notes' => $reviewNotes ?: $attendance->notes,
+            ]);
 
-        $newValues = [
-            'status' => $attendance->status,
-            'notes' => $attendance->notes,
-            'reviewed_by' => $attendance->reviewed_by,
-        ];
+            $newValues = [
+                'status' => $attendance->status,
+                'notes' => $attendance->notes,
+                'reviewed_by' => $attendance->reviewed_by,
+            ];
 
-        // Audit Trail penting
-        $this->auditLogService->log(
-            action: 'attendance_corrected',
-            entityType: 'attendance',
-            entityId: $attendance->id,
-            oldValues: $oldValues,
-            newValues: $newValues,
-            actor: $admin
-        );
+            // Audit Trail penting
+            $this->auditLogService->log(
+                action: 'attendance_corrected',
+                entityType: 'attendance',
+                entityId: $attendance->id,
+                oldValues: $oldValues,
+                newValues: $newValues,
+                actor: $admin
+            );
 
-        return $attendance->fresh();
+            $updated = $attendance->fresh(['intern']);
+
+            DB::afterCommit(function () use ($updated, $admin, $newStatus, $reviewNotes) {
+                if ($updated->intern) {
+                    $updated->intern->notify(new AttendanceCorrectedNotification($updated, $admin, $newStatus, $reviewNotes));
+                }
+            });
+
+            return $updated;
+        });
     }
 
     /**
@@ -234,34 +266,44 @@ class AttendanceService
             throw new InvalidArgumentException('Alasan penolakan presensi wajib diisi.');
         }
 
-        $oldValues = [
-            'verification_status' => $attendance->verification_status,
-            'notes' => $attendance->notes,
-            'reviewed_by' => $attendance->reviewed_by,
-        ];
+        return DB::transaction(function () use ($attendance, $admin, $reason) {
+            $oldValues = [
+                'verification_status' => $attendance->verification_status,
+                'notes' => $attendance->notes,
+                'reviewed_by' => $attendance->reviewed_by,
+            ];
 
-        $attendance->update([
-            'verification_status' => 'rejected',
-            'reviewed_by' => $admin->id,
-            'notes' => $reason,
-        ]);
+            $attendance->update([
+                'verification_status' => 'rejected',
+                'reviewed_by' => $admin->id,
+                'notes' => $reason,
+            ]);
 
-        $newValues = [
-            'verification_status' => 'rejected',
-            'notes' => $reason,
-            'reviewed_by' => $admin->id,
-        ];
+            $newValues = [
+                'verification_status' => 'rejected',
+                'notes' => $reason,
+                'reviewed_by' => $admin->id,
+            ];
 
-        // Audit Trail Penolakan
-        $this->auditLogService->log(
-            action: 'attendance_rejected',
-            entityType: 'attendance',
-            entityId: $attendance->id,
-            oldValues: $oldValues,
-            newValues: $newValues,
-            actor: $admin
-        );
+            // Audit Trail Penolakan
+            $this->auditLogService->log(
+                action: 'attendance_rejected',
+                entityType: 'attendance',
+                entityId: $attendance->id,
+                oldValues: $oldValues,
+                newValues: $newValues,
+                actor: $admin
+            );
 
-        return $attendance->fresh();
+            $updated = $attendance->fresh(['intern']);
+
+            DB::afterCommit(function () use ($updated, $admin, $reason) {
+                if ($updated->intern) {
+                    $updated->intern->notify(new AttendanceRejectedNotification($updated, $admin, $reason));
+                }
+            });
+
+            return $updated;
+        });
     }
 }

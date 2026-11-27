@@ -40,7 +40,7 @@ class AppServiceProvider extends ServiceProvider
             $user = auth()->user();
             $headerNotifications = $user instanceof User
                 ? app(HeaderNotificationService::class)->forUser($user)
-                : ['count' => 0, 'items' => []];
+                : ['count' => 0, 'unread_db_count' => 0, 'items' => []];
 
             $view->with('headerNotifications', $headerNotifications);
         });

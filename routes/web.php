@@ -7,6 +7,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\InternProfileController;
 use App\Http\Controllers\LeaveRequestController;
 use App\Http\Controllers\LogbookController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PicProfileController;
 use App\Http\Controllers\PrivateMediaController;
 use App\Http\Controllers\TaskController;
@@ -32,6 +33,11 @@ Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'destroy'])->name('logout');
 
     Route::get('/media/private/{mediaFile}', [PrivateMediaController::class, 'show'])->name('media.private.show');
+
+    // Notifikasi In-App (Database Notifications)
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
+    Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
 
     // ==============================================================
     // 1. DASHBOARD & MANAJEMEN SISTEM ADMINISTRATOR / HR
