@@ -518,15 +518,15 @@
     <!-- ============================================================== -->
     <!-- AREA KANAN: TOP HEADER & KONTEN UTAMA -->
     <!-- ============================================================== -->
-    <div class="flex-1 flex flex-col min-w-0 min-h-screen bg-[#eef4f8]">
+    <div class="flex-1 flex flex-col min-w-0 h-screen overflow-hidden bg-[#eef4f8]">
         
         <!-- Banner Peringatan Offline (PWA Network Check) -->
-        <div id="network-offline-banner" class="hidden bg-rose-600 text-white text-xs font-medium px-4 py-2.5 text-center">
+        <div id="network-offline-banner" class="hidden bg-rose-600 text-white text-xs font-medium px-4 py-2.5 text-center flex-shrink-0">
             Koneksi internet terputus. Presensi, pengajuan izin, logbook, dan pengiriman tugas memerlukan koneksi internet aktif.
         </div>
 
-        <!-- Top Header Navbar -->
-        <header class="px-4 sm:px-6 lg:px-8 pt-5 lg:pt-7 pb-4 lg:pb-5 flex flex-col md:flex-row md:items-center justify-between gap-4 sticky top-0 z-30 bg-[#eef4f8]/95 backdrop-blur-xs border-b border-slate-200/60 shadow-2xs flex-shrink-0">
+        <!-- Top Header Navbar (Flex item normal di atas main agar konten tidak terpotong) -->
+        <header class="px-4 sm:px-6 lg:px-8 pt-5 lg:pt-7 pb-4 lg:pb-5 flex flex-col md:flex-row md:items-center justify-between gap-4 z-30 bg-[#eef4f8] border-b border-slate-200/60 shadow-2xs flex-shrink-0">
             <!-- Judul Halaman + Tombol Hamburger Mobile -->
             <div class="flex items-start gap-3 min-w-0 flex-1">
                 <button type="button" id="mobile-sidebar-open" class="lg:hidden p-2.5 rounded-xl bg-white border border-slate-200/80 text-[#015987] shadow-xs mt-0.5 flex-shrink-0" aria-label="Buka menu navigasi">
@@ -596,6 +596,7 @@
                     <!-- Tombol & Dropdown Notifikasi Real-Time -->
                     @php
                         $notifCount = $headerNotifications['count'] ?? 0;
+                        $unreadDbCount = $headerNotifications['unread_db_count'] ?? 0;
                         $notifItems = $headerNotifications['items'] ?? [];
                     @endphp
                     <div id="header-notification-wrapper" class="relative">
@@ -610,14 +611,12 @@
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
                             </svg>
-                            @if ($notifCount > 0)
-                                <span
-                                    id="header-notification-badge"
-                                    class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center ring-2 ring-white leading-none"
-                                >
-                                    {{ $notifCount > 9 ? '9+' : $notifCount }}
-                                </span>
-                            @endif
+                            <span
+                                id="header-notification-badge"
+                                class="{{ $notifCount > 0 ? '' : 'hidden' }} absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center ring-2 ring-white leading-none"
+                            >
+                                {{ $notifCount > 9 ? '9+' : $notifCount }}
+                            </span>
                         </button>
 
                         <div
@@ -626,22 +625,26 @@
                         >
                             <div class="px-4 py-3 bg-[#015987]/5 border-b border-slate-100 flex items-center justify-between gap-2">
                                 <span class="text-xs font-extrabold text-[#015987]">Notifikasi</span>
-                                @if ($notifCount > 0)
-                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-600 border border-rose-200">
-                                        {{ $notifCount }} perlu perhatian
+                                <div class="flex items-center gap-2">
+                                    <form id="header-notification-readall-form" method="POST" action="{{ route('notifications.read-all') }}" class="{{ $unreadDbCount > 0 ? '' : 'hidden' }}">
+                                        @csrf
+                                        <button type="submit" class="text-[10px] font-bold text-[#015987] hover:underline">
+                                            Tandai Semua Dibaca
+                                        </button>
+                                    </form>
+                                    <span id="header-notification-count-pill" class="{{ $notifCount > 0 ? 'px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-600 border border-rose-200' : 'text-[11px] text-slate-400' }}">
+                                        {{ $notifCount > 0 ? "{$notifCount} perlu perhatian" : 'Semua beres' }}
                                     </span>
-                                @else
-                                    <span class="text-[11px] text-slate-400">Semua beres</span>
-                                @endif
+                                </div>
                             </div>
 
+                            <div id="header-notification-list" class="max-h-80 overflow-y-auto divide-y divide-slate-100">
                             @if (empty($notifItems))
                                 <div class="px-5 py-8 text-center">
                                     <p class="text-xs font-semibold text-slate-500">Tidak ada notifikasi baru</p>
                                     <p class="text-[11px] text-slate-400 mt-1">Semua tugas dan catatan Anda sudah terpantau.</p>
                                 </div>
                             @else
-                                <div class="max-h-80 overflow-y-auto divide-y divide-slate-100">
                                     @foreach ($notifItems as $notif)
                                         @php
                                             $iconBg = match ($notif['type']) {
@@ -649,33 +652,69 @@
                                                 'warning' => 'bg-amber-50 text-amber-600',
                                                 default => 'bg-sky-50 text-[#015987]',
                                             };
+                                            $isDbNotif = $notif['is_database'] ?? false;
                                         @endphp
-                                        <a
-                                            href="{{ $notif['url'] }}"
-                                            class="flex items-start gap-3 px-4 py-3 hover:bg-slate-50 transition"
-                                        >
-                                            <span class="w-8 h-8 rounded-xl {{ $iconBg }} flex items-center justify-center shrink-0 mt-0.5">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                                    @if ($notif['type'] === 'danger')
-                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-                                                    @elseif ($notif['type'] === 'warning')
-                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                                    @else
-                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                        @if ($isDbNotif)
+                                            <form method="POST" action="{{ route('notifications.read', $notif['id']) }}">
+                                                @csrf
+                                                <button type="submit" class="w-full text-left flex items-start gap-3 px-4 py-3 bg-sky-50/30 hover:bg-slate-50 transition cursor-pointer">
+                                                    <span class="w-8 h-8 rounded-xl {{ $iconBg }} flex items-center justify-center shrink-0 mt-0.5">
+                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                            @if ($notif['type'] === 'danger')
+                                                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                                                            @elseif ($notif['type'] === 'warning')
+                                                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                                            @else
+                                                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                                            @endif
+                                                        </svg>
+                                                    </span>
+                                                    <div class="min-w-0 flex-1">
+                                                        <div class="flex items-center justify-between gap-2">
+                                                            <p class="text-xs font-bold text-slate-800">{{ $notif['title'] }}</p>
+                                                            <span class="w-2 h-2 rounded-full bg-[#015987] shrink-0" title="Belum dibaca"></span>
+                                                        </div>
+                                                        <p class="text-[11px] text-slate-500 mt-0.5 leading-snug">{{ $notif['message'] }}</p>
+                                                        @if (! empty($notif['meta']))
+                                                            <p class="text-[10px] font-semibold text-slate-400 mt-1">{{ $notif['meta'] }}</p>
+                                                        @endif
+                                                    </div>
+                                                </button>
+                                            </form>
+                                        @else
+                                            <a
+                                                href="{{ $notif['url'] }}"
+                                                class="flex items-start gap-3 px-4 py-3 hover:bg-slate-50 transition"
+                                            >
+                                                <span class="w-8 h-8 rounded-xl {{ $iconBg }} flex items-center justify-center shrink-0 mt-0.5">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                        @if ($notif['type'] === 'danger')
+                                                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                                                        @elseif ($notif['type'] === 'warning')
+                                                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                                        @else
+                                                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                                        @endif
+                                                    </svg>
+                                                </span>
+                                                <div class="min-w-0 flex-1">
+                                                    <p class="text-xs font-bold text-slate-800">{{ $notif['title'] }}</p>
+                                                    <p class="text-[11px] text-slate-500 mt-0.5 leading-snug">{{ $notif['message'] }}</p>
+                                                    @if (! empty($notif['meta']))
+                                                        <p class="text-[10px] font-semibold text-slate-400 mt-1">{{ $notif['meta'] }}</p>
                                                     @endif
-                                                </svg>
-                                            </span>
-                                            <div class="min-w-0 flex-1">
-                                                <p class="text-xs font-bold text-slate-800">{{ $notif['title'] }}</p>
-                                                <p class="text-[11px] text-slate-500 mt-0.5 leading-snug">{{ $notif['message'] }}</p>
-                                                @if (! empty($notif['meta']))
-                                                    <p class="text-[10px] font-semibold text-slate-400 mt-1">{{ $notif['meta'] }}</p>
-                                                @endif
-                                            </div>
-                                        </a>
+                                                </div>
+                                            </a>
+                                        @endif
                                     @endforeach
-                                </div>
                             @endif
+                            </div>
+
+                            <div class="px-4 py-2.5 bg-slate-50 border-t border-slate-100 text-center">
+                                <a href="{{ route('notifications.index') }}" class="text-[11px] font-bold text-[#015987] hover:underline">
+                                    Lihat Semua Notifikasi &rarr;
+                                </a>
+                            </div>
                         </div>
                     </div>
                 @endif
@@ -683,7 +722,7 @@
         </header>
 
         <!-- Konten Utama Halaman -->
-        <main class="flex-1 px-4 sm:px-6 lg:px-8 pb-12 pt-4 lg:pt-6 overflow-y-auto">
+        <main class="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 pb-12 pt-4 lg:pt-6">
             @yield('content')
         </main>
 
@@ -691,6 +730,9 @@
 
     <!-- Stack Modal Root-Level (di atas sidebar & topbar) -->
     @stack('modals')
+
+    <!-- Toast Notifikasi Live Polling -->
+    <div id="live-notification-toast" class="fixed bottom-5 right-5 z-50 max-w-sm w-[calc(100vw-2.5rem)] space-y-2 pointer-events-none"></div>
 
     <!-- Modal Pop-up Alert Sukses & Error Sesuai Figma WANTRACE -->
     @include('partials.alert-modal')
@@ -805,6 +847,176 @@
                 document.addEventListener('keydown', (event) => {
                     if (event.key === 'Escape' && !dropdown.classList.contains('hidden')) {
                         closeDropdown();
+                    }
+                });
+
+                // Live Polling Notifikasi In-App (setiap 5 detik saat tab aktif)
+                const feedUrl = @json(route('notifications.feed'));
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+                const badgeEl = document.getElementById('header-notification-badge');
+                const pillEl = document.getElementById('header-notification-count-pill');
+                const readAllForm = document.getElementById('header-notification-readall-form');
+                const listEl = document.getElementById('header-notification-list');
+                const toastContainer = document.getElementById('live-notification-toast');
+
+                const initialItems = @json($headerNotifications['items'] ?? []);
+                const knownDbIds = new Set(
+                    (initialItems || []).filter(i => i.is_database && i.id).map(i => String(i.id))
+                );
+
+                function escapeHtml(str) {
+                    return String(str ?? '')
+                        .replace(/&/g, '&amp;')
+                        .replace(/</g, '&lt;')
+                        .replace(/>/g, '&gt;')
+                        .replace(/"/g, '&quot;')
+                        .replace(/'/g, '&#039;');
+                }
+
+                function iconSvg(type) {
+                    if (type === 'danger') {
+                        return '<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>';
+                    }
+                    if (type === 'warning') {
+                        return '<path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>';
+                    }
+                    return '<path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>';
+                }
+
+                function iconBgClass(type) {
+                    if (type === 'danger') return 'bg-rose-50 text-rose-500';
+                    if (type === 'warning') return 'bg-amber-50 text-amber-600';
+                    return 'bg-sky-50 text-[#015987]';
+                }
+
+                function showToast(item) {
+                    if (!toastContainer) return;
+                    const toast = document.createElement('div');
+                    toast.className = 'pointer-events-auto bg-white border border-sky-200 shadow-xl rounded-2xl p-4 flex items-start gap-3 transition-all';
+                    toast.innerHTML = `
+                        <span class="w-8 h-8 rounded-xl ${iconBgClass(item.type)} flex items-center justify-center shrink-0 mt-0.5">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">${iconSvg(item.type)}</svg>
+                        </span>
+                        <div class="min-w-0 flex-1">
+                            <a href="${escapeHtml(item.action_url || item.url || '#')}" class="block group">
+                                <p class="text-xs font-bold text-[#015987] group-hover:underline">${escapeHtml(item.title)}</p>
+                                <p class="text-[11px] text-slate-600 mt-0.5 leading-snug">${escapeHtml(item.message)}</p>
+                            </a>
+                        </div>
+                        <button type="button" class="text-slate-400 hover:text-slate-600 text-sm leading-none px-1" aria-label="Tutup">&times;</button>
+                    `;
+                    toast.querySelector('button')?.addEventListener('click', () => toast.remove());
+                    toastContainer.appendChild(toast);
+                    setTimeout(() => toast.remove(), 6000);
+                }
+
+                function renderDropdown(data) {
+                    const count = Number(data.unread_count || 0);
+                    const unreadDb = Number(data.unread_db_count || 0);
+                    const items = Array.isArray(data.items) ? data.items : [];
+
+                    if (badgeEl) {
+                        if (count > 0) {
+                            badgeEl.textContent = count > 9 ? '9+' : String(count);
+                            badgeEl.classList.remove('hidden');
+                        } else {
+                            badgeEl.classList.add('hidden');
+                        }
+                    }
+
+                    if (pillEl) {
+                        if (count > 0) {
+                            pillEl.textContent = `${count} perlu perhatian`;
+                            pillEl.className = 'px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-600 border border-rose-200';
+                        } else {
+                            pillEl.textContent = 'Semua beres';
+                            pillEl.className = 'text-[11px] text-slate-400';
+                        }
+                    }
+
+                    if (readAllForm) {
+                        readAllForm.classList.toggle('hidden', unreadDb <= 0);
+                    }
+
+                    if (listEl) {
+                        if (items.length === 0) {
+                            listEl.innerHTML = `
+                                <div class="px-5 py-8 text-center">
+                                    <p class="text-xs font-semibold text-slate-500">Tidak ada notifikasi baru</p>
+                                    <p class="text-[11px] text-slate-400 mt-1">Semua tugas dan catatan Anda sudah terpantau.</p>
+                                </div>
+                            `;
+                        } else {
+                            listEl.innerHTML = items.map(item => {
+                                const bg = iconBgClass(item.type);
+                                const svg = iconSvg(item.type);
+                                const metaHtml = item.meta ? `<p class="text-[10px] font-semibold text-slate-400 mt-1">${escapeHtml(item.meta)}</p>` : '';
+                                if (item.is_database && item.read_url) {
+                                    return `
+                                        <form method="POST" action="${escapeHtml(item.read_url)}">
+                                            <input type="hidden" name="_token" value="${escapeHtml(csrfToken)}">
+                                            <button type="submit" class="w-full text-left flex items-start gap-3 px-4 py-3 bg-sky-50/30 hover:bg-slate-50 transition cursor-pointer">
+                                                <span class="w-8 h-8 rounded-xl ${bg} flex items-center justify-center shrink-0 mt-0.5">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">${svg}</svg>
+                                                </span>
+                                                <div class="min-w-0 flex-1">
+                                                    <div class="flex items-center justify-between gap-2">
+                                                        <p class="text-xs font-bold text-slate-800">${escapeHtml(item.title)}</p>
+                                                        <span class="w-2 h-2 rounded-full bg-[#015987] shrink-0" title="Belum dibaca"></span>
+                                                    </div>
+                                                    <p class="text-[11px] text-slate-500 mt-0.5 leading-snug">${escapeHtml(item.message)}</p>
+                                                    ${metaHtml}
+                                                </div>
+                                            </button>
+                                        </form>
+                                    `;
+                                }
+                                return `
+                                    <a href="${escapeHtml(item.url || '#')}" class="flex items-start gap-3 px-4 py-3 hover:bg-slate-50 transition">
+                                        <span class="w-8 h-8 rounded-xl ${bg} flex items-center justify-center shrink-0 mt-0.5">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">${svg}</svg>
+                                        </span>
+                                        <div class="min-w-0 flex-1">
+                                            <p class="text-xs font-bold text-slate-800">${escapeHtml(item.title)}</p>
+                                            <p class="text-[11px] text-slate-500 mt-0.5 leading-snug">${escapeHtml(item.message)}</p>
+                                            ${metaHtml}
+                                        </div>
+                                    </a>
+                                `;
+                            }).join('');
+                        }
+                    }
+                }
+
+                async function pollNotifications() {
+                    if (document.visibilityState !== 'visible') return;
+                    try {
+                        const res = await fetch(feedUrl, {
+                            headers: {
+                                'Accept': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest'
+                            },
+                            credentials: 'same-origin'
+                        });
+                        if (!res.ok) return;
+                        const data = await res.json();
+                        const items = Array.isArray(data.items) ? data.items : [];
+                        items.forEach(item => {
+                            if (item.is_database && item.id && !knownDbIds.has(String(item.id))) {
+                                knownDbIds.add(String(item.id));
+                                showToast(item);
+                            }
+                        });
+                        renderDropdown(data);
+                    } catch (err) {
+                        // Abaikan error jaringan sementara saat polling
+                    }
+                }
+
+                setInterval(pollNotifications, 5000);
+                document.addEventListener('visibilitychange', () => {
+                    if (document.visibilityState === 'visible') {
+                        pollNotifications();
                     }
                 });
             }

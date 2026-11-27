@@ -14,21 +14,54 @@ use Illuminate\Support\Facades\Schema;
 class HeaderNotificationService
 {
     /**
-     * Mengambil ringkasan notifikasi real-time tanpa tabel tambahan sesuai role pengguna.
+     * Mengambil ringkasan notifikasi real-time (gabungan Database Notifications & pengingat Modul 3) sesuai role pengguna.
      *
-     * @return array{count: int, items: array<int, array{type: string, title: string, message: string, url: string, meta: ?string}>}
+     * @return array{count: int, unread_db_count: int, items: array<int, array<string, mixed>>}
      */
     public function forUser(User $user, int $limit = 8): array
     {
-        $items = match ($user->role) {
+        $dbItems = [];
+        $unreadDbCount = 0;
+
+        if (Schema::hasTable('notifications')) {
+            $unreadDbCount = $user->unreadNotifications()->count();
+            $dbNotifications = $user->unreadNotifications()
+                ->latest()
+                ->limit($limit)
+                ->get();
+
+            foreach ($dbNotifications as $notif) {
+                $data = $notif->data ?? [];
+                $dbItems[] = [
+                    'id' => $notif->id,
+                    'is_database' => true,
+                    'is_unread' => is_null($notif->read_at),
+                    'category' => $data['category'] ?? 'system',
+                    'type' => $data['type'] ?? 'info',
+                    'title' => $data['title'] ?? 'Notifikasi',
+                    'message' => $data['message'] ?? '',
+                    'url' => $data['action_url'] ?? route('notifications.index'),
+                    'action_url' => $data['action_url'] ?? route('notifications.index'),
+                    'read_url' => route('notifications.read', $notif->id),
+                    'meta' => $notif->created_at
+                        ? $notif->created_at->timezone(config('wantrace.timezone', 'Asia/Jakarta'))->translatedFormat('d M Y, H:i') . ' WIB'
+                        : null,
+                ];
+            }
+        }
+
+        $computedItems = match ($user->role) {
             'intern' => $this->forIntern($user),
             'pic' => $this->forPic($user),
             'admin' => $this->forAdmin(),
             default => [],
         };
 
+        $items = array_merge($dbItems, $computedItems);
+
         return [
             'count' => count($items),
+            'unread_db_count' => $unreadDbCount,
             'items' => array_slice($items, 0, $limit),
         ];
     }

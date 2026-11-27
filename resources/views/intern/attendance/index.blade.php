@@ -317,17 +317,17 @@
                         </div>
                     @endif
                     
-                    <!-- Viewport Kamera Selfie Langsung WebRTC (Click-to-Start & Bounded Container) -->
-                    <div class="relative w-full aspect-video max-h-[420px] bg-slate-900 rounded-2xl overflow-hidden shadow-inner">
+                    <!-- Viewport Kamera Selfie Langsung WebRTC (Click-to-Start & Bounded 4:3 Container) -->
+                    <div class="relative w-full max-w-xl mx-auto aspect-[4/3] min-h-[320px] sm:min-h-[380px] bg-slate-950 rounded-2xl overflow-hidden shadow-inner">
                         
                         <!-- Video Stream dari WebRTC -->
-                        <video id="cameraVideo" autoplay playsinline class="hidden absolute inset-0 w-full h-full object-cover transform scale-x-[-1]"></video>
+                        <video id="cameraVideo" autoplay playsinline class="hidden absolute inset-0 w-full h-full object-contain transform scale-x-[-1]"></video>
                         
                         <!-- Canvas Tersembunyi untuk Snapshot Frame -->
                         <canvas id="captureCanvas" class="hidden"></canvas>
 
                         <!-- Preview Foto yang Sudah Ditangkap Sebelum Submit -->
-                        <img id="snapshotPreview" alt="Snapshot" class="hidden absolute inset-0 w-full h-full object-cover z-10">
+                        <img id="snapshotPreview" alt="Snapshot" class="hidden absolute inset-0 w-full h-full object-contain z-10">
 
                         <!-- Overlay Standby (Kamera Mati Hingga Diklik/Tap) -->
                         <button

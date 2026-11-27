@@ -4,9 +4,12 @@ namespace App\Services;
 
 use App\Models\LeaveRequest;
 use App\Models\User;
+use App\Notifications\LeaveRequestReviewedNotification;
+use App\Notifications\LeaveRequestSubmittedNotification;
 use Carbon\Carbon;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
 use InvalidArgumentException;
 
 class LeaveRequestService
@@ -64,7 +67,7 @@ class LeaveRequestService
                 $evidenceMediaId = $media->id;
             }
 
-            return LeaveRequest::create([
+            $leaveRequest = LeaveRequest::create([
                 'intern_user_id' => $intern->id,
                 'leave_type' => $leaveType,
                 'start_date' => $start->format('Y-m-d'),
@@ -76,6 +79,15 @@ class LeaveRequestService
                 'reviewed_at' => null,
                 'review_notes' => null,
             ]);
+
+            DB::afterCommit(function () use ($leaveRequest, $intern) {
+                $admins = User::where('role', 'admin')->where('is_active', true)->get();
+                if ($admins->isNotEmpty()) {
+                    Notification::send($admins, new LeaveRequestSubmittedNotification($leaveRequest, $intern));
+                }
+            });
+
+            return $leaveRequest;
         });
     }
 
@@ -100,40 +112,50 @@ class LeaveRequestService
             throw new InvalidArgumentException("Keputusan '{$decision}' tidak valid. Harus approved atau rejected.");
         }
 
-        $oldValues = [
-            'status' => $leaveRequest->status,
-            'reviewed_by' => $leaveRequest->reviewed_by,
-            'reviewed_at' => $leaveRequest->reviewed_at?->toDateTimeString(),
-            'review_notes' => $leaveRequest->review_notes,
-        ];
+        return DB::transaction(function () use ($leaveRequest, $admin, $decision, $reviewNotes) {
+            $oldValues = [
+                'status' => $leaveRequest->status,
+                'reviewed_by' => $leaveRequest->reviewed_by,
+                'reviewed_at' => $leaveRequest->reviewed_at?->toDateTimeString(),
+                'review_notes' => $leaveRequest->review_notes,
+            ];
 
-        $now = $this->calendarService->getNow();
+            $now = $this->calendarService->getNow();
 
-        $leaveRequest->update([
-            'status' => $decision,
-            'reviewed_by' => $admin->id,
-            'reviewed_at' => $now,
-            'review_notes' => $reviewNotes,
-        ]);
+            $leaveRequest->update([
+                'status' => $decision,
+                'reviewed_by' => $admin->id,
+                'reviewed_at' => $now,
+                'review_notes' => $reviewNotes,
+            ]);
 
-        $newValues = [
-            'status' => $leaveRequest->status,
-            'reviewed_by' => $leaveRequest->reviewed_by,
-            'reviewed_at' => $leaveRequest->reviewed_at->toDateTimeString(),
-            'review_notes' => $leaveRequest->review_notes,
-        ];
+            $newValues = [
+                'status' => $leaveRequest->status,
+                'reviewed_by' => $leaveRequest->reviewed_by,
+                'reviewed_at' => $leaveRequest->reviewed_at->toDateTimeString(),
+                'review_notes' => $leaveRequest->review_notes,
+            ];
 
-        // Catat jejak audit keputusan
-        $actionName = $decision === 'approved' ? 'leave_request_approved' : 'leave_request_rejected';
-        $this->auditLogService->log(
-            action: $actionName,
-            entityType: 'leave_requests',
-            entityId: $leaveRequest->id,
-            oldValues: $oldValues,
-            newValues: $newValues,
-            actor: $admin
-        );
+            // Catat jejak audit keputusan
+            $actionName = $decision === 'approved' ? 'leave_request_approved' : 'leave_request_rejected';
+            $this->auditLogService->log(
+                action: $actionName,
+                entityType: 'leave_requests',
+                entityId: $leaveRequest->id,
+                oldValues: $oldValues,
+                newValues: $newValues,
+                actor: $admin
+            );
 
-        return $leaveRequest->fresh();
+            $updated = $leaveRequest->fresh(['intern']);
+
+            DB::afterCommit(function () use ($updated, $admin) {
+                if ($updated->intern) {
+                    $updated->intern->notify(new LeaveRequestReviewedNotification($updated, $admin));
+                }
+            });
+
+            return $updated;
+        });
     }
 }
