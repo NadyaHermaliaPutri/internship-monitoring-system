@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\HeaderNotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -9,6 +10,27 @@ use Illuminate\View\View;
 
 class NotificationController extends Controller
 {
+    public function __construct(
+        protected HeaderNotificationService $headerNotificationService
+    ) {}
+
+    /**
+     * Endpoint JSON ringan untuk live polling notifikasi in-app.
+     */
+    public function feed(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        abort_unless($user && $user->is_active, 403, 'Akun Anda tidak aktif.');
+
+        $feed = $this->headerNotificationService->forUser($user, 8);
+
+        return response()->json([
+            'unread_count' => $feed['count'],
+            'unread_db_count' => $feed['unread_db_count'],
+            'items' => $feed['items'],
+        ]);
+    }
     /**
      * Menampilkan daftar notifikasi milik pengguna yang sedang login.
      */

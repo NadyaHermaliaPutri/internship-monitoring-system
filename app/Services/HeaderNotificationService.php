@@ -35,10 +35,14 @@ class HeaderNotificationService
                 $dbItems[] = [
                     'id' => $notif->id,
                     'is_database' => true,
+                    'is_unread' => is_null($notif->read_at),
+                    'category' => $data['category'] ?? 'system',
                     'type' => $data['type'] ?? 'info',
                     'title' => $data['title'] ?? 'Notifikasi',
                     'message' => $data['message'] ?? '',
                     'url' => $data['action_url'] ?? route('notifications.index'),
+                    'action_url' => $data['action_url'] ?? route('notifications.index'),
+                    'read_url' => route('notifications.read', $notif->id),
                     'meta' => $notif->created_at
                         ? $notif->created_at->timezone(config('wantrace.timezone', 'Asia/Jakarta'))->translatedFormat('d M Y, H:i') . ' WIB'
                         : null,

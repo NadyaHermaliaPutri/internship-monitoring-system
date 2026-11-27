@@ -252,4 +252,41 @@ class NotificationTest extends TestCase
         $notifPage->assertOk();
         $notifPage->assertSee('Semua notifikasi sudah dibaca');
     }
+
+    public function test_notifications_feed_returns_only_authenticated_users_notifications_and_blocks_guests(): void
+    {
+        $this->getJson('/notifications/feed')->assertStatus(401);
+
+        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $internA = User::factory()->create(['role' => 'intern', 'is_active' => true, 'name' => 'Peserta A']);
+        $internB = User::factory()->create(['role' => 'intern', 'is_active' => true, 'name' => 'Peserta B']);
+
+        $leaveA = LeaveRequest::create([
+            'intern_user_id' => $internA->id,
+            'leave_type' => 'leave',
+            'start_date' => '2026-11-28',
+            'end_date' => '2026-11-28',
+            'reason' => 'Izin Peserta A',
+            'status' => 'pending',
+        ]);
+
+        $this->actingAs($admin)->post("/admin/izin/{$leaveA->id}/review", [
+            'decision' => 'approved',
+            'review_notes' => 'Disetujui untuk A',
+        ])->assertRedirect();
+
+        // Intern A sees their notification in feed
+        $feedA = $this->actingAs($internA)->getJson('/notifications/feed');
+        $feedA->assertOk()
+            ->assertJsonPath('unread_count', 1)
+            ->assertJsonPath('unread_db_count', 1)
+            ->assertJsonFragment(['title' => 'Pengajuan Izin/Sakit Disetujui']);
+
+        // Intern B sees 0 notifications and does not see Intern A's notification
+        $feedB = $this->actingAs($internB)->getJson('/notifications/feed');
+        $feedB->assertOk()
+            ->assertJsonPath('unread_count', 0)
+            ->assertJsonPath('unread_db_count', 0)
+            ->assertJsonMissing(['title' => 'Pengajuan Izin/Sakit Disetujui']);
+    }
 }
