@@ -124,8 +124,6 @@
                 $isAdminCalendarActive = request()->routeIs('admin.calendar.*');
                 $isAdminAttendanceActive = request()->routeIs('admin.attendance.*');
                 $isAdminLeaveActive = request()->routeIs('admin.leave.*');
-                $isPicAttendanceActive = request()->routeIs('pic.attendance.*');
-                $isPicLeaveActive = request()->routeIs('pic.leave.*');
                 $isInternAttendanceActive = request()->routeIs('intern.attendance.*');
                 $isInternLeaveActive = request()->routeIs('intern.leave.*');
             @endphp
@@ -373,68 +371,7 @@
                     </div>
                 @endif
 
-                {{-- ============================================================== --}}
-                {{-- MENU KHUSUS PEMBIMBING PIC --}}
-                {{-- ============================================================== --}}
-                @if(auth()->user()?->role === 'pic')
-                    <!-- Menu: Presensi Bimbingan (PIC Read-Only) -->
-                    <div class="relative w-full pl-5 {{ $isPicAttendanceActive ? 'z-10' : '' }}">
-                        @if($isPicAttendanceActive)
-                            <a href="{{ route('pic.attendance.index') }}" class="relative flex items-center gap-3 py-3 pl-4 pr-6 bg-[#eef4f8] text-[#015987] font-bold text-xs rounded-l-full w-full shadow-none block">
-                                <span class="absolute -top-5 right-0 w-5 h-5 pointer-events-none">
-                                    <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">
-                                        <path d="M20 0 L20 20 L0 20 A20 20 0 0 0 20 0 Z" fill="#eef4f8"/>
-                                    </svg>
-                                </span>
-                                <svg class="w-4 h-4 text-[#015987] flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                </svg>
-                                <span>Presensi Bimbingan</span>
-                                <span class="absolute -bottom-5 right-0 w-5 h-5 pointer-events-none">
-                                    <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">
-                                        <path d="M20 20 L20 0 L0 0 A20 20 0 0 1 20 20 Z" fill="#eef4f8"/>
-                                    </svg>
-                                </span>
-                            </a>
-                        @else
-                            <a href="{{ route('pic.attendance.index') }}" class="flex items-center gap-3 py-3 pl-4 pr-6 text-white/80 hover:text-white hover:bg-white/10 font-medium text-xs rounded-l-full w-full transition">
-                                <svg class="w-4 h-4 text-white/80 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                </svg>
-                                <span>Presensi Bimbingan</span>
-                            </a>
-                        @endif
-                    </div>
-
-                    <!-- Menu: Izin Bimbingan (PIC Read-Only) -->
-                    <div class="relative w-full pl-5 {{ $isPicLeaveActive ? 'z-10' : '' }}">
-                        @if($isPicLeaveActive)
-                            <a href="{{ route('pic.leave.index') }}" class="relative flex items-center gap-3 py-3 pl-4 pr-6 bg-[#eef4f8] text-[#015987] font-bold text-xs rounded-l-full w-full shadow-none block">
-                                <span class="absolute -top-5 right-0 w-5 h-5 pointer-events-none">
-                                    <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">
-                                        <path d="M20 0 L20 20 L0 20 A20 20 0 0 0 20 0 Z" fill="#eef4f8"/>
-                                    </svg>
-                                </span>
-                                <svg class="w-4 h-4 text-[#015987] flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                                </svg>
-                                <span>Izin Bimbingan</span>
-                                <span class="absolute -bottom-5 right-0 w-5 h-5 pointer-events-none">
-                                    <svg viewBox="0 0 20 20" fill="none" class="w-full h-full">
-                                        <path d="M20 20 L20 0 L0 0 A20 20 0 0 1 20 20 Z" fill="#eef4f8"/>
-                                    </svg>
-                                </span>
-                            </a>
-                        @else
-                            <a href="{{ route('pic.leave.index') }}" class="flex items-center gap-3 py-3 pl-4 pr-6 text-white/80 hover:text-white hover:bg-white/10 font-medium text-xs rounded-l-full w-full transition">
-                                <svg class="w-4 h-4 text-white/80 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                                </svg>
-                                <span>Izin Bimbingan</span>
-                            </a>
-                        @endif
-                    </div>
-                @endif
+                
 
                 {{-- ============================================================== --}}
                 {{-- MENU KHUSUS PESERTA MAGANG (INTERN) --}}

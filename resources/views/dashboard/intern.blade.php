@@ -413,7 +413,9 @@
                                         <td class="py-4 px-6">
                                             <div>
                                                 <p class="font-bold text-[#015987] text-xs leading-snug">{{ $task->title }}</p>
-                                                <p class="text-[10px] text-slate-400 mt-0.5 line-clamp-1">{{ \Illuminate\Support\Str::limit($task->description, 65) }}</p>
+                                                @if (filled($task->description))
+                                                    <p class="text-[10px] text-slate-400 mt-0.5 line-clamp-1">{{ \Illuminate\Support\Str::limit($task->description, 65) }}</p>
+                                                @endif
                                             </div>
                                         </td>
                                         <td class="py-4 px-5 font-medium text-slate-700 whitespace-nowrap">

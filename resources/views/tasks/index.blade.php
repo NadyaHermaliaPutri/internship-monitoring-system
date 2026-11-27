@@ -208,7 +208,9 @@
 
                                 <td class="py-3.5 px-4 max-w-md">
                                     <p class="font-bold text-slate-900 truncate">{{ $taskItem->title }}</p>
-                                    <p class="text-[11px] text-slate-500 line-clamp-1 mt-0.5">{{ $taskItem->description }}</p>
+                                    @if (filled($taskItem->description))
+                                        <p class="text-[11px] text-slate-500 line-clamp-1 mt-0.5">{{ $taskItem->description }}</p>
+                                    @endif
                                 </td>
 
                                 <td class="py-3.5 px-4 whitespace-nowrap">
@@ -318,9 +320,11 @@
                             @endif
                         </p>
 
-                        <p class="text-xs text-slate-600 leading-relaxed line-clamp-2">
-                            {{ $taskItem->description }}
-                        </p>
+                        @if (filled($taskItem->description))
+                            <p class="text-xs text-slate-600 leading-relaxed line-clamp-2">
+                                {{ $taskItem->description }}
+                            </p>
+                        @endif
 
                         <div class="pt-2 border-t border-slate-100 flex items-center justify-end gap-2">
                             <a

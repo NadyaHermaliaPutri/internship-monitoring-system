@@ -78,6 +78,7 @@ class LogbookService
     {
         return DB::transaction(function () use ($intern, $data, $evidenceFile) {
             $relatedTaskId = ! empty($data['related_task_id']) ? (int) $data['related_task_id'] : null;
+            $targetPicUserId = ! empty($data['target_pic_user_id']) ? (int) $data['target_pic_user_id'] : null;
             $result = isset($data['result']) && trim((string) $data['result']) !== ''
                 ? trim((string) $data['result'])
                 : null;
@@ -95,11 +96,12 @@ class LogbookService
                 'activity_description' => $this->resolveActivityDescription($data),
                 'result' => $result,
                 'evidence_media_id' => $evidenceMediaId,
-                'activity_status' => ! empty($data['activity_status']) ? $data['activity_status'] : null,
+                'activity_status' => LogbookActivityStatus::SedangDikerjakan->value,
                 'source' => LogbookSource::Manual,
                 'task_id' => null,
                 'related_task_id' => $relatedTaskId,
-                'status' => LogbookStatus::Pending,
+                'target_pic_user_id' => $targetPicUserId,
+                'status' => null,
             ]);
         });
     }
@@ -133,6 +135,7 @@ class LogbookService
                 'activity_description' => $locked->activity_description,
                 'result' => $locked->result,
                 'evidence_media_id' => $locked->evidence_media_id,
+                'target_pic_user_id' => $locked->target_pic_user_id,
                 'activity_status' => $locked->activity_status?->value,
                 'status_before' => $locked->status?->value,
                 'review_note_before' => $locked->review_note,
@@ -142,6 +145,10 @@ class LogbookService
             $relatedTaskId = array_key_exists('related_task_id', $data)
                 ? (! empty($data['related_task_id']) ? (int) $data['related_task_id'] : null)
                 : $locked->related_task_id;
+
+            $targetPicUserId = array_key_exists('target_pic_user_id', $data)
+                ? (! empty($data['target_pic_user_id']) ? (int) $data['target_pic_user_id'] : null)
+                : $locked->target_pic_user_id;
 
             $result = isset($data['result']) && trim((string) $data['result']) !== ''
                 ? trim((string) $data['result'])
@@ -153,9 +160,18 @@ class LogbookService
                 $evidenceMediaId = $media->id;
             }
 
-            $activityStatus = array_key_exists('activity_status', $data)
-                ? (! empty($data['activity_status']) ? $data['activity_status'] : null)
-                : $locked->activity_status?->value;
+            if ($locked->status === LogbookStatus::RevisionRequested) {
+                $resolvedActivityStatus = LogbookActivityStatus::Selesai;
+            } elseif (array_key_exists('activity_status', $data) && ! empty($data['activity_status'])) {
+                $resolvedActivityStatus = LogbookActivityStatus::from((string) $data['activity_status']);
+            } else {
+                $resolvedActivityStatus = $locked->activity_status ?? LogbookActivityStatus::SedangDikerjakan;
+            }
+
+            $nextStatus = null;
+            if ($targetPicUserId !== null && $resolvedActivityStatus === LogbookActivityStatus::Selesai) {
+                $nextStatus = LogbookStatus::Pending;
+            }
 
             $locked->update([
                 'log_date' => $data['log_date'],
@@ -163,9 +179,10 @@ class LogbookService
                 'activity_description' => $this->resolveActivityDescription($data),
                 'result' => $result,
                 'evidence_media_id' => $evidenceMediaId,
-                'activity_status' => $activityStatus,
+                'activity_status' => $resolvedActivityStatus->value,
                 'related_task_id' => $relatedTaskId,
-                'status' => LogbookStatus::Pending,
+                'target_pic_user_id' => $targetPicUserId,
+                'status' => $nextStatus,
             ]);
 
             return $locked->refresh();
@@ -221,9 +238,9 @@ class LogbookService
                 ]);
             }
 
-            if ($locked->status !== LogbookStatus::Pending) {
+            if ($locked->activity_status !== LogbookActivityStatus::Selesai || $locked->status !== LogbookStatus::Pending) {
                 throw ValidationException::withMessages([
-                    'status' => 'Hanya logbook berstatus Menunggu Review (Pending) yang dapat ditinjau oleh PIC.',
+                    'status' => 'Hanya logbook yang sudah ditandai Selesai dan berstatus Menunggu Review (Pending) yang dapat ditinjau oleh PIC.',
                 ]);
             }
 
@@ -268,7 +285,9 @@ class LogbookService
     }
 
     /**
-     * Menandai progres kegiatan mandiri peserta menjadi "Selesai" tanpa mengubah status review PIC.
+     * Menandai progres kegiatan manual peserta menjadi "Selesai":
+     * - Jika ditujukan ke PIC (target_pic_user_id terisi) -> status otomatis menjadi Pending (Menunggu Review PIC).
+     * - Jika Mandiri (target_pic_user_id = null) -> status tetap null (hanya Selesai untuk pantauan Admin).
      */
     public function completeManualEntry(Logbook $logbook, User $actor): Logbook
     {
@@ -278,12 +297,13 @@ class LogbookService
 
             if (! $actor->isIntern() || $locked->intern_user_id !== $actor->id || ! $locked->canBeCompletedByIntern()) {
                 throw ValidationException::withMessages([
-                    'logbook' => 'Hanya logbook kegiatan mandiri milik Anda yang masih Sedang Dikerjakan dan belum disetujui yang dapat ditandai Selesai.',
+                    'logbook' => 'Hanya logbook kegiatan milik Anda yang masih Sedang Dikerjakan dan belum disetujui yang dapat ditandai Selesai.',
                 ]);
             }
 
             $locked->update([
                 'activity_status' => LogbookActivityStatus::Selesai->value,
+                'status' => $locked->target_pic_user_id !== null ? LogbookStatus::Pending : null,
             ]);
 
             return $locked->refresh();
